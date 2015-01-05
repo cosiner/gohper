@@ -3,8 +3,8 @@ package log
 import (
 	"errors"
 	"fmt"
-	t "mlib/util/time"
-	"mlib/util/types"
+	t "github.com/cosiner/golib/time"
+	"github.com/cosiner/golib/types"
 	"os"
 	"sync"
 	"time"

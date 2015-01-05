@@ -2,7 +2,7 @@ package model
 
 import (
 	"bytes"
-	"mlib/util/types"
+	"github.com/cosiner/golib/types"
 	"strings"
 )
 

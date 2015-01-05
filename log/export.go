@@ -2,7 +2,7 @@
 package log
 
 import (
-	"mlib/util/sys"
+	"github.com/cosiner/golib/sys"
 )
 
 // null function set

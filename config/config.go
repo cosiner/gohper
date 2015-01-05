@@ -2,7 +2,7 @@
 package config
 
 import (
-	"mlib/util/types"
+	"github.com/cosiner/golib/types"
 	"strconv"
 )
 

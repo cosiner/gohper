@@ -1,7 +1,7 @@
 package test
 
 import (
-	"mlib/memcache"
+	"github.com/cosiner/gomodule/memcache"
 	"testing"
 )
 

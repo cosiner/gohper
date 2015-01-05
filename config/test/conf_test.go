@@ -1,8 +1,8 @@
 package test
 
 import (
-	"mlib/config"
-	"mlib/util/types"
+	"github.com/cosiner/golib/types"
+	"github.com/cosiner/gomodule/config"
 	"testing"
 )
 

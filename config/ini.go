@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"github.com/cosiner/golib/types"
 	"io"
-	"mlib/util/types"
 	"os"
 )
 

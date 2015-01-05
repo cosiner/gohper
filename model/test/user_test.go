@@ -1,7 +1,7 @@
 package test
 
 import (
-	"mlib/model"
+	"github.com/cosiner/gomodule/model"
 	"testing"
 )
 

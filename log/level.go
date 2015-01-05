@@ -1,7 +1,7 @@
 package log
 
 import (
-	"mlib/util/types"
+	"github.com/cosiner/golib/types"
 )
 
 // Level is log level,
