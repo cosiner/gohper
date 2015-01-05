@@ -1,3 +1,4 @@
+// Inspired by limetext's region code, but add an direction for a region
 package types
 
 // NOTICE: ALL untestd!!!
@@ -5,9 +6,16 @@ import (
 	"fmt"
 )
 
+// Direction means positive or reverse
+type Direction bool
+
+const (
+	POSITIVE Direction = true
+	REVERSE  Direction = false
+)
+
 // Region from point From to To.
 // From must be less than To, real direction is decide by the Dir field
-// if real is reverse, Dir set to REVERSE
 type Region struct {
 	From, To int
 	Dir      Direction

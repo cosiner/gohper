@@ -1,3 +1,4 @@
+// Package funcs implements a set of functions support for function programming
 package funcs
 
 import (
