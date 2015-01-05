@@ -2,9 +2,9 @@ package sys
 
 import (
 	"bufio"
+	"github.com/cosiner/golib/funcs"
+	. "github.com/cosiner/golib/generic"
 	"io"
-	"mlib/util/funcs"
-	. "mlib/util/generic"
 )
 
 // BufReader return a new bufio.Reader from exist io.Reader
@@ -51,7 +51,7 @@ func WrapWriter(wr io.Writer) BufVWriter {
 
 // WriteVString write slice string
 //go:generate gotmpl  -i $GOFILE -o ./$GOFILE -t T:string
-//go:generate gotmpl -p mlib/util/funcs -o funcs_string_gen.go  -t T:string -d
+//go:generate gotmpl -p github.com/cosiner/golib/funcs -o funcs_string_gen.go  -t T:string -d
 func (w BufVWriter) WriteVString(strs []string) (int, error) {
 	return writeVString(func(index int, str string) (int, error) {
 		return w.WriteString(str)
@@ -65,7 +65,7 @@ func (w BufVWriter) WriteLString(strs ...string) (int, error) {
 
 // WriteV write slice byte array
 //go:generate gotmpl  -i $GOFILE -o ./$GOFILE  -t T:[]byte
-//go:generate gotmpl -p mlib/util/funcs -o funcs_bytes_gen.go -t T:[]byte -d
+//go:generate gotmpl -p github.com/cosiner/golib/funcs -o funcs_bytes_gen.go -t T:[]byte -d
 func (w BufVWriter) WriteV(bs [][]byte) (int, error) {
 	return writeVBytes(func(index int, b []byte) (int, error) {
 		return w.Write(b)

@@ -3,7 +3,7 @@
 package regexp
 
 import (
-	"mlib/util/types"
+	"github.com/cosiner/golib/types"
 	"regexp"
 )
 

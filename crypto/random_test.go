@@ -1,7 +1,7 @@
 package test
 
 import (
-	"mlib/util/crypto"
+	"github.com/cosiner/golib/crypto"
 	"testing"
 )
 

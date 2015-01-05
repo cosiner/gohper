@@ -1,7 +1,7 @@
 package funcs
 
 import (
-	. "mlib/util/generic"
+	. "github.com/cosiner/golib/generic"
 )
 
 type (

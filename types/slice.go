@@ -1,7 +1,7 @@
 package types
 
 import (
-	. "mlib/util/generic"
+	. "github.com/cosiner/golib/generic"
 )
 
 // DelIndexObjFor_T delete all object that marked as true in delIndex

@@ -1,8 +1,8 @@
 package sys
 
 import (
-	. "mlib/util/errors"
-	"mlib/util/types"
+	. "github.com/cosiner/golib/errors"
+	"github.com/cosiner/golib/types"
 	"os"
 	"os/user"
 	"path/filepath"

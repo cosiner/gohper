@@ -1,7 +1,7 @@
 package gotool
 
 import (
-	"mlib/util/test"
+	"github.com/cosiner/golib/test"
 	"testing"
 )
 

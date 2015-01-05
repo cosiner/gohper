@@ -1,7 +1,7 @@
 package gotool
 
 import (
-	"mlib/util/sys"
+	"github.com/cosiner/golib/sys"
 	"os"
 	"path/filepath"
 	"strings"

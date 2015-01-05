@@ -1,8 +1,8 @@
-// Package gotool implements some utility functions related to go
-package gotool
+// Package goutil implements some utility functions related to go
+package goutil
 
 import (
-	"mlib/util/types"
+	"github.com/cosiner/golib/types"
 )
 
 const (

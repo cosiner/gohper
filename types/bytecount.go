@@ -2,7 +2,7 @@ package types
 
 import (
 	"bytes"
-	"mlib/util/errors"
+	"github.com/cosiner/golib/errors"
 	"strconv"
 )
 

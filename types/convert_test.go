@@ -2,7 +2,7 @@ package types
 
 import (
 	"bytes"
-	"mlib/util/test"
+	"github.com/cosiner/golib/test"
 	"testing"
 )
 

@@ -1,8 +1,8 @@
-package gotool
+package goutil
 
 import (
+	"github.com/cosiner/golib/types"
 	"go/ast"
-	"mlib/util/types"
 )
 
 // IsExported return whether or not field is exported
