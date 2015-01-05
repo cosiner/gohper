@@ -1,12 +1,11 @@
 package test
 
 import (
-	"github.com/cosiner/gomodule/memcache"
 	"testing"
 )
 
-func TestOrdiCache(t *testing.T) {
-	cache := memcache.Cacher(memcache.RANDOM, 10, 10)
+func TestRandomCache(t *testing.T) {
+	cache := Cacher(memcache.RANDOM, 10, 10)
 	cache.Set("aaa", "sss")
 	cache.Set("aaa", "bbb")
 	cache.Set("ddd", "ddd")

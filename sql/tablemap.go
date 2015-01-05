@@ -1,6 +1,5 @@
 package mgolib
 
-/*
 import (
 	"errors"
 	"fmt"
@@ -182,4 +181,3 @@ func (pq *ParseQueue) Dequeue() (st *StructType, has bool) {
 	}
 	return
 }
-*/

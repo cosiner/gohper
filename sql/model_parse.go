@@ -1,6 +1,5 @@
 package mgolib
 
-/*
 import (
 	"reflect"
 	"sync"
@@ -90,4 +89,3 @@ var (
 	COLUMN_DISABLED      = "-"
 	FIELD_SCOPE_SEPRATOR = "."
 )
-*/
