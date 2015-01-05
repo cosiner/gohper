@@ -1,13 +1,5 @@
 package types
 
-// Direction means positive or reverse
-type Direction bool
-
-const (
-	POSITIVE Direction = true
-	REVERSE  Direction = false
-)
-
 func SeqByDir(a, b int, dir Direction) (int, int) {
 	if dir == POSITIVE {
 		return a, b
