@@ -6,21 +6,241 @@ package types
 
 // u_1 is uint 1
 const (
-	uint0          uint   = 0
-	unitLenLogN           = 6 // log64 = 6
-	unitLen               = 1 << unitLenLogN
-	unitMax        uint64 = 1<<unitLen - 1
-	minShrinkCount        = 16
+	uint0       uint   = 0
+	unitLenLogN        = 6 // log64 = 6
+	unitLen            = 1 << unitLenLogN
+	unitMax     uint64 = 1<<unitLen - 1
 )
 
 // BitSet is a bitset
 type BitSet struct {
-	count       uint // bitset unit count
-	shrinkCount uint // bitset shrink unit count
-	set         []uint64
+	length uint     // bitset length
+	set    []uint64 // bitset data store
 }
 
-// unitCount return unit count need for the count
+// NewBitSet return a new bitset with gived length,
+// if length is not multiple of 64, it will fit to be.
+func NewBitSet(length uint) *BitSet {
+	if length == 0 {
+		return nil
+	}
+	return &BitSet{length, newUnitSet(unitCount(length))}
+}
+
+// Len return bitset length
+func (bs *BitSet) Len() uint {
+	return bs.length
+}
+
+// Cap return bitset's capacity
+func (bs *BitSet) Cap() uint {
+	return bs.UnitLen() * bs.UnitCount()
+}
+
+// UnitCount return bitset's unit count
+func (bs *BitSet) UnitCount() uint {
+	return uint(len(bs.set))
+}
+
+// UnitLen return unit length of bitset
+func (bs *BitSet) UnitLen() uint {
+	return unitLen
+}
+
+// Clone return a new bitset same as current
+func (bs *BitSet) Clone() *BitSet {
+	newBitSet := NewBitSet(bs.Len())
+	if bs.Len() > 0 {
+		copy(newBitSet.set, bs.set)
+	}
+	return newBitSet
+}
+
+// Shrink apply bitset for shrink operation
+func (bs *BitSet) Shrink() *BitSet {
+	return bs.ChangeLength(bs.length)
+}
+
+// changeUnitCount change the bitset's count
+func (bs *BitSet) ChangeLength(length uint) *BitSet {
+	newCount := unitCount(length)
+	oldCount := bs.UnitCount()
+	if oldCount < newCount || newCount*2 <= oldCount {
+		newSet := newUnitSet(newCount)
+		if bs.set != nil {
+			copy(newSet, bs.set)
+		}
+		bs.set = newSet
+	}
+	bs.length = length
+	return bs
+}
+
+// Set set index bit to 1
+// if index large then bitset count, will expand the bitset
+func (bs *BitSet) Set(index uint) *BitSet {
+	bs.extend(index)
+	bs.set[unitPos(index)] |= 1 << unitIndex(index)
+	return bs
+}
+
+// Set set index bit to 1
+func (bs *BitSet) SetAll() *BitSet {
+	return bs.unitOp(func(index uint) {
+		bs.set[index] = unitMax
+	})
+}
+
+// Unset set index bit to 0
+// if index is larger than bitset length, bitset must be extended
+func (bs *BitSet) UnSet(index uint) *BitSet {
+	bs.extend(index)
+	bs.set[unitPos(index)] &= ^(1 << unitIndex(index))
+	return bs
+}
+
+// UnSetAll set all bits to 0
+func (bs *BitSet) UnSetAll() *BitSet {
+	return bs.unitOp(func(index uint) {
+		bs.set[index] = 0
+	})
+}
+
+// Flip flip the index bit
+func (bs *BitSet) Flip(index uint) *BitSet {
+	if index >= bs.Len() {
+		bs.Set(index)
+	}
+	bs.set[unitPos(index)] ^= 1 << unitIndex(index)
+	return bs
+}
+
+// FlipAll flip all the index bit
+func (bs *BitSet) FlipAll() *BitSet {
+	return bs.unitOp(func(index uint) {
+		bs.set[index] = ^bs.set[index]
+	})
+}
+
+// IsSet check whether or not index bit is set
+func (bs *BitSet) IsSet(index uint) bool {
+	return index < bs.Len() && (bs.set[unitPos(index)]&(1<<unitIndex(index))) != 0
+}
+
+// SetTo set index bit to 1 if value is true, otherwise 0
+func (bs *BitSet) SetTo(index uint, value bool) *BitSet {
+	if value {
+		return bs.Set(index)
+	}
+	return bs.UnSet(index)
+}
+
+// BitCount count 1 bits
+func (bs *BitSet) BitCount() uint {
+	var n uint = 0
+	bs.clearTop()
+	bs.unitOp(func(index uint) {
+		n += bitCount(bs.set[index])
+	})
+	return n
+}
+
+// Union union another bitset to current bitset
+// if want union to a new bitset instead of change current bitset,
+// please call Clone() first to create a new bitset, then call Union
+// on new bitset
+func (bs *BitSet) Union(b *BitSet) *BitSet {
+	return bs.bitsetOp(b,
+		func(length *uint) {
+			bl, l := bs.Len(), *length
+			if bl < l {
+				bs.clearTop()
+				bs.ChangeLength(l)
+			} else if bl > l {
+				b.clearTop()
+			}
+		},
+		func(index uint) {
+			bs.set[index] |= b.set[index]
+		})
+}
+
+// Intersection intersection another bitset to current bitset
+func (bs *BitSet) Intersection(b *BitSet) *BitSet {
+	return bs.bitsetOp(b,
+		func(length *uint) {
+			bl, l := bs.Len(), *length
+			if bl < l {
+				bs.clearTop()
+				bs.ChangeLength(l)
+			} else if bl > l {
+				bs.setTop()
+			}
+		},
+		func(index uint) {
+			bs.set[index] &= b.set[index]
+		})
+}
+
+// Diff calculate difference between current and another bitset
+func (bs *BitSet) Diff(b *BitSet) *BitSet {
+	return bs.bitsetOp(b,
+		func(length *uint) {
+			if *length > bs.Len() {
+				*length = bs.Len()
+			} else {
+				b.clearTop()
+			}
+		},
+		func(index uint) {
+			bs.set[index] &= ^b.set[index]
+		})
+}
+
+// bitsetOp is common operation for union, intersection, diff
+func (bs *BitSet) bitsetOp(b *BitSet, lenFn func(*uint), opFn func(index uint)) *BitSet {
+	length := b.Len()
+	if b == nil || b.Len() == 0 {
+		return bs
+	}
+	lenFn(&length)
+	for i, n := uint0, unitCount(length); i < n; i++ {
+		opFn(i)
+	}
+	return bs
+}
+
+// extend check if it's necessery to extend bitset's data store
+func (bs *BitSet) extend(index uint) {
+	if index >= bs.Len() {
+		bs.ChangeLength(index + 1)
+	}
+}
+
+// clearTop clear bitset's top non-used unit, all these bits are set to zero
+func (bs *BitSet) clearTop() {
+	units := unitCount(bs.length)
+	for i := bs.UnitCount() - 1; i >= units; i-- {
+		bs.set[i] = 0
+	}
+	bs.set[units-1] &= (unitMax >> (units*unitLen - bs.length))
+}
+
+// setTop set bitset's top non-used unit,  to 1
+func (bs *BitSet) setTop() {
+	units := unitCount(bs.length)
+	for i := bs.UnitCount() - 1; i >= units; i-- {
+		bs.set[i] = 1
+	}
+	bs.set[units-1] |= (unitMax << (bs.length - (units-1)*unitLen))
+}
+
+// newUnitSet create a new unit set has given unit count for bitset
+func newUnitSet(count uint) []uint64 {
+	return make([]uint64, count)
+}
+
+// unitCount return unit count need for the length
 func unitCount(length uint) uint {
 	count := length >> unitLenLogN
 	if length&(unitLen-1) != 0 {
@@ -39,182 +259,9 @@ func unitIndex(index uint) uint {
 	return index & (unitLen - 1)
 }
 
-// NewBitSet return a new bitset with gived count
-// Notice: the parameter count represent 64bits
-func NewBitSet(count uint) *BitSet {
-	return &BitSet{count, minShrinkCount, make([]uint64, count)}
-}
-
-// Length return bitset count
-func (bs *BitSet) Length() uint {
-	return bs.count * unitLen
-}
-
-// Clone return a new bitset same as current
-func (bs *BitSet) Clone() *BitSet {
-	newBitSet := NewBitSet(bs.count)
-	if bs.count > 0 {
-		copy(newBitSet.set, bs.set)
-	}
-	return newBitSet
-}
-
-// Shrink shrink the bitset, before call this, must setup minshrinkcount,
-// otherwise, may make no difference
-func (bs *BitSet) Shrink(count uint) {
-	bs.changeUnitCount(count)
-}
-
-// changeUnitCount change the bitset's count
-func (bs *BitSet) changeUnitCount(count uint) {
-	oldCount := uint(len(bs.set))
-	if oldCount < count ||
-		(count*2 <= oldCount &&
-			oldCount > bs.shrinkCount) {
-		// if unit count is not enough or new unit count is twice small than old
-		// and old unit count is too large, then make a new set and copy data
-		newSet := make([]uint64, count)
-		if bs.set != nil {
-			copy(bs.set, newSet)
-			bs.set = nil
-		}
-		bs.set = newSet
-	}
-	bs.count = count
-}
-
-// ChangeShrinkCount change set shrink count, only used when bitset is shrinking
-func (bs *BitSet) ChangeShrinkCount(count uint) {
-	if count > 1 {
-		bs.shrinkCount = count
-	}
-}
-
-// Set set index bit to 1
-// if index large then bitset count, will expand the bitset
-func (bs *BitSet) Set(index uint) *BitSet {
-	if index >= bs.count*unitLen {
-		bs.changeUnitCount(unitCount(index + 1))
-	}
-	bs.set[unitPos(index)] |= 1 << unitIndex(index)
-	return bs
-}
-
-// Set set index bit to 1
-func (bs *BitSet) SetAll() *BitSet {
-	return bs.unitOp(func(index uint) {
-		bs.set[index] = unitMax
-	})
-}
-
-// Unset set index bit to 0
-func (bs *BitSet) UnSet(index uint) *BitSet {
-	if index < bs.count*unitLen {
-		bs.set[unitPos(index)] &= ^(1 << unitIndex(index))
-	}
-	return bs
-}
-
-// UnSetAll set all bits to 0
-func (bs *BitSet) UnSetAll() *BitSet {
-	return bs.unitOp(func(index uint) {
-		bs.set[index] = 0
-	})
-}
-
-// Flip flip the index bit
-func (bs *BitSet) Flip(index uint) *BitSet {
-	if index >= bs.count {
-		return bs.Set(index)
-	}
-	bs.set[unitPos(index)] ^= 1 << unitIndex(index)
-	return bs
-}
-
-// FlipAll flip all the index bit
-func (bs *BitSet) FlipAll() *BitSet {
-	return bs.unitOp(func(index uint) {
-		bs.set[index] = ^bs.set[index]
-	})
-}
-
-// IsSet check whether or not index bit is set
-func (bs *BitSet) IsSet(index uint) bool {
-	return index < bs.count && (bs.set[unitPos(index)]&(1<<unitIndex(index))) != 0
-}
-
-// SetTo set index bit to 1 if value is true, otherwise 0
-func (bs *BitSet) SetTo(index uint, value bool) *BitSet {
-	if value {
-		return bs.Set(index)
-	}
-	return bs.UnSet(index)
-}
-
-func (bs *BitSet) BitCount() uint {
-	var n uint = 0
-	bs.unitOp(func(index uint) {
-		n += bitCount(bs.set[index])
-	})
-	return n
-}
-
-// Union union another bitset to current bitset
-// if want union to a new bitset instead of change current bitset,
-// please call Clone() first to create a new bitset, then call Union
-// on new bitset
-func (bs *BitSet) Union(b *BitSet) *BitSet {
-	count := b.count
-	if b == nil || count == 0 {
-		return bs
-	}
-	if bs.count < count {
-		bs.changeUnitCount(count)
-	}
-	for i := uint0; i < count; i++ {
-		bs.set[i] |= b.set[i]
-	}
-
-	return bs
-}
-
-// Intersection intersection another bitset to current bitset
-func (bs *BitSet) Intersection(b *BitSet) *BitSet {
-	count := b.count
-	if b == nil || count == 0 {
-		return bs
-	}
-	bsCount := bs.count
-	if bsCount < count {
-		bs.changeUnitCount(count)
-	}
-	for i := uint0; i < count; i++ {
-		bs.set[i] &= b.set[i]
-	}
-	for i := count; i < bsCount; i++ {
-		bs.set[i] = 0
-	}
-	return bs
-}
-
-// Diff calculate difference between current and another bitset
-func (bs *BitSet) Diff(b *BitSet) *BitSet {
-	count := b.count
-	if b == nil || count == 0 {
-		return bs
-	}
-	if count > bs.count {
-		count = bs.count
-	}
-	for i := uint0; i < count; i++ {
-		bs.set[i] &= ^b.set[i]
-	}
-	return bs
-}
-
 // unitOp iter the bitset unit, apply function to each unit
 func (bs *BitSet) unitOp(f func(index uint)) *BitSet {
-	for i, n := uint0, bs.count; i < n; i++ {
+	for i, n := uint0, unitCount(bs.Len()); i < n; i++ {
 		f(i)
 	}
 	return bs
