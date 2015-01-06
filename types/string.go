@@ -2,7 +2,6 @@ package types
 
 import (
 	"bytes"
-	. "github.com/cosiner/golib/errors"
 	"strings"
 	"unicode"
 )
@@ -65,41 +64,6 @@ func TrimLower(str string) string {
 // BytesTrim2Str trim bytes return as string
 func BytesTrim2Str(s []byte) string {
 	return string(bytes.TrimSpace(s))
-}
-
-// Str2Bool convert string to bool, error when not string
-func Str2Bool(s string) (val bool, err error) {
-	s = TrimLower(s)
-	if s == "true" {
-		val = true
-	} else if s == "false" {
-		val = false
-	} else {
-		err = Errorf("%s is not an bool string", s)
-	}
-	return
-}
-
-// MustStr2Bool is same as Str2Bool, on error it will panic
-func MustStr2Bool(s string) bool {
-	val, err := Str2Bool(s)
-	if err != nil {
-		panic(err)
-	}
-	return val
-}
-
-// Str2BoolDef convert string to bool, on error return default value
-func Str2BoolDef(s string, def bool) (val bool) {
-	s = TrimLower(s)
-	if s == "true" {
-		val = true
-	} else if s == "false" {
-		val = false
-	} else {
-		val = def
-	}
-	return
 }
 
 // TrimSplit split string and return trim space string

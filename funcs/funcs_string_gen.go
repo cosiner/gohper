@@ -1,30 +1,19 @@
+// Package funcs implements a set of functions support for function programming
 package funcs
 
-type (
 
-	// All params is slice index, slice element
-	// no return value
-	MapFuncForString func(int, string)
-	// return error to stop iterate
-	MapErrFuncForString    func(int, string) error
-	ApplyFuncForString     func(int, string) string
-	ApplyErrFuncForString  func(int, string) (string, error)
-	FilterFuncForString    func(int, string) (string, bool)
-	FilterErrFuncForString ApplyErrFuncForString
-)
-
-// nil value for FuncT
+// nil value for T
 var NILForString string = ""
 
-// MapFor_FuncT iterate every elements of slice
-func MapForString(slice []string, fn MapFuncForString) {
+// MapFor_T iterate every elements of slice
+func MapForString(slice []string, fn func(int, string)) {
 	for index, o := range slice {
 		fn(index, o)
 	}
 }
 
-// MapWithErrFor_FuncT iterate every elements of slice, on error stop
-func MapWithErrForString(slice []string, fn MapErrFuncForString) (err error) {
+// MapWithErrFor_T iterate every elements of slice, on error stop
+func MapWithErrForString(slice []string, fn func(int, string) error) (err error) {
 	for index, o := range slice {
 		if err = fn(index, o); err != nil {
 			return
@@ -33,15 +22,15 @@ func MapWithErrForString(slice []string, fn MapErrFuncForString) (err error) {
 	return
 }
 
-// ApplyFor_FuncT apply function to every elements of slice
-func ApplyForString(slice []string, fn ApplyFuncForString) {
+// ApplyFor_T apply function to every elements of slice
+func ApplyForString(slice []string, fn func(int, string) string) {
 	for index, o := range slice {
 		slice[index] = fn(index, o)
 	}
 }
 
-// ApplyWithErrFor_FuncT apply function to every elements of slice, on error stop
-func ApplyWithErrForString(slice []string, fn ApplyErrFuncForString) (err error) {
+// ApplyWithErrFor_T apply function to every elements of slice, on error stop
+func ApplyWithErrForString(slice []string, fn func(int, string) (string, error)) (err error) {
 	for index, o := range slice {
 		if o, err = fn(index, o); err != nil {
 			return
@@ -51,9 +40,9 @@ func ApplyWithErrForString(slice []string, fn ApplyErrFuncForString) (err error)
 	return
 }
 
-// FilterFor_FuncT iterate slice and filter with function, if function return true as useful
+// FilterFor_T iterate slice and filter with function, if function return true as useful
 // append it to result slice
-func FilterForString(slice []string, fn FilterFuncForString) (res []string) {
+func FilterForString(slice []string, fn func(int, string) (string, bool)) (res []string) {
 	MapForString(slice, func(index int, o string) {
 		if o, use := fn(index, o); use {
 			res = append(res, o)
@@ -62,9 +51,9 @@ func FilterForString(slice []string, fn FilterFuncForString) (res []string) {
 	return res
 }
 
-// FilterWithErrFor_FuncT iterate slice and filter with function, if function return no error
+// FilterWithErrFor_T iterate slice and filter with function, if function return no error
 // append it to result slice, else stop iterate
-func FilterWithErrForString(slice []string, fn FilterErrFuncForString) (res []string, err error) {
+func FilterWithErrForString(slice []string, fn func(int, string) (string, error)) (res []string, err error) {
 	MapWithErrForString(slice, func(index int, o string) (e error) {
 		if o, e = fn(index, o); err == nil {
 			res = append(res, o)
@@ -74,17 +63,17 @@ func FilterWithErrForString(slice []string, fn FilterErrFuncForString) (res []st
 	return
 }
 
-// ZipFor_FuncT zip two slice, if a slice is longer, the remains will match nil
+// ZipFor_T zip two slice, if a slice is longer, the remains will match nil
 func ZipForString(slice1, slice2 []string) (res [][]string) {
 	return zipForString(slice1, slice2, true)
 }
 
-// ZipShortFor_FuncT zip two slice, if a slice is longer, the remains will not be used
+// ZipShortFor_T zip two slice, if a slice is longer, the remains will not be used
 func ZipShortForString(slice1, slice2 []string) (res [][]string) {
 	return zipForString(slice1, slice2, false)
 }
 
-// zipFor_FuncT zip two slice, zipLong determin whether use the remains of longer slice
+// zipFor_T zip two slice, zipLong determin whether use the remains of longer slice
 func zipForString(slice1, slice2 []string, zipLong bool) (res [][]string) {
 	var (
 		i, l1, l2 int

@@ -230,7 +230,7 @@ func bitCount(n uint64) uint {
 	return uint(n >> 56)
 }
 
-// In 测试第index位在bitset中是否被设置,如果设置了,返回index位被设置的bitset 即 1 << index
+// In test whether the bit at index is set to 1, if true, return 1 << index, else 0
 func In(index int, bitset uint) (i uint) {
 	if index >= 0 {
 		var idx uint = 1 << uint(index)
@@ -241,7 +241,7 @@ func In(index int, bitset uint) (i uint) {
 	return
 }
 
-// NotIn 测试第index位在bitset中是否被设置,如果没设置, 返回index位被设置的bitset 即 1 << index
+// NotIn test whether the bit at index is set to 0, if true, return 1 << index, else 0
 func NotIn(index int, bitset uint) (i uint) {
 	if index >= 0 {
 		var idx uint = 1 << uint(index)

@@ -1,4 +1,4 @@
-package gotool
+package goutil
 
 import (
 	"github.com/cosiner/golib/test"

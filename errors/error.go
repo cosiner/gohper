@@ -14,19 +14,25 @@ const (
 	NOREXIT_CODE = 0
 )
 
+// ExitWith print message, then normal exit
+func ExitWith(str string) {
+	fmt.Println(str)
+	os.Exit(NOREXIT_CODE)
+}
+
 // Errorf make an error with given format and  params
 func Errorf(format string, v ...interface{}) error {
-	return errors.New(fmt.Sprintf(format, v...))
+	return Err(fmt.Sprintf(format, v...))
 }
 
 // Errorln make an error with given params and append an newline character
 func Errorln(v ...interface{}) error {
-	return errors.New(fmt.Sprintln(v...))
+	return Err(fmt.Sprintln(v...))
 }
 
 // Error make an error with given params
 func Error(v ...interface{}) error {
-	return errors.New(fmt.Sprint(v...))
+	return Err(fmt.Sprint(v...))
 }
 
 // Err is only a wrapper of errors.New

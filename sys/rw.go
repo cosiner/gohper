@@ -20,13 +20,14 @@ func BufReader(rd io.Reader) (br *bufio.Reader) {
 	return
 }
 
-// BufReader return a new bufio.Writer from exist io.Writer
+// BufWriter return a new bufio.Writer from exist io.Writer
 // if current Writer is already bufferd, return itself
 func BufWriter(wr io.Writer) (bw *bufio.Writer) {
 	if wr != nil {
-		if w, is := wr.(*bufio.Writer); is {
-			bw = w
-		} else {
+		switch wr := wr.(type) {
+		case *bufio.Writer:
+			bw = wr
+		default:
 			bw = bufio.NewWriter(wr)
 		}
 	}

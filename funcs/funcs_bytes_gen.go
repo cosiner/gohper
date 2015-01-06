@@ -1,30 +1,19 @@
+// Package funcs implements a set of functions support for function programming
 package funcs
 
-type (
 
-	// All params is slice index, slice element
-	// no return value
-	MapFuncForBytes func(int, []byte)
-	// return error to stop iterate
-	MapErrFuncForBytes    func(int, []byte) error
-	ApplyFuncForBytes     func(int, []byte) []byte
-	ApplyErrFuncForBytes  func(int, []byte) ([]byte, error)
-	FilterFuncForBytes    func(int, []byte) ([]byte, bool)
-	FilterErrFuncForBytes ApplyErrFuncForBytes
-)
-
-// nil value for FuncT
+// nil value for T
 var NILForBytes []byte = nil
 
-// MapFor_FuncT iterate every elements of slice
-func MapForBytes(slice [][]byte, fn MapFuncForBytes) {
+// MapFor_T iterate every elements of slice
+func MapForBytes(slice [][]byte, fn func(int, []byte)) {
 	for index, o := range slice {
 		fn(index, o)
 	}
 }
 
-// MapWithErrFor_FuncT iterate every elements of slice, on error stop
-func MapWithErrForBytes(slice [][]byte, fn MapErrFuncForBytes) (err error) {
+// MapWithErrFor_T iterate every elements of slice, on error stop
+func MapWithErrForBytes(slice [][]byte, fn func(int, []byte) error) (err error) {
 	for index, o := range slice {
 		if err = fn(index, o); err != nil {
 			return
@@ -33,15 +22,15 @@ func MapWithErrForBytes(slice [][]byte, fn MapErrFuncForBytes) (err error) {
 	return
 }
 
-// ApplyFor_FuncT apply function to every elements of slice
-func ApplyForBytes(slice [][]byte, fn ApplyFuncForBytes) {
+// ApplyFor_T apply function to every elements of slice
+func ApplyForBytes(slice [][]byte, fn func(int, []byte) []byte) {
 	for index, o := range slice {
 		slice[index] = fn(index, o)
 	}
 }
 
-// ApplyWithErrFor_FuncT apply function to every elements of slice, on error stop
-func ApplyWithErrForBytes(slice [][]byte, fn ApplyErrFuncForBytes) (err error) {
+// ApplyWithErrFor_T apply function to every elements of slice, on error stop
+func ApplyWithErrForBytes(slice [][]byte, fn func(int, []byte) ([]byte, error)) (err error) {
 	for index, o := range slice {
 		if o, err = fn(index, o); err != nil {
 			return
@@ -51,9 +40,9 @@ func ApplyWithErrForBytes(slice [][]byte, fn ApplyErrFuncForBytes) (err error) {
 	return
 }
 
-// FilterFor_FuncT iterate slice and filter with function, if function return true as useful
+// FilterFor_T iterate slice and filter with function, if function return true as useful
 // append it to result slice
-func FilterForBytes(slice [][]byte, fn FilterFuncForBytes) (res [][]byte) {
+func FilterForBytes(slice [][]byte, fn func(int, []byte) ([]byte, bool)) (res [][]byte) {
 	MapForBytes(slice, func(index int, o []byte) {
 		if o, use := fn(index, o); use {
 			res = append(res, o)
@@ -62,9 +51,9 @@ func FilterForBytes(slice [][]byte, fn FilterFuncForBytes) (res [][]byte) {
 	return res
 }
 
-// FilterWithErrFor_FuncT iterate slice and filter with function, if function return no error
+// FilterWithErrFor_T iterate slice and filter with function, if function return no error
 // append it to result slice, else stop iterate
-func FilterWithErrForBytes(slice [][]byte, fn FilterErrFuncForBytes) (res [][]byte, err error) {
+func FilterWithErrForBytes(slice [][]byte, fn func(int, []byte) ([]byte, error)) (res [][]byte, err error) {
 	MapWithErrForBytes(slice, func(index int, o []byte) (e error) {
 		if o, e = fn(index, o); err == nil {
 			res = append(res, o)
@@ -74,17 +63,17 @@ func FilterWithErrForBytes(slice [][]byte, fn FilterErrFuncForBytes) (res [][]by
 	return
 }
 
-// ZipFor_FuncT zip two slice, if a slice is longer, the remains will match nil
+// ZipFor_T zip two slice, if a slice is longer, the remains will match nil
 func ZipForBytes(slice1, slice2 [][]byte) (res [][][]byte) {
 	return zipForBytes(slice1, slice2, true)
 }
 
-// ZipShortFor_FuncT zip two slice, if a slice is longer, the remains will not be used
+// ZipShortFor_T zip two slice, if a slice is longer, the remains will not be used
 func ZipShortForBytes(slice1, slice2 [][]byte) (res [][][]byte) {
 	return zipForBytes(slice1, slice2, false)
 }
 
-// zipFor_FuncT zip two slice, zipLong determin whether use the remains of longer slice
+// zipFor_T zip two slice, zipLong determin whether use the remains of longer slice
 func zipForBytes(slice1, slice2 [][]byte, zipLong bool) (res [][][]byte) {
 	var (
 		i, l1, l2 int

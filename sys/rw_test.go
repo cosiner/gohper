@@ -26,7 +26,7 @@ func TestWriteVString(t *testing.T) {
 
 }
 
-func TestWriteMString(t *testing.T) {
+func TestWriteLString(t *testing.T) {
 
 }
 
@@ -34,10 +34,11 @@ func TestWriteV(t *testing.T) {
 
 }
 
-func TestWriteM(t *testing.T) {
+func TestWriteL(t *testing.T) {
 	tt := test.WrapTest(t)
 	buffer := bytes.NewBuffer(make([]byte, 0))
 	bw := WrapWriter(buffer)
-	bw.WriteMString("abc", "de")
-	tt.AssertTrue("WriteM", bytes.Equal([]byte("abcde"), buffer.Bytes()))
+	bw.WriteLString("abc", "de")
+	bw.Flush()
+	tt.AssertTrue("WriteL", bytes.Equal([]byte("abcde"), buffer.Bytes()))
 }

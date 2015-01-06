@@ -15,24 +15,41 @@ const (
 
 // IsExist check whether or not file/dir exist
 func IsExist(fname string) bool {
-	_, err := os.Stat(ExpandAbs(fname))
+	_, err := os.Stat(ExpandHome(fname))
 	return err == nil
+}
+
+// IsFile check whether or not file exist
+func IsFile(fname string) bool {
+	fi, err := os.Stat(ExpandHome(fname))
+	return err == nil && !fi.IsDir()
 }
 
 // IsDir check whether or not given name is a dir
 func IsDir(fname string) bool {
-	fi, err := os.Stat(fname)
+	fi, err := os.Stat(ExpandHome(fname))
 	return err == nil && fi.IsDir()
+}
+
+// IsFileOrNotExist check whether given name is a file or not exist
+func IsFileOrNotExist(fname string) bool {
+	return !IsDir(fname)
+}
+
+// IsDirOrNotExist check whether given is a directory or not exist
+func IsDirOrNotExist(dirName string) bool {
+	return !IsFile(dirName)
 }
 
 // IsSymlink check whether or not given name is a symlink
 func IsSymlink(fname string) bool {
-	fi, err := os.Lstat(fname)
+	fi, err := os.Lstat(ExpandHome(fname))
 	return err == nil && (fi.Mode()&os.ModeSymlink == os.ModeSymlink)
 }
 
 // IsFileModifiedAfter check whether or not file is modified by the function
 func IsFileModifiedAfter(fname string, fn func()) bool {
+	fname := ExpandHome(fname)
 	fi1, err := os.Stat(fname)
 	fn()
 	fi2, _ := os.Stat(fname)
@@ -41,7 +58,7 @@ func IsFileModifiedAfter(fname string, fn func()) bool {
 
 // OpenOrCreate open or  create file
 func OpenOrCreate(fname string) (*os.File, error) {
-	return os.OpenFile(fname, os.O_RDWR|os.O_CREATE, FILE_WRPERM)
+	return os.OpenFile(ExpandHome(fname), os.O_RDWR|os.O_CREATE, FILE_WRPERM)
 }
 
 // OpenFileForRead open file, process file with function, then close file

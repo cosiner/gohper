@@ -1,5 +1,7 @@
 package types
 
+// SeqByDir return the sequence of a and b sorted by direction
+// if it's positive, a, b is returned, otherwise, b, a is returned
 func SeqByDir(a, b int, dir Direction) (int, int) {
 	if dir == POSITIVE {
 		return a, b
@@ -7,6 +9,7 @@ func SeqByDir(a, b int, dir Direction) (int, int) {
 	return b, a
 }
 
+// MinByDir return minimum of a and b sorted by direction
 func MinByDir(a, b int, dir Direction) int {
 	if dir == POSITIVE {
 		return a
@@ -14,6 +17,7 @@ func MinByDir(a, b int, dir Direction) int {
 	return b
 }
 
+// MaxByDir return maxium of a and b sorted by direction
 func MaxByDir(a, b int, dir Direction) int {
 	if dir == POSITIVE {
 		return b

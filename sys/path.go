@@ -69,7 +69,7 @@ func IsRootPath(path string) bool {
 
 // MkdirWithParent create dirs with parent dir
 func MkdirWithParent(path string) error {
-	if IsExist(path) {
+	if IsDir(path) {
 		return nil
 	}
 	var err error
