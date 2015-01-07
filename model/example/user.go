@@ -67,6 +67,10 @@ func (u *User) ColumnName(field Field) string {
 	return userColumns[field.Num()]
 }
 
+func (u *User) HasField(field Field) bool {
+	return field < userFieldEnd
+}
+
 func (u *User) Init() *User {
 	cp := NewColumnParser()
 	cp.Bind(u)

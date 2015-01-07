@@ -11,6 +11,8 @@ type (
 		Table() string
 		// all fields
 		Fields() []Field
+		// check whether has field
+		HasField(field Field) bool
 		// values of given field
 		FieldVal(field Field) interface{}
 		// column names
@@ -20,10 +22,6 @@ type (
 	}
 	ColumnParser interface {
 		Bind(sb SqlBean)
-		// create a new bitset use sqlbean's given fields
-		FieldSet(fields ...Field) FieldSet
-		// check whether has field
-		HasField(field Field) bool
 		// check field effective, on error panic
 		MustEffectiveField(field Field)
 		// FieldCount
@@ -33,33 +31,33 @@ type (
 		// all columns string with placeholder
 		ColumnsPHStrAll() string
 		// get column name by field
-		ColumnsStr(fields FieldSet) string
+		ColumnsStr(fields ...Field) string
 		//get column names with seperator
-		ColumnsStrExcept(excepts FieldSet) string
+		ColumnsStrExcept(excepts ...Field) string
 		// get column name with seperator and placeholder
-		ColumnsPHStr(fields FieldSet) string
+		ColumnsPHStr(fields ...Field) string
 		// get column name with seperator and placeholder
-		ColumnsPHStrExcept(excepts FieldSet) string
+		ColumnsPHStrExcept(excepts ...Field) string
 		// fields string and placeholder string
-		ColumnsSepPHStr(fields FieldSet) (string, string)
+		ColumnsSepPHStr(fields ...Field) (string, string)
 		// fields string and placeholder string
-		ColumnsSepPHStrExcept(excepts FieldSet) (string, string)
+		ColumnsSepPHStrExcept(excepts ...Field) (string, string)
 		// ColumnVals return values of fields
-		ColumnVals(fields FieldSet) []interface{}
+		ColumnVals(fields ...Field) []interface{}
 		// get column val by field name
-		ColumnValsExcept(excepts FieldSet) []interface{}
+		ColumnValsExcept(excepts ...Field) []interface{}
 	}
 	SqlRunner interface {
 		// add model, return sql and args
 		Add(db *sql.DB) error
 		// update model, return sql and args, if no field update all
-		Update(db *sql.DB, fields FieldSet) error
+		Update(db *sql.DB, fields ...Field) error
 		// delete model by id return sql and args
 		Delete(db *sql.DB) error
 		// select user return sql and args, if no field, by id
-		Select(db *sql.DB, fields FieldSet) error
+		Select(db *sql.DB, fields ...Field) error
 		// select limit
-		SelectLimit(db *sql.DB, offset int, count int, fields FieldSet) error
+		SelectLimit(db *sql.DB, offset int, count int, fields ...Field) error
 	}
 	Model interface {
 		SqlBean
