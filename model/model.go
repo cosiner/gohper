@@ -40,6 +40,10 @@ type (
 		ColumnsPHStr(fields FieldSet) string
 		// get column name with seperator and placeholder
 		ColumnsPHStrExcept(excepts FieldSet) string
+		// fields string and placeholder string
+		ColumnsSepPHStr(fields FieldSet) (string, string)
+		// fields string and placeholder string
+		ColumnsSepPHStrExcept(excepts FieldSet) (string, string)
 		// ColumnVals return values of fields
 		ColumnVals(fields FieldSet) []interface{}
 		// get column val by field name

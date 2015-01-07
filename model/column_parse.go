@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
+
+	"github.com/cosiner/golib/types"
 )
 
 // colParser is a common column parser
@@ -79,6 +81,20 @@ func (cp *colParser) ColumnsStrExcept(excepts FieldSet) string {
 	return cp.ColumnsStr(cp.columnFieldsExcept(excepts))
 }
 
+// ColumnsSepPHStr return two string use given fieldset
+// first string is columns, second string is placeholders
+func (cp *colParser) ColumnsSepPHStr(fields FieldSet) (string, string) {
+	fieldsStr := cp.columnsJoin("", ",", fields)
+	phStr := types.RepeatJoin("?", ",", fields.FieldCount())
+	return fieldsStr, phStr
+}
+
+// ColumnsSepPHStrExcept return two string exclude given fieldset
+func (cp *colParser) ColumnsSepPHStrExcept(excepts FieldSet) (string, string) {
+	exist := cp.columnFieldsExcept(excepts)
+	return cp.ColumnsSepPHStr(exist)
+}
+
 // ColumnsPHStr return columns string
 // append each column with a placeholder '=?'
 func (cp *colParser) ColumnsPHStr(fields FieldSet) string {
@@ -121,12 +137,12 @@ const COLUMN_BUFSIZE = 64
 
 // columnsJoin return column name exist in the exists bitset
 // result like : col1+suffix+sep+col2+suffix+sep
-func (cp *colParser) columnsJoin(suffix, sep string, exists FieldSet) (col string) {
-	if exists.Len() != 0 && exists.FieldCount() != 0 {
+func (cp *colParser) columnsJoin(suffix, sep string, fields FieldSet) (col string) {
+	if fields.Len() != 0 && fields.FieldCount() != 0 {
 		var buf *bytes.Buffer = bytes.NewBuffer(make([]byte, COLUMN_BUFSIZE))
 		suffix = suffix + sep
 		for _, f := range cp.Fields() {
-			if exists.HasField(f) {
+			if fields.HasField(f) {
 				buf.WriteString(cp.ColumnName(f))
 				buf.WriteString(suffix)
 			}
