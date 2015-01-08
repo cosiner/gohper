@@ -17,8 +17,8 @@ func (cp *colParser) Bind(sb SqlBean) {
 	cp.SqlBean = sb
 }
 
-// MustEffectiveField check whether field is valid, otherwise panic
-func (cp *colParser) MustEffectiveField(field Field) {
+// MustValid check whether field is valid, otherwise panic
+func (cp *colParser) MustValid(field Field) {
 	if !cp.HasField(field) {
 		cp.PanicUnknownField(field)
 	}
@@ -29,83 +29,83 @@ func (cp *colParser) FieldCount() uint {
 	return uint(len(cp.Fields()))
 }
 
-// ColumnsStrAll return all columns joined with "," as string
-func (cp *colParser) ColumnsStrAll() string {
-	return cp.columnsStrAll("", ",")
+// ColsAll return all columns joined with "," as string
+func (cp *colParser) ColsAll() string {
+	return cp.colsAll("", ",")
 }
 
-// ColumnsPHStrAll return all columns joined with ",",
+// ColsPHAll return all columns joined with ",",
 // and each column append a placeholder suffix
-func (cp *colParser) ColumnsPHStrAll() string {
-	return cp.columnsStrAll("=?", ",")
+func (cp *colParser) ColsPHAll() string {
+	return cp.colsAll("=?", ",")
 }
 
-// columnsStrAll return all columns string
-func (cp *colParser) columnsStrAll(suffix, sep string) string {
-	colStr := strings.Join(cp.Columns(), suffix+sep)
+// colsAll return all columns string
+func (cp *colParser) colsAll(suffix, sep string) string {
+	colStr := strings.Join(cp.ColNames(), suffix+sep)
 	if colStr == "" {
 		return ""
 	}
 	return colStr + suffix
 }
 
-// ColumnsStr return columns string use given fieldset
-func (cp *colParser) ColumnsStr(fields ...Field) string {
-	return cp.columnsJoin("", ",", fields)
+// Cols return columns string use given fieldset
+func (cp *colParser) Cols(fields ...Field) string {
+	return cp.colsJoin("", ",", fields)
 }
 
-// ColumnsStrExcept return columns string exclude the excepts bitset
-func (cp *colParser) ColumnsStrExcept(excepts ...Field) string {
-	return cp.ColumnsStr(cp.columnFieldsExcept(excepts)...)
+// ColsExcp return columns string exclude the Excps bitset
+func (cp *colParser) ColsExcp(Excps ...Field) string {
+	return cp.Cols(cp.colFieldsExcp(Excps)...)
 }
 
-// ColumnsSepPHStr return two string use given fieldset
+// ColsSepPH return two string use given fieldset
 // first string is columns, second string is placeholders
-func (cp *colParser) ColumnsSepPHStr(fields ...Field) (string, string) {
-	fieldsStr := cp.columnsJoin("", ",", fields)
+func (cp *colParser) ColsSepPH(fields ...Field) (string, string) {
+	fieldsStr := cp.colsJoin("", ",", fields)
 	phStr := types.RepeatJoin("?", ",", len(fields))
 	return fieldsStr, phStr
 }
 
-// ColumnsSepPHStrExcept return two string exclude given fieldset
-func (cp *colParser) ColumnsSepPHStrExcept(excepts ...Field) (string, string) {
-	exist := cp.columnFieldsExcept(excepts)
-	return cp.ColumnsSepPHStr(exist...)
+// ColsSepPHExcp return two string exclude given fieldset
+func (cp *colParser) ColsSepPHExcp(Excps ...Field) (string, string) {
+	exist := cp.colFieldsExcp(Excps)
+	return cp.ColsSepPH(exist...)
 }
 
-// ColumnsPHStr return columns string
+// ColsPH return columns string
 // append each column with a placeholder '=?'
-func (cp *colParser) ColumnsPHStr(fields ...Field) string {
-	return cp.columnsJoin("=?", ",", fields)
+func (cp *colParser) ColsPH(fields ...Field) string {
+	return cp.colsJoin("=?", ",", fields)
 }
 
-// ColumnsStrPHExcept return columns string exclude the excepts bitset
+// ColsPHExcp return columns string exclude the Excps bitset
 // append each column with a placeholder '=?'
-func (cp *colParser) ColumnsPHStrExcept(excepts ...Field) string {
-	return cp.ColumnsPHStr(cp.columnFieldsExcept(excepts)...)
+func (cp *colParser) ColsPHExcp(Excps ...Field) string {
+	return cp.ColsPH(cp.colFieldsExcp(Excps)...)
 }
 
-// ColumnVals return column values for given fields
-func (cp *colParser) ColumnVals(fields ...Field) []interface{} {
+// ColVals return column values for given fields
+func (cp *colParser) ColVals(fields ...Field) []interface{} {
 	colVals := make([]interface{}, 0, len(fields))
 	for _, f := range cp.Fields() {
-		cp.MustEffectiveField(f)
+		cp.MustValid(f)
 		colVals = append(colVals, cp.FieldVal(f))
 	}
 	return colVals
 }
 
-// ColumnValsExcept return column values exclude the excepts bitset
-func (cp *colParser) ColumnValsExcept(excepts ...Field) []interface{} {
-	return cp.ColumnVals(cp.columnFieldsExcept(excepts)...)
+// ColValsExcp return column values exclude the Excps bitset
+func (cp *colParser) ColValsExcp(Excps ...Field) []interface{} {
+	return cp.ColVals(cp.colFieldsExcp(Excps)...)
 }
 
-// columnFieldsExcept return columns bitset exclude the except
-func (cp *colParser) columnFieldsExcept(excepts []Field) []Field {
+// colFieldsExcp return columns bitset exclude the Excp
+func (cp *colParser) colFieldsExcp(Excps []Field) []Field {
 	var exists []Field
 	var fs FieldSet = NewFieldSet(cp.FieldCount())
-	for _, e := range excepts {
-		cp.MustEffectiveField(e)
+	for _, e := range Excps {
+		cp.MustValid(e)
 		fs.AddField(e)
 	}
 	for _, f := range cp.Fields() {
@@ -119,15 +119,15 @@ func (cp *colParser) columnFieldsExcept(excepts []Field) []Field {
 // COLUMN_BUFSIZE if default buffer size to join columns
 const COLUMN_BUFSIZE = 64
 
-// columnsJoin return column name exist in the exists bitset
+// colsJoin return column name exist in the exists bitset
 // result like : col1+suffix+sep+col2+suffix+sep
-func (cp *colParser) columnsJoin(suffix, sep string, fields []Field) (col string) {
+func (cp *colParser) colsJoin(suffix, sep string, fields []Field) (col string) {
 	if len(fields) != 0 {
 		var buf *bytes.Buffer = bytes.NewBuffer(make([]byte, COLUMN_BUFSIZE))
 		suffix = suffix + sep
 		for _, f := range fields {
-			cp.MustEffectiveField(f)
-			buf.WriteString(cp.ColumnName(f))
+			cp.MustValid(f)
+			buf.WriteString(cp.ColName(f))
 			buf.WriteString(suffix)
 		}
 		if buf.Len() != 0 {

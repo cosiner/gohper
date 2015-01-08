@@ -16,36 +16,36 @@ type (
 		// values of given field
 		FieldVal(field Field) interface{}
 		// column names
-		Columns() []string
+		ColNames() []string
 		// column name by field
-		ColumnName(field Field) string
+		ColName(field Field) string
 	}
 	ColumnParser interface {
 		Bind(sb SqlBean)
 		// check field effective, on error panic
-		MustEffectiveField(field Field)
+		MustValid(field Field)
 		// FieldCount
 		FieldCount() uint
 		// all columns string
-		ColumnsStrAll() string
+		ColsAll() string
 		// all columns string with placeholder
-		ColumnsPHStrAll() string
+		ColsPHAll() string
 		// get column name by field
-		ColumnsStr(fields ...Field) string
+		Cols(fields ...Field) string
 		//get column names with seperator
-		ColumnsStrExcept(excepts ...Field) string
+		ColsExcp(excepts ...Field) string
 		// get column name with seperator and placeholder
-		ColumnsPHStr(fields ...Field) string
+		ColsPH(fields ...Field) string
 		// get column name with seperator and placeholder
-		ColumnsPHStrExcept(excepts ...Field) string
+		ColsPHExcp(excepts ...Field) string
 		// fields string and placeholder string
-		ColumnsSepPHStr(fields ...Field) (string, string)
+		ColsSepPH(fields ...Field) (string, string)
 		// fields string and placeholder string
-		ColumnsSepPHStrExcept(excepts ...Field) (string, string)
+		ColsSepPHExcp(excepts ...Field) (string, string)
 		// ColumnVals return values of fields
-		ColumnVals(fields ...Field) []interface{}
+		ColVals(fields ...Field) []interface{}
 		// get column val by field name
-		ColumnValsExcept(excepts ...Field) []interface{}
+		ColValsExcp(excepts ...Field) []interface{}
 	}
 	SqlRunner interface {
 		// add model, return sql and args
