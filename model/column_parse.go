@@ -42,7 +42,7 @@ func (cp *colParser) ColsPHAll() string {
 
 // colsAll return all columns string
 func (cp *colParser) colsAll(suffix, sep string) string {
-	colStr := strings.Join(cp.ColNames(), suffix+sep)
+	colStr := strings.Join(cp.Columns(), suffix+sep)
 	if colStr == "" {
 		return ""
 	}
