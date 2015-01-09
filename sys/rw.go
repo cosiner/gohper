@@ -2,8 +2,6 @@ package sys
 
 import (
 	"bufio"
-	"github.com/cosiner/golib/funcs"
-	. "github.com/cosiner/golib/generic"
 	"io"
 )
 
@@ -40,21 +38,15 @@ type BufVWriter struct {
 	*bufio.Writer
 }
 
-// WrapBufwriter wrap bufio.Writer to BufVWriter
-func WrapBufWriter(bw *bufio.Writer) BufVWriter {
-	return BufVWriter{bw}
-}
-
-// WrapBufwriter wrap io.Writer to BufVWriter
-func WrapWriter(wr io.Writer) BufVWriter {
+// NewBufVWriter wrap io.Writer to BufVWriter
+func NewBufVWriter(wr io.Writer) BufVWriter {
 	return BufVWriter{BufWriter(wr)}
 }
 
-// WriteVString write slice string
-//go:generate gotmpl  -i $GOFILE -o ./$GOFILE -t T:string
-//go:generate gotmpl -p github.com/cosiner/golib/funcs -o funcs_string_gen.go  -t T:string -d
+// Filter write slice string
+//go:generate gotmpl -p "github.com/cosiner/golib/types" -o ./$GOFILE -f FilterV -t "T:string"
 func (w BufVWriter) WriteVString(strs []string) (int, error) {
-	return writeVString(func(index int, str string) (int, error) {
+	return FilterVString(func(index int, str string) (int, error) {
 		return w.WriteString(str)
 	}, strs)
 }
@@ -65,10 +57,9 @@ func (w BufVWriter) WriteLString(strs ...string) (int, error) {
 }
 
 // WriteV write slice byte array
-//go:generate gotmpl  -i $GOFILE -o ./$GOFILE  -t T:[]byte
-//go:generate gotmpl -p github.com/cosiner/golib/funcs -o funcs_bytes_gen.go -t T:[]byte -d
+//go:generate gotmpl -p "github.com/cosiner/golib/types" -o ./$GOFILE -f FilterV -t "T:[]byte]"
 func (w BufVWriter) WriteV(bs [][]byte) (int, error) {
-	return writeVBytes(func(index int, b []byte) (int, error) {
+	return FilterVBytes(func(index int, b []byte) (int, error) {
 		return w.Write(b)
 	}, bs)
 }
@@ -78,38 +69,26 @@ func (w BufVWriter) WriteL(bs ...[]byte) (int, error) {
 	return w.WriteV(bs)
 }
 
-// writeV integrates common operation for batch write
-func writeV_T(fn func(int, T) (int, error), slice []T) (n int, err error) {
-	err = funcs.MapWithErrFor_T(slice, func(index int, o T) error {
-		var m int
-		if m, err = fn(index, o); err == nil {
+func FilterVString(filter func(int, string) (int, error), slice []string) (n int, err error) {
+	var m int
+	for index, s := range slice {
+		if m, err = filter(index, s); err == nil {
 			n += m
+		} else {
+			break
 		}
-		return err
-	})
+	}
 	return
 }
 
-// writeV integrates common operation for batch write
-func writeVString(fn func(int, string) (int, error), slice []string) (n int, err error) {
-	err = funcs.MapWithErrForString(slice, func(index int, o string) error {
-		var m int
-		if m, err = fn(index, o); err == nil {
+func FilterVBytes(filter func(int, []byte) (int, error), slice [][]byte) (n int, err error) {
+	var m int
+	for index, s := range slice {
+		if m, err = filter(index, s); err == nil {
 			n += m
+		} else {
+			break
 		}
-		return err
-	})
-	return
-}
-
-// writeV integrates common operation for batch write
-func writeVBytes(fn func(int, []byte) (int, error), slice [][]byte) (n int, err error) {
-	err = funcs.MapWithErrForBytes(slice, func(index int, o []byte) error {
-		var m int
-		if m, err = fn(index, o); err == nil {
-			n += m
-		}
-		return err
-	})
+	}
 	return
 }

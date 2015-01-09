@@ -2,14 +2,15 @@ package types
 
 import (
 	"bytes"
-	"github.com/cosiner/golib/test"
 	"testing"
+
+	"github.com/cosiner/golib/test"
 )
 
 func TestUnsafeString(t *testing.T) {
-	test.AssertEq(t, "abcde", UnsafeString([]byte("abcde")), "UnsafeString")
+	test.AssertEq(t, "UnsafeString", "abcde", UnsafeString([]byte("abcde")))
 }
 
 func TestUnsafeBytes(t *testing.T) {
-	test.AssertEq(t, true, bytes.Equal([]byte("abcde"), UnsafeBytes("abcde")), "UnsafeBytes")
+	test.AssertEq(t, "UnsafeBytes", true, bytes.Equal([]byte("abcde"), UnsafeBytes("abcde")))
 }

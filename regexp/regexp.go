@@ -3,8 +3,9 @@
 package regexp
 
 import (
-	"github.com/cosiner/golib/types"
 	"regexp"
+
+	"github.com/cosiner/golib/types"
 )
 
 // Regexp is a package type of regexp.Regexp that provide some useful function
@@ -76,7 +77,7 @@ func (r *Regexp) SingleSubmatchMap(s string) map[string]string {
 
 // SingleSubmatchWithName return first match string with the name
 func (r *Regexp) SingleSubmatchWithName(s, name string) (res string) {
-	if index := types.FindStringIn(r.SubexpNames(), name); index >= 0 {
+	if index := types.StringIn(name, r.SubexpNames()); index >= 0 {
 		res = r.FindStringSubmatch(s)[index]
 	}
 	return
@@ -100,7 +101,7 @@ func (r *Regexp) AllSubmatchMap(s string) (matchMaps []map[string]string) {
 // if name is "", return the whole matched string
 // else return single matched group string with the name
 func (r *Regexp) AllSubmatchWithName(s, name string) (matchs []string) {
-	if index := types.FindStringIn(r.SubexpNames(), name); index >= 0 {
+	if index := types.StringIn(name, r.SubexpNames()); index >= 0 {
 		for _, singleMatch := range r.FindAllStringSubmatch(s, -1) {
 			matchs = append(matchs, singleMatch[index])
 		}

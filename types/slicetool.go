@@ -15,3 +15,16 @@ func DelIndexObjFor_T(slice []T, delIndex []bool) []T {
 	}
 	return newSlice
 }
+
+// FilterV_T filter a slice, first return value is customed
+func FilterV_T(filter func(int, T) (int, error), slice []T) (n int, err error) {
+	var m int
+	for index, s := range slice {
+		if m, err = filter(index, s); err == nil {
+			n += m
+		} else {
+			break
+		}
+	}
+	return
+}

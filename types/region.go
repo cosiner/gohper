@@ -6,14 +6,6 @@ import (
 	"fmt"
 )
 
-// Direction means positive or reverse
-type Direction bool
-
-const (
-	POSITIVE Direction = true
-	REVERSE  Direction = false
-)
-
 // Region from point From to To.
 // From must be less than To, real direction is decide by the Dir field
 type Region struct {

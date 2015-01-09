@@ -2,8 +2,9 @@ package crypto
 
 import (
 	"crypto/rand"
-	"errors"
 	"math/big"
+
+	. "github.com/cosiner/golib/errors"
 )
 
 // Charset of characters to use for generating random strings
@@ -15,8 +16,8 @@ const (
 )
 
 var (
-	numNegativeError  = errors.New("Number cannot be negative")
-	charsetEmptyError = errors.New("Charset cannot be empty")
+	numNegativeError  = Err("Number cannot be negative")
+	charsetEmptyError = Err("Charset cannot be empty")
 )
 
 // RandBytesInCharset generate a random bytes in gived charset

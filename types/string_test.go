@@ -1,8 +1,9 @@
 package types
 
 import (
-	"github.com/cosiner/golib/test"
 	"testing"
+
+	"github.com/cosiner/golib/test"
 )
 
 func TestLowerCase(t *testing.T) {
@@ -65,24 +66,20 @@ func TestRepeatJoin(t *testing.T) {
 
 }
 
-func TestFindStringIn(t *testing.T) {
-	test.AssertEq(t, 1, FindStringIn([]string{"a", "b", "c"}, "b"), "FindStringIn")
-}
-
 func TestSnakeString(t *testing.T) {
-	test.AssertEq(t, "_xy_xy", SnakeString("_xy_xy"), "SnakeString1")
-	test.AssertEq(t, "_xy_xy", SnakeString("_xyXy"), "SnakeString2")
-	test.AssertEq(t, "_xy xy", SnakeString("_Xy Xy"), "SnakeString3")
-	test.AssertEq(t, "_xy_xy", SnakeString("_Xy_Xy"), "SnakeString4")
+	test.AssertEq(t, "SnakeString1", "_xy_xy", SnakeString("_xy_xy"))
+	test.AssertEq(t, "SnakeString2", "_xy_xy", SnakeString("_xyXy"))
+	test.AssertEq(t, "SnakeString3", "_xy xy", SnakeString("_Xy Xy"))
+	test.AssertEq(t, "SnakeString4", "_xy_xy", SnakeString("_Xy_Xy"))
 }
 
 func TestCamelString(t *testing.T) {
-	test.AssertEq(t, "XyXy", CamelString("xy_xy"), "CamelString1")
-	test.AssertEq(t, "Xy__Xy", CamelString("xy__Xy"), "CamelString2")
-	test.AssertEq(t, "Xy Xy", CamelString("xy Xy"), "CamelString3")
-	test.AssertEq(t, "XY Xy", CamelString("x_y Xy"), "CamelString4")
-	test.AssertEq(t, "X_Y XY", CamelString("x__y XY"), "CamelString5")
-	test.AssertEq(t, "XY XY", CamelString("x_y xY"), "CamelString6")
-	test.AssertEq(t, "XY XY", CamelString("x_y _x_y"), "CamelString7")
-	test.AssertEq(t, "  XY", CamelString("  x_y"), "CamelString8")
+	test.AssertEq(t, "CamelString1", "XyXy", CamelString("xy_xy"))
+	test.AssertEq(t, "CamelString2", "Xy__Xy", CamelString("xy__Xy"))
+	test.AssertEq(t, "CamelString3", "Xy Xy", CamelString("xy Xy"))
+	test.AssertEq(t, "CamelString4", "XY Xy", CamelString("x_y Xy"))
+	test.AssertEq(t, "CamelString5", "X_Y XY", CamelString("x__y XY"))
+	test.AssertEq(t, "CamelString6", "XY XY", CamelString("x_y xY"))
+	test.AssertEq(t, "CamelString7", "XY XY", CamelString("x_y _x_y"))
+	test.AssertEq(t, "CamelString8", "  XY", CamelString("  x_y"))
 }

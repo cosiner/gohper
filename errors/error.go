@@ -1,33 +1,18 @@
 package errors
 
-import (
-	"errors"
-	"fmt"
-	"io"
-	"os"
-)
+import "fmt"
 
-const (
-	// ERREXIT_CODE is the default exit code on error
-	ERREXIT_CODE = 1
-	// NOREXIT_CODE is the default exit code on normal
-	NOREXIT_CODE = 0
-)
-
-// ExitWith print message, then normal exit
-func ExitWith(str string) {
-	fmt.Println(str)
-	os.Exit(NOREXIT_CODE)
+type errStr struct {
+	s string
 }
 
-// Errorf make an error with given format and  params
-func Errorf(format string, v ...interface{}) error {
-	return Err(fmt.Sprintf(format, v...))
+func (es *errStr) Error() string {
+	return es.s
 }
 
-// Errorln make an error with given params and append an newline character
-func Errorln(v ...interface{}) error {
-	return Err(fmt.Sprintln(v...))
+// Err wrap a string to error
+func Err(str string) error {
+	return &errStr{s: str}
 }
 
 // Error make an error with given params
@@ -35,60 +20,48 @@ func Error(v ...interface{}) error {
 	return Err(fmt.Sprint(v...))
 }
 
-// Err is only a wrapper of errors.New
-func Err(str string) error {
-	return errors.New(str)
+// Errorln make an error with given params and append an newline character
+func Errorln(v ...interface{}) error {
+	return Err(fmt.Sprintln(v...))
 }
 
-// ErrorPanic call f and panic on error
-func ErrorPanic(f func() error) {
-	OnError(f(), func(err error) {
+// Errorf make an error with given format and  params
+func Errorf(format string, v ...interface{}) error {
+	return Err(fmt.Sprintf(format, v...))
+}
+
+// OnErrPanic panic on error
+func OnErrPanic(err error) {
+	if err != nil {
 		panic(err)
-	})
+	}
 }
 
-// ErrorStrPanic call f and panic on error print given error message
-func ErrorStrPanic(f func() error, errStr string) {
-	OnError(f(), func(err error) {
+// OnErrPanicStr panic error string on error
+func OnErrPanicStr(err error, errStr string) {
+	if err != nil {
 		panic(errStr)
-	})
+	}
 }
 
-// OnError call param function when err is not null
-func OnError(err error, fn func(err error)) {
+// OnErr call param function when err is not null
+func OnErrDo(err error, fn func(err error)) {
 	if err != nil {
 		fn(err)
 	}
 }
 
-// ConsoleError output error message to stderr
-func ConsoleError(v ...interface{}) {
-	fmt.Fprint(os.Stderr, v...)
+// OnFuncErrDo call second funcion when first function return error
+func OnFuncErrDo(f func() error, fn func(err error)) {
+	OnErrDo(f(), fn)
 }
 
-// ConsoleErrorf format and output error message to stderr
-func ConsoleErrorf(format string, v ...interface{}) {
-	fmt.Fprintf(os.Stderr, format, v...)
-}
-
-// ErrorExit print error message to stderr then exit process
-func ErrorExit(v ...interface{}) {
-	FerrorExit(os.Stderr, v...)
-}
-
-// ErrorfExit  format and output error message to stderr, then exit process
-func ErrorfExit(format string, v ...interface{}) {
-	FerrorfExit(os.Stderr, format, v...)
-}
-
-// FerrorExit print error message to writer then exit process
-func FerrorExit(w io.Writer, v ...interface{}) {
-	fmt.Fprint(w, v...)
-	os.Exit(ERREXIT_CODE)
-}
-
-// FerrorfExit  format and output error message to writer, then exit process
-func FerrorfExit(w io.Writer, format string, v ...interface{}) {
-	fmt.Fprintf(w, format, v...)
-	os.Exit(ERREXIT_CODE)
+// OnErrDoChain is a chain to process error
+// when error is not completed process, it will finally throw again
+// to stop it, only return nil in one of the process chain is needed
+func OnErrDoChain(err error, fns ...func(err error) error) error {
+	for i, end := 0, len(fns); err != nil && i < end; i++ {
+		err = fns[i](err)
+	}
+	return err
 }

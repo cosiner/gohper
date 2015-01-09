@@ -1,10 +1,11 @@
 package types
 
 import (
-	. "github.com/cosiner/golib/errors"
 	"reflect"
 	"strconv"
 	"unsafe"
+
+	. "github.com/cosiner/golib/errors"
 )
 
 // UnsafeString bring a no copy convert from byte slice to string
@@ -66,10 +67,8 @@ func Str2Int(s string) (int, error) {
 
 // MustStr2Int convert string to int, on error panic
 func MustStr2Int(s string) (val int) {
-	ErrorPanic(func() (err error) {
-		val, err = Str2Int(s)
-		return
-	})
+	val, err := Str2Int(s)
+	OnErrPanic(err)
 	return
 }
 

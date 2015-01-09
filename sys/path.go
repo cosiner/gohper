@@ -1,11 +1,12 @@
 package sys
 
 import (
-	. "github.com/cosiner/golib/errors"
-	"github.com/cosiner/golib/types"
 	"os"
 	"os/user"
 	"path/filepath"
+
+	. "github.com/cosiner/golib/errors"
+	"github.com/cosiner/golib/types"
 )
 
 // HomeDir return current user's Home dir
@@ -54,12 +55,31 @@ func LastDir(path string) (string, error) {
 	return dir, err
 }
 
+// IsRelativePath check whether a path is relative
+// In these condition: path is empty, start with '[.~][/\]', '/', "[a-z]:\"
+func IsRelativePath(path string) bool {
+	return !(types.StartWith(path, "./") ||
+		types.StartWith(path, ".\\") ||
+		types.StartWith(path, "~/") ||
+		types.StartWith(path, "~\\") ||
+		types.StartWith(path, "/") ||
+		IsWindowsRootpath(path))
+}
+
+// IsWindowsRootPath check whether a path is windows absolute path with disk letter
+func IsWindowsRootpath(path string) bool {
+	if path == "" {
+		return false
+	}
+	return types.IsLetter(path[0]) && types.StartWith(path[1:], ":\\")
+}
+
 // IsRootPath check wether or not path is root of filesystem
 func IsRootPath(path string) bool {
 	if l := len(path); l > 0 {
 		switch OperateSystem() {
 		case WINDOWS:
-			return types.IsLetter(path[0]) && path[1:] == ":\\"
+			return IsWindowsRootpath(path)
 		case LINUX, DARWIN, FREEBSD, SOLARIS, ANDROID:
 			return l == 1 && path[0] == '/'
 		}

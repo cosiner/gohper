@@ -4,13 +4,26 @@ import (
 	"bytes"
 	"io"
 	"os"
+
+	. "github.com/cosiner/golib/errors"
 )
 
 const (
 	// FILE_BBUFSIZe is the buffer size of slice to store file content
-	FILE_BUFSIZE = 4096
-	FILE_WRPERM  = 0644
-	DIR_PERM     = 0755
+	FILE_BUFSIZE     = 4096
+	FILE_PERM        = 0644
+	DIR_PERM         = 0755
+	CR           int = os.O_CREATE
+	AP           int = os.O_APPEND
+	TC           int = os.O_TRUNC
+	EX           int = os.O_EXCL
+	WR           int = os.O_WRONLY
+	RD           int = os.O_RDONLY
+	RW           int = os.O_RDWR
+	TW           int = TC | WR
+	CW           int = CR | WR
+	CTW          int = CR | WR | TC
+	CEW          int = CR | EX | WR
 )
 
 // IsExist check whether or not file/dir exist
@@ -49,38 +62,68 @@ func IsSymlink(fname string) bool {
 
 // IsFileModifiedAfter check whether or not file is modified by the function
 func IsFileModifiedAfter(fname string, fn func()) bool {
-	fname := ExpandHome(fname)
+	fname = ExpandHome(fname)
 	fi1, err := os.Stat(fname)
 	fn()
 	fi2, _ := os.Stat(fname)
 	return err == nil && !fi1.ModTime().Equal(fi2.ModTime())
 }
 
-// OpenOrCreate open or  create file
+// FileOpFunc accept a file descriptor, return an error or nil
+type FileOpFunc func(*os.File) error
+
+// OpenOrCreate open or create file
 func OpenOrCreate(fname string) (*os.File, error) {
-	return os.OpenFile(ExpandHome(fname), os.O_RDWR|os.O_CREATE, FILE_WRPERM)
+	return os.OpenFile(ExpandHome(fname), CW, FILE_PERM)
 }
 
-// OpenFileForRead open file, process file with function, then close file
-func OpenFileForRead(fname string, fn func(*os.File) error) error {
-	return openFileFor(func() (*os.File, error) {
-		return os.Open(fname)
-	}, fn)
+// OpenAndTruncFor open file, clear all content
+func OpenAndTruncFor(fname string, fn FileOpFunc) error {
+	return OpenFileFor(fname, TW, fn)
 }
 
-// OpenFileFor open file, process file with function, then close file
-func OpenFileForModify(fname string, fn func(*os.File) error) error {
-	return openFileFor(func() (*os.File, error) {
-		return os.OpenFile(fname, os.O_RDWR, FILE_WRPERM)
-	}, fn)
+// OpenOrCreateFor openfile for write
+func OpenOrCreateFor(fname string, overwrite bool, fn FileOpFunc) error {
+	return OpenFileFor(fname, CW|WriteFlag(overwrite), fn)
 }
 
-// openFileFor open file use given opener, if no error, call fn
-// opener determin mode and permission of open file
-func openFileFor(opener func() (*os.File, error), fn func(*os.File) error) error {
-	fd, err := opener()
+// OpenOrCreateTruncFor open or create file for write, clear all content
+func OpenOrCreateTruncFor(fname string, fn FileOpFunc) error {
+	return OpenFileFor(fname, CTW, fn)
+}
+
+// OpenForWrite open file for read
+func OpenForWrite(fname string, fn FileOpFunc) error {
+	return OpenFileFor(fname, WR, fn)
+}
+
+// OpenOrCreateForWrite open or create file for write
+func OpenOrCreateForWrite(fname string, fn FileOpFunc) error {
+	return OpenFileFor(fname, CW, fn)
+}
+
+// OpenForRead open file for read
+func OpenForRead(fname string, fn FileOpFunc) error {
+	return OpenFileFor(fname, RD, fn)
+}
+
+// OpenFileForRW open file for write and read
+func OpenForRW(fname string, fn FileOpFunc) error {
+	return OpenFileFor(fname, RW, fn)
+}
+
+// CreateFor create new file for write, if already exist, return error
+func CreateFor(fname string, fn FileOpFunc) error {
+	return OpenFileFor(fname, CEW, fn)
+}
+
+// OpenFileFor openfile use given flag
+func OpenFileFor(fname string, flags int, fn FileOpFunc) error {
+	fd, err := os.OpenFile(ExpandHome(fname), flags, FILE_PERM)
 	if err == nil {
-		err = fn(fd)
+		if fn != nil {
+			err = fn(fd)
+		}
 		fd.Close()
 	}
 	return err
@@ -94,6 +137,19 @@ func TruncateAndSeek(fd *os.File) {
 	}
 }
 
+// CopyFile copy src file to dest file
+func CopyFile(dst, src string) error {
+	if IsDir(dst) || IsDir(src) {
+		return Errorf("dest path %s or src path is directory", dst, src)
+	}
+	return OpenOrCreateTruncFor(dst, func(dstFd *os.File) error {
+		return OpenForRead(src, func(srcFd *os.File) error {
+			_, err := io.Copy(dstFd, srcFd)
+			return err
+		})
+	})
+}
+
 // TruncateAndSeekWriter assume writer is actually os.File,
 // do same as TruncateAndSeek, otherwise, do nothing
 func TruncateAndSeekWriter(wr io.Writer) {
@@ -104,10 +160,8 @@ func TruncateAndSeekWriter(wr io.Writer) {
 
 // FileOverwrite delete all content in file, and write new content to it
 func FileOverwrite(fname string, content string) error {
-	return OpenFileForModify(fname, func(fd *os.File) (err error) {
-		if err = fd.Truncate(0); err == nil {
-			_, err = fd.WriteString(content)
-		}
+	return OpenAndTruncFor(fname, func(fd *os.File) (err error) {
+		_, err = fd.WriteString(content)
 		return
 	})
 }
@@ -121,7 +175,7 @@ func ReadOneLine(fname string) (line string, err error) {
 	return
 }
 
-// ReadOneLine  read first line from reader, if no content return errNoContent
+// ReadOneLine read first line from reader, if no content return errNoContent
 func ReadOneLineFrom(r io.Reader) (line string, err error) {
 	err = FilterContent(r, nil, false, func(l []byte) ([]byte, error) {
 		line = string(l)
@@ -136,8 +190,13 @@ func ReadOneLineFrom(r io.Reader) (line string, err error) {
 // and not rewrite file, io.EOF means an early end.
 func FilterFileContent(fname string, rewrite bool,
 	filter func([]byte) ([]byte, error)) error {
-
-	return OpenFileForModify(fname, func(fd *os.File) (err error) {
+	var openfunc func(string, FileOpFunc) error
+	if rewrite {
+		openfunc = OpenForRW
+	} else {
+		openfunc = OpenForRead
+	}
+	return openfunc(fname, func(fd *os.File) (err error) {
 		var wr io.Writer
 		if rewrite {
 			wr = fd
@@ -146,10 +205,23 @@ func FilterFileContent(fname string, rewrite bool,
 	})
 }
 
-// FilterContent readline from reader, after filter, if sync set at the end, and writer is non-null
+// FilterFileContentTo filter file content with given filter, then write result
+// to dest file
+func FilterFileContentTo(fname, dstfile string, delContent bool,
+	filter func([]byte) ([]byte, error)) error {
+	return OpenForRead(fname, func(fd *os.File) (err error) {
+		return OpenOrCreateFor(dstfile, delContent,
+			func(dstFd *os.File) error {
+				return FilterContent(fd, dstFd, true, filter)
+			})
+	})
+}
+
+// FilterContent readline from reader, after filter, if parallel set at the end, and writer is non-null
 // write content to writer, otherwise,  every read operation will followed by
 // a write operation
-func FilterContent(rd io.Reader, wr io.Writer, sync bool, filter func([]byte) ([]byte, error)) (err error) {
+func FilterContent(rd io.Reader, wr io.Writer,
+	parallel bool, filter func([]byte) ([]byte, error)) (err error) {
 	var (
 		saveToBuffer = func(line []byte) {}
 		flushBuffer  = func() error { return nil }
@@ -168,13 +240,13 @@ func FilterContent(rd io.Reader, wr io.Writer, sync bool, filter func([]byte) ([
 				bw.WriteString("\n")
 			}
 		}
-		if sync { // use buffered writer, don't need extra buffer
+		if parallel { // use buffered writer, don't need extra buffer
 			w := BufWriter(wr)
 			flushBuffer = func() error {
 				return w.Flush()
 			}
 			bw = w
-		} else { // if not sync, need buffer to save content for later write
+		} else { // if not parallel, need buffer to save content for later write
 			w := bytes.NewBuffer(make([]byte, 0, FILE_BUFSIZE))
 			flushBuffer = func() error {
 				TruncateAndSeekWriter(wr)
@@ -206,4 +278,20 @@ func FilterContent(rd io.Reader, wr io.Writer, sync bool, filter func([]byte) ([
 		err = nil
 	}
 	return
+}
+
+// CloseFd close io.Closer when it's effective
+func CloseFd(fd io.Closer) {
+	if fd != nil {
+		fd.Close()
+	}
+}
+
+// WriteFlag return APPEND if not delete content, else TRUNCATE
+func WriteFlag(delContent bool) int {
+	flag := os.O_APPEND
+	if delContent {
+		flag = os.O_TRUNC
+	}
+	return flag
 }

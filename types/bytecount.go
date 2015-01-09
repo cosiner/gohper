@@ -2,8 +2,9 @@ package types
 
 import (
 	"bytes"
-	"github.com/cosiner/golib/errors"
 	"strconv"
+
+	. "github.com/cosiner/golib/errors"
 )
 
 const (
@@ -55,10 +56,12 @@ func Str2BytesDef(size string, defSize uint64) (s uint64) {
 
 // MustStr2Bytes is same as Str2Bytes, on error panic
 func MustStr2Bytes(size string) (s uint64) {
-	errors.ErrorPanic(func() error {
-		var err error
-		s, err = Str2Bytes(size)
-		return err
-	})
-	return
+	s, err := Str2Bytes(size)
+	OnErrPanic(err)
+	return s
+}
+
+// TODO
+func Bytes2Str(size uint64) string {
+	return ""
 }

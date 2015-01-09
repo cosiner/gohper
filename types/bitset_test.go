@@ -1,13 +1,14 @@
 package types
 
 import (
-	"github.com/cosiner/golib/test"
 	"testing"
+
+	"github.com/cosiner/golib/test"
 )
 
 func testInOrNot(t *testing.T) {
-	test.AssertEq(t, "In", uint(1<<2), In(2, uint((1<<0)|(1<<1)|(1<<2)|(1<<3)|(1<<4))))
-	test.AssertEq(t, "NotIn", uint(1<<2), NotIn(2, uint((1<<0)|(1<<1)|(1<<3)|(1<<4))))
+	test.AssertEq(t, "BitIn", uint(1<<2), BitIn(2, uint((1<<0)|(1<<1)|(1<<2)|(1<<3)|(1<<4))))
+	test.AssertEq(t, "BitNotIn", uint(1<<2), BitNotIn(2, uint((1<<0)|(1<<1)|(1<<3)|(1<<4))))
 }
 
 func TestBitSet(t *testing.T) {

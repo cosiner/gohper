@@ -1,14 +1,15 @@
 package goutil
 
 import (
-	"github.com/cosiner/golib/test"
 	"testing"
+
+	"github.com/cosiner/golib/test"
 )
 
 func TestGoFileType(t *testing.T) {
-	test.AssertEq(t, true, IsGoFile("aa.go"), "IsGoFile")
-	test.AssertEq(t, true, IsGoSrcFile("aa.go"), "IsGoSrcFile")
-	test.AssertEq(t, true, IsGoTestFile("aa_test.go"), "IsGoTestFile")
-	test.AssertEq(t, false, IsGoSrcFile("aa_test.go"), "IsGoSrcFile")
-	test.AssertEq(t, "aa_test.go", TestFileName("aa.go"), "TestFileName")
+	test.AssertEq(t, "IsGoFile", true, IsGoFile("aa.go"))
+	test.AssertEq(t, "IsGoSrcFile", true, IsGoSrcFile("aa.go"))
+	test.AssertEq(t, "IsGoTestFile", true, IsGoTestFile("aa_test.go"))
+	test.AssertEq(t, "IsGoSrcFile", false, IsGoSrcFile("aa_test.go"))
+	test.AssertEq(t, "TestFileName", "aa_test.go", CorrespondTestFile("aa.go"))
 }

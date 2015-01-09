@@ -18,13 +18,15 @@ type BitSet struct {
 	set    []uint64 // bitset data store
 }
 
-// NewBitSet return a new bitset with gived length,
-// if length is not multiple of 64, it will fit to be.
-func NewBitSet(length uint) *BitSet {
-	if length == 0 {
-		return nil
+// NewBitSet return a new bitset with given length, all index params are set to 1
+func NewBitSet(length uint, indexs ...uint) (bs *BitSet) {
+	if length != 0 {
+		bs = &BitSet{length, newUnitSet(unitCount(length))}
+		for _, idx := range indexs {
+			bs.Set(idx)
+		}
 	}
-	return &BitSet{length, newUnitSet(unitCount(length))}
+	return
 }
 
 // Len return bitset length
@@ -275,26 +277,4 @@ func bitCount(n uint64) uint {
 	n &= 0x0f0f0f0f0f0f0f0f
 	n *= 0x0101010101010101
 	return uint(n >> 56)
-}
-
-// In test whether the bit at index is set to 1, if true, return 1 << index, else 0
-func In(index int, bitset uint) (i uint) {
-	if index >= 0 {
-		var idx uint = 1 << uint(index)
-		if idx&bitset != 0 {
-			i = idx
-		}
-	}
-	return
-}
-
-// NotIn test whether the bit at index is set to 0, if true, return 1 << index, else 0
-func NotIn(index int, bitset uint) (i uint) {
-	if index >= 0 {
-		var idx uint = 1 << uint(index)
-		if idx&bitset == 0 {
-			i = idx
-		}
-	}
-	return
 }

@@ -6,9 +6,8 @@ func NewList() SkipList {
 
 func NewStrNode(skl SkipList, index int, []rune) Node {
 
-    return
+    return nil
 }
 
 func NewNode(index int, data []rune) {
-    node :=
 }

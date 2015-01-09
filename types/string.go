@@ -110,16 +110,6 @@ func StringReader(s string) *strings.Reader {
 	return strings.NewReader(s)
 }
 
-// FindStringIn return the index of string to find in a string slice
-func FindStringIn(strs []string, find string) int {
-	for i, str := range strs {
-		if str == find {
-			return i
-		}
-	}
-	return -1
-}
-
 // snake string, XxYy to xx_yy, X_Y to x_y
 func SnakeString(s string) string {
 	data := make([]byte, 0, len(s)*2)
