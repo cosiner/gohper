@@ -2,9 +2,10 @@ package db
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"mlib/config"
+
+	. "github.com/cosiner/golib/errors"
 )
 
 func OpenDBFromConf(conf *DBConf) (db *sql.DB, err error) {
@@ -68,14 +69,14 @@ func LoadDBConf(filename string) (c *DBConf, err error) {
 
 func DataSourceName(conf *DBConf) (string, error) {
 	if conf == nil || conf.Database == "" {
-		return "", errors.New("No Config or database is not set")
+		return "", Err("No Config or database is not set")
 	}
 
 	switch conf.Driver {
 	case "mysql":
 		return mysqlDSN(conf), nil
 	}
-	return "", errors.New("No support")
+	return "", Err("No support")
 }
 
 func mysqlDSN(conf *DBConf) string {

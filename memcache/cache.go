@@ -6,7 +6,7 @@
 package memcache
 
 import (
-	"errors"
+	. "github.com/cosiner/golib/errors"
 )
 
 // CacheType is implemented cache algorithm
@@ -46,7 +46,7 @@ type MemCache interface {
 }
 
 // SizeNegativeError
-var SizeNegativeError error = errors.New("Cache Size must > 0")
+SizeNegativeError := Err("Cache Size must > 0")
 
 // Cacher return actual cache container, if initSize is larger than maxSize,
 // initSize will setup tp maxSize, for ordinary cache, there is no maxSize

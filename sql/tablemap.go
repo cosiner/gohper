@@ -1,10 +1,11 @@
 package mgolib
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
+
+	. "github.com/cosiner/golib/errors"
 )
 
 type tableMap struct {
@@ -29,7 +30,7 @@ func (t *tableMap) SetTable(typ reflect.Type, tb string) {
 func (t *tableMap) AddColumn(fieldName string, col string, overwrite bool) error {
 	_, has := t.columns[fieldName]
 	if has && !overwrite {
-		return errors.New("Column exist")
+		return Err("Column exist")
 	}
 
 	t.columns[fieldName] = col

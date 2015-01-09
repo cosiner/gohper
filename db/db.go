@@ -1,9 +1,7 @@
 package db
 
 import (
-	"container/list"
 	"database/sql"
-	"errors"
 	"sync"
 )
 

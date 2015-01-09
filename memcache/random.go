@@ -1,9 +1,5 @@
 package memcache
 
-import (
-	"fmt"
-)
-
 type randCache struct {
 	maxSize int
 	ordiCache

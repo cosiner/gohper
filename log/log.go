@@ -1,13 +1,13 @@
 package log
 
 import (
-	"errors"
 	"fmt"
-	t "github.com/cosiner/golib/time"
-	"github.com/cosiner/golib/types"
 	"os"
 	"sync"
 	"time"
+
+	t "github.com/cosiner/golib/time"
+	"github.com/cosiner/golib/types"
 )
 
 // LogWriter is actual log writer
@@ -44,7 +44,7 @@ var (
 // default use file logger, and default started
 func NewLogger(flushInterval int, level Level, bufSize, maxSize uint64, logDir string) (*Logger, error) {
 	if level == LEVEL_MAX || level < LEVEL_MIN {
-		return nil, errors.New("Invalid log level:" + level.Name())
+		return nil, Err("Invalid log level:" + level.Name())
 	}
 
 	if bufSize == 0 {
@@ -90,7 +90,7 @@ func NewEmptyLogger(flushInterval int, level Level) *Logger {
 // SetLogWriter set log writer, writer must not be nil
 func (logger *Logger) SetLogWriter(lw LogWriter) error {
 	if lw == nil {
-		return errors.New("LogWrite can't be nil")
+		return Err("LogWrite can't be nil")
 	}
 	if logger.lw != nil {
 		logger.mu.Lock()

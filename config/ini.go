@@ -3,10 +3,13 @@ package config
 import (
 	"bufio"
 	"bytes"
-	"errors"
-	"github.com/cosiner/golib/types"
 	"io"
 	"os"
+
+	. "github.com/cosiner/golib/errors"
+
+	"github.com/cosiner/golib/sys"
+	"github.com/cosiner/golib/types"
 )
 
 // default section, if there is no section,
@@ -95,7 +98,7 @@ func (ic *iniConfig) bind(key, value string) {
 // ParseString parse from string
 func (ic *iniConfig) ParseString(content string) error {
 	if content == "" {
-		return errors.New("No Content")
+		return Err("No Content")
 	}
 
 	return ic.parse(types.StringReader(content))
@@ -103,12 +106,9 @@ func (ic *iniConfig) ParseString(content string) error {
 
 // ParseFile parse from file
 func (ic *iniConfig) ParseFile(confFileName string) (err error) {
-	f, err := os.Open(confFileName)
-	if err == nil {
-		err = ic.parse(f)
-		err = f.Close()
-	}
-	return
+	return sys.OpenForRead(confFileName, func(fd *os.File) error {
+		return ic.parse(fd)
+	})
 }
 
 // lineType is parse result of per line
