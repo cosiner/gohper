@@ -12,6 +12,18 @@ import (
 // CacheType is implemented cache algorithm
 type CacheType int8
 
+func (ct CacheType) String() (str string) {
+	switch ct {
+	case ORDINARY:
+		str = "Ordinary"
+	case RANDOM:
+		str = "Random-eliminate"
+	case LRU:
+		str = "LRU-eliminate"
+	}
+	return
+}
+
 const (
 	// ORDINARY is normal cache, hs no elimination
 	ORDINARY CacheType = 1 << iota
@@ -22,8 +34,9 @@ const (
 )
 
 // MemCache is cache interface
+// all method a safe for concurrent
 type MemCache interface {
-	init(initSize int, maxSize ...int) error
+	Init(maxSize int)
 	// Get by key
 	Get(key string) interface{}
 	// Set key-value pair, if no remaining space, trigger a elimination
@@ -37,21 +50,13 @@ type MemCache interface {
 	Len() int
 	// Cap return cache capacity
 	Cap() int
-	// ChangeCap will change cache capacity, if offset > 0, increate,
-	// else, delete cache data by offse, for ordinary and random cache, random delete,
-	// for lru cache, delete lru cache.
-	// offset is not allowed that -offset >= Cap() when offset < 0,
-	// in other words, cache's capacity must larger than 0
-	ChangeCap(offset int) error
 }
 
-// SizeNegativeError
-SizeNegativeError := Err("Cache Size must > 0")
-
-// Cacher return actual cache container, if initSize is larger than maxSize,
-// initSize will setup tp maxSize, for ordinary cache, there is no maxSize
-func Cacher(typ CacheType, initSize int, maxSize ...int) MemCache {
-	var cache MemCache
+// Cacher return actual cache container
+// for cacher with elimination:Random and LRU, maxsize is the max capcity of cache
+// for ordinary cache, it only used to initial cache space
+func Cacher(typ CacheType, maxSize int) (cache MemCache) {
+	Assert(maxSize > 0, Errorf("Invalid  max size"))
 	switch typ {
 	case ORDINARY:
 		cache = new(ordiCache)
@@ -60,8 +65,8 @@ func Cacher(typ CacheType, initSize int, maxSize ...int) MemCache {
 	case LRU:
 		cache = new(lruCache)
 	default:
-		return cache
+		panic("Unsupported Cache Type")
 	}
-	cache.init(initSize, maxSize...)
+	cache.Init(maxSize)
 	return cache
 }

@@ -1,50 +1,48 @@
 package memcache
 
 import (
+	"math"
 	"sync"
 )
+
+const capUnlimit int = math.MaxInt32
 
 type ordiCache struct {
 	cache map[string]interface{}
 	*sync.RWMutex
 }
 
-func (oc *ordiCache) init(initSize int, maxsize ...int) error {
-	if initSize < 0 {
-		initSize = 0
-	}
-	oc.cache = make(map[string]interface{}, initSize)
+func (oc *ordiCache) Init(maxsize int) {
+	oc.cache = make(map[string]interface{}, maxsize)
 	oc.RWMutex = new(sync.RWMutex)
-	return nil
 }
 
 func (oc *ordiCache) Len() int {
+	oc.RLock()
+	length := oc.len()
+	oc.RUnlock()
+	return length
+}
+
+func (oc *ordiCache) len() int {
 	return len(oc.cache)
 }
 
 func (oc *ordiCache) Cap() int {
-	return -1
-}
-
-func (oc *ordiCache) ChangeCap(offset int) error {
-	return nil
+	return capUnlimit
 }
 
 func (oc *ordiCache) Get(key string) (val interface{}) {
-	if len(oc.cache) != 0 {
-		oc.RLock()
-		val = oc.cache[key]
-		oc.RUnlock()
-	}
+	oc.RLock()
+	val = oc.cache[key]
+	oc.RUnlock()
 	return
 }
 
 func (oc *ordiCache) Remove(key string) {
-	if len(oc.cache) != 0 {
-		oc.Lock()
-		delete(oc.cache, key)
-		oc.Unlock()
-	}
+	oc.Lock()
+	delete(oc.cache, key)
+	oc.Unlock()
 }
 
 func (oc *ordiCache) Set(key string, val interface{}) {
@@ -55,15 +53,15 @@ func (oc *ordiCache) Update(key string, val interface{}) bool {
 	return oc.set(key, val, false)
 }
 
-func (oc *ordiCache) set(key string, val interface{}, forceSet bool) bool {
-	oc.RLock()
-	v := oc.cache[key]
-	oc.RUnlock()
-	if v == nil && !forceSet {
-		return false
-	}
+// set bind value to key
+// allowAdd means if or not allow add new value when key don't exist
+func (oc *ordiCache) set(key string, val interface{}, allowAdd bool) (ret bool) {
 	oc.Lock()
-	oc.cache[key] = val
+	v := oc.cache[key]
+	if v != nil || allowAdd {
+		oc.cache[key] = val
+		ret = true
+	}
 	oc.Unlock()
-	return true
+	return
 }

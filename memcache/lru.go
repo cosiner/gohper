@@ -1,25 +1,24 @@
 package memcache
 
 import (
-	"container/list"
 	"sync"
+
+	"container/list"
 )
 
 // lruCacheEntry is a item of lru cache
 type lruCacheEntry struct {
-	accessCount int // access accessCount
-	key         string
-	val         interface{}
+	key string
+	val interface{}
 }
 
-// init init lruCacheEntry
-func (ci *lruCacheEntry) init(key string, val interface{}, accessCount int) {
-	ci.accessCount = accessCount
-	ci.key = key
-	ci.val = val
+// init init a cache entry
+func (ce *lruCacheEntry) init(key string, val interface{}) {
+	ce.key = key
+	ce.val = val
 }
 
-// lruCache is a lru cacher
+// lruCache is a cacher use lru eliminate algorithm
 type lruCache struct {
 	cacheData  *list.List
 	cacheIndex map[string]*list.Element
@@ -27,107 +26,98 @@ type lruCache struct {
 	*sync.RWMutex
 }
 
-// init init lru cache
-func (lc *lruCache) init(initSize int, maxSize ...int) error {
-	if len(maxSize) <= 0 {
-		return SizeNegativeError
-	}
-	if initSize < 0 {
-		initSize = 0
-	}
-	if initSize > maxSize[0] {
-		initSize = maxSize[0]
-	}
-
+// Init init lru cacher
+func (lc *lruCache) Init(maxSize int) {
 	lc.cacheData = list.New()
-	lc.cacheIndex = make(map[string]*list.Element, initSize)
-	lc.maxSize = maxSize[0]
+	lc.maxSize = maxSize
+	lc.cacheIndex = make(map[string]*list.Element, maxSize)
 	lc.RWMutex = new(sync.RWMutex)
-	return nil
 }
 
 // Len return current cache count
+// it's safe for concurrent
 func (lc *lruCache) Len() int {
+	lc.RLock()
+	length := lc.len()
+	lc.RUnlock()
+	return length
+}
+
+// len is same as Len, but don't require read lock
+func (lc *lruCache) len() int {
 	return len(lc.cacheIndex)
 }
 
 // Cap return cache capacity
 func (lc *lruCache) Cap() int {
+	// lc.RLock() current it's not need
+	c := lc.cap()
+	// lc.RUnlock()
+	return c
+}
+
+// cap is same as Cap, but don't require read lock
+func (lc *lruCache) cap() int {
 	return lc.maxSize
 }
-func (lc *lruCache) ChangeCap(offset int) error {
 
-	return nil
-}
-func (lc *lruCache) incrGet(elem *list.Element) interface{} {
-	entry := elem.Value.(*lruCacheEntry)
-	entry.accessCount++
-	return entry.val
-}
-
+// Get return value of the key, if not exist, nil returned
 func (lc *lruCache) Get(key string) (val interface{}) {
-	if len(lc.cacheIndex) != 0 {
-		lc.RLock()
-		elem, has := lc.cacheIndex[key]
-		lc.RUnlock()
-		if has {
-			lc.Lock()
-			lc.cacheData.MoveToFront(elem)
-			val = lc.incrGet(elem)
-			lc.Unlock()
-		}
+	lc.RLock()
+	elem, has := lc.cacheIndex[key]
+	if has {
+		val = elem.Value.(*lruCacheEntry).val
+		lc.cacheData.MoveToFront(elem)
 	}
+	lc.RUnlock()
 	return
 }
 
+// Remove remove key and it's value from cache
 func (lc *lruCache) Remove(key string) {
-	if len(lc.cacheIndex) != 0 {
-		lc.RLock()
-		elem, has := lc.cacheIndex[key]
-		lc.RUnlock()
-		if has {
-			lc.Lock()
-			lc.cacheData.Remove(elem)
-			delete(lc.cacheIndex, key)
-			lc.Unlock()
-		}
+	lc.Lock()
+	elem, has := lc.cacheIndex[key]
+	if has {
+		lc.cacheData.Remove(elem)
+		delete(lc.cacheIndex, key)
 	}
+	lc.Unlock()
 }
 
+// Set add an key-value to cache, if key already exist in cache, update it's value
 func (lc *lruCache) Set(key string, val interface{}) {
 	lc.set(key, val, true)
 }
 
+// Update only update existed key-value, returned value show whether it's successed
 func (lc *lruCache) Update(key string, val interface{}) bool {
 	return lc.set(key, val, false)
 }
 
-func (lc *lruCache) set(key string, val interface{}, forceSet bool) bool {
+// set do actually update cache, the parameter forceSet make a difference when
+// key already exist in cache, if forceSet, update it's value, else do nothing
+// return value show if operation is successed or not
+func (lc *lruCache) set(key string, val interface{}, forceSet bool) (ret bool) {
 	var entry *lruCacheEntry
-	lc.RLock()
-	elem := lc.cacheIndex[key]
-	size := len(lc.cacheIndex)
-	lc.RUnlock()
-	lc.Lock() // lock big area only for convenience
-	if elem == nil {
+	ret = true
+	lc.Lock()
+	if elem, has := lc.cacheIndex[key]; !has {
 		if !forceSet {
-			return false // don't exist and don't allow set
-		} else if size == lc.maxSize {
+			ret = false
+		} else if lc.cap() == lc.len() {
 			elem = lc.cacheData.Back() // remove last and reuse for new value
 			entry = elem.Value.(*lruCacheEntry)
 			lc.cacheData.Remove(elem)
 			delete(lc.cacheIndex, entry.key)
 		} else {
-			elem = new(list.Element) // has remaining size
 			entry = new(lruCacheEntry)
-			elem.Value = entry
 		}
+		entry.init(key, val) // setup value
+		lc.cacheIndex[key] = lc.cacheData.PushFront(entry)
 	} else {
-		lc.cacheData.Remove(elem) // if exist, remove it
+		elem.Value.(*lruCacheEntry).val = val
+		lc.cacheData.MoveToFront(elem)
 	}
-	entry.init(key, val, 1)      // setup value
-	lc.cacheData.PushFront(elem) // insert to front
-	lc.cacheIndex[key] = elem
 	lc.Unlock()
-	return true
+	return
 }

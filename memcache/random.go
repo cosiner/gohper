@@ -5,29 +5,20 @@ type randCache struct {
 	ordiCache
 }
 
-func (rc *randCache) init(initSize int, maxSize ...int) error {
-	if len(maxSize) <= 0 {
-		return SizeNegativeError
-	}
-	rc.maxSize = maxSize[0]
-	return rc.ordiCache.init(initSize, 0)
+func (rc *randCache) Init(maxSize int) {
+	rc.maxSize = maxSize
+	rc.ordiCache.Init(maxSize)
 }
 
 func (rc *randCache) Cap() int {
-	return rc.maxSize
+	// rc.RLock() // currently don't need lock for maxSize will not be modified
+	c := rc.cap()
+	// rc.RUnlock()
+	return c
 }
 
-func (rc *randCache) ChangeCap(offset int) error {
-	if offset == 0 {
-		return nil
-	} else if offset > 0 {
-		rc.Lock()
-		rc.maxSize += offset
-		rc.Unlock()
-	} else {
-		// if -offsett >= r
-	}
-	return nil
+func (rc *randCache) cap() int {
+	return rc.maxSize
 }
 
 func (rc *randCache) Set(key string, val interface{}) {
@@ -38,22 +29,19 @@ func (rc *randCache) Update(key string, val interface{}) bool {
 	return rc.set(key, val, false)
 }
 
-func (rc *randCache) set(key string, val interface{}, forceSet bool) bool {
-	rc.RLock()
-	v := rc.cache[key]
-	size := len(rc.cache)
-	rc.RUnlock()
-	if v == nil && !forceSet {
-		return false
-	}
+func (rc *randCache) set(key string, val interface{}, forceSet bool) (ret bool) {
 	rc.Lock()
-	if size == rc.maxSize {
-		for k, _ := range rc.cache {
-			delete(rc.cache, k)
-			break
+	v := rc.cache[key]
+	if v != nil || forceSet {
+		if rc.len() == rc.cap() {
+			for k, _ := range rc.cache {
+				delete(rc.cache, k)
+				break
+			}
 		}
+		rc.cache[key] = val
+		ret = true
 	}
-	rc.cache[key] = val
 	rc.Unlock()
-	return true
+	return
 }

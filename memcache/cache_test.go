@@ -2,16 +2,32 @@ package memcache
 
 import (
 	"testing"
+
+	"github.com/cosiner/golib/test"
 )
 
 func TestRandomCache(t *testing.T) {
-	cache := Cacher(memcache.RANDOM, 10, 10)
+	cache := Cacher(RANDOM, 1)
 	cache.Set("aaa", "sss")
-	cache.Set("aaa", "bbb")
-	cache.Set("ddd", "ddd")
-	cache.Set("dded", "ddd")
-	cache.Set("dddf", 123)
-	cache.Update("dddd", 133)
-	t.Log(cache.Get("dddd"))
-	t.Log(cache.Len(), cache.Cap())
+	test.AssertEq(t, "RandomCache", "sss", cache.Get("aaa").(string))
+
+	cache.Set("bbb", "bbb")
+	test.AssertEq(t, "RandomCache", "bbb", cache.Get("bbb").(string))
+	test.AssertEq(t, "RandomCache", nil, cache.Get("aaa"))
+
+	test.AssertFalse(t, "RandomCache", cache.Update("dddd", 133))
+}
+
+func TestLRUCache(t *testing.T) {
+	tt := test.WrapTest(t)
+	cache := Cacher(LRU, 3)
+	cache.Set("a", "a")
+	cache.Set("b", "b")
+	cache.Set("c", "c")
+	tt.AssertEq("LRUCACHE", 3, cache.Len())
+	tt.AssertEq("LRUCACHE", 3, cache.Cap())
+	tt.AssertEq("LRUCache", "a", cache.Get("a").(string))
+
+	cache.Set("d", "nc")
+	tt.AssertNE("LRUCache", nil, cache.Get("a"))
 }
