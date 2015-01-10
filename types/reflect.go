@@ -8,3 +8,8 @@ import (
 func IsSlice(s interface{}) bool {
 	return s != nil && reflect.TypeOf(s).Kind() == reflect.Slice
 }
+
+// Equaler is a interface that compare whether two object is equal
+type Equaler interface {
+	EqualTo(interface{}) bool
+}

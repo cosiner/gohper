@@ -2,6 +2,9 @@ package errors
 
 import "fmt"
 
+// ERR is a nil error for those condition only need an error
+var ERR = Err("")
+
 type errStr struct {
 	s string
 }
@@ -28,6 +31,20 @@ func Errorln(v ...interface{}) error {
 // Errorf make an error with given format and  params
 func Errorf(format string, v ...interface{}) error {
 	return Err(fmt.Sprintf(format, v...))
+}
+
+// OnErrExit exit process and print message on error
+func OnErrExit(err error) {
+	if err != nil {
+		ExitErrln(err)
+	}
+}
+
+// OnErrExitStr exit process and print error string on error
+func OnErrExitStr(err error, errStr string) {
+	if err != nil {
+		ExitErrorln(errStr)
+	}
 }
 
 // OnErrPanic panic on error
