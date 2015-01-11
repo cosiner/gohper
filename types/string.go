@@ -62,7 +62,7 @@ func TrimLower(str string) string {
 }
 
 // BytesTrim2Str trim bytes return as string
-func BytesTrim2Str(s []byte) string {
+func TrimBytes2Str(s []byte) string {
 	return string(bytes.TrimSpace(s))
 }
 
@@ -108,6 +108,24 @@ func RepeatJoin(s1, s2 string, count int) string {
 // StringReader is a wrapper of strings.NewReader
 func StringReader(s string) *strings.Reader {
 	return strings.NewReader(s)
+}
+
+// TrimAfter trim string and remove the section after delimiter and delimiter itself
+func TrimAfter(s string, delimiter string) string {
+	idx := strings.Index(s, delimiter)
+	if idx >= 0 {
+		s = s[:idx]
+	}
+	return strings.TrimSpace(s)
+}
+
+// TrimAfter trim bytes and remove the section after delimiter and delimiter itself
+func TrimBytesAfter(s []byte, delimiter []byte) []byte {
+	idx := bytes.Index(s, delimiter)
+	if idx >= 0 {
+		s = s[:idx]
+	}
+	return bytes.TrimSpace(s)
 }
 
 // snake string, XxYy to xx_yy, X_Y to x_y

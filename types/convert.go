@@ -86,3 +86,55 @@ func Str2IntDef(s string, def int) int {
 func Int2Str(val int) string {
 	return fmt.Sprintf("%d", val)
 }
+
+// HexStr2Uint convert a hexadecimal string to uint
+// if string is invalid, return an error
+func HexStr2Uint(str string) (n uint, err error) {
+	err = Errorf("Invalid hexadecimal string %s", str)
+	if len(str) <= 2 {
+		return
+	} else {
+		if head := str[:2]; head != "0x" && head != "0X" {
+			return
+		}
+	}
+	str = str[2:]
+	for _, c := range str {
+		if c >= '0' && c <= '9' {
+			c = c - '0'
+		} else if c >= 'a' && c <= 'f' {
+			c = c - 'a' + 10
+		} else if c >= 'A' && c <= 'F' {
+			c = c - 'A' + 10
+		} else {
+			return
+		}
+		n = n << 4
+		n |= uint(c)
+	}
+	err = nil
+	return
+}
+
+// ReverseBits reverse all bits in number
+func ReverseBits(num uint) uint {
+	var n uint
+	size := uint(unsafe.Sizeof(num))
+	for s := size * 8; s > 0; s-- {
+		n = n << 1
+		n |= (num & 1)
+		num = num >> 1
+	}
+	return n
+}
+
+// ReverseByte reverse all bits for a byte
+func ReverseByte(num uint8) uint8 {
+	var n uint8
+	for s := 8; s > 0; s-- {
+		n = n << 1
+		n |= (num & 1)
+		num = num >> 1
+	}
+	return n
+}

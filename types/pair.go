@@ -45,6 +45,13 @@ func (p *Pair) String() string {
 	return fmt.Sprint("%s=%s", p.Key, p.Value)
 }
 
+// Trim trim all space of pair's key and value
+func (p *Pair) Trim() *Pair {
+	p.Key = strings.TrimSpace(p.Key)
+	p.Value = strings.TrimSpace(p.Value)
+	return p
+}
+
 // NoKey check whether pair has key or not
 func (p *Pair) NoKey() bool {
 	return p.Key == ""

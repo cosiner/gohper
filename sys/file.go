@@ -1,7 +1,6 @@
 package sys
 
 import (
-	"bytes"
 	"io"
 	"os"
 
@@ -156,128 +155,6 @@ func TruncateAndSeekWriter(wr io.Writer) {
 	if w, is := wr.(*os.File); is {
 		TruncateAndSeek(w)
 	}
-}
-
-// FileOverwrite delete all content in file, and write new content to it
-func FileOverwrite(fname string, content string) error {
-	return OpenAndTruncFor(fname, func(fd *os.File) (err error) {
-		_, err = fd.WriteString(content)
-		return
-	})
-}
-
-// ReadOneLineFrom read first line from file
-func ReadOneLine(fname string) (line string, err error) {
-	err = FilterFileContent(fname, false, func(l []byte) ([]byte, error) {
-		line = string(l)
-		return nil, io.EOF
-	})
-	return
-}
-
-// ReadOneLine read first line from reader, if no content return errNoContent
-func ReadOneLineFrom(r io.Reader) (line string, err error) {
-	err = FilterContent(r, nil, false, func(l []byte) ([]byte, error) {
-		line = string(l)
-		return nil, io.EOF
-	})
-	return
-}
-
-// FilterFileContent filter file content with given filter
-// if rewrite is true, content after filter will overwrite exist file
-// if recieved io.EOF or other error, will stop read next line,
-// and not rewrite file, io.EOF means an early end.
-func FilterFileContent(fname string, rewrite bool,
-	filter func([]byte) ([]byte, error)) error {
-	var openfunc func(string, FileOpFunc) error
-	if rewrite {
-		openfunc = OpenForRW
-	} else {
-		openfunc = OpenForRead
-	}
-	return openfunc(fname, func(fd *os.File) (err error) {
-		var wr io.Writer
-		if rewrite {
-			wr = fd
-		}
-		return FilterContent(fd, wr, false, filter)
-	})
-}
-
-// FilterFileContentTo filter file content with given filter, then write result
-// to dest file
-func FilterFileContentTo(fname, dstfile string, delContent bool,
-	filter func([]byte) ([]byte, error)) error {
-	return OpenForRead(fname, func(fd *os.File) (err error) {
-		return OpenOrCreateFor(dstfile, delContent,
-			func(dstFd *os.File) error {
-				return FilterContent(fd, dstFd, true, filter)
-			})
-	})
-}
-
-// FilterContent readline from reader, after filter, if parallel set at the end, and writer is non-null
-// write content to writer, otherwise,  every read operation will followed by
-// a write operation
-func FilterContent(rd io.Reader, wr io.Writer,
-	parallel bool, filter func([]byte) ([]byte, error)) (err error) {
-	var (
-		saveToBuffer = func(line []byte) {}
-		flushBuffer  = func() error { return nil }
-		line         []byte
-		earlyStop    bool
-		br           = BufReader(rd)
-	)
-	if wr != nil { // writer non-null means need out put filter line to writer
-		var bw interface {
-			Write([]byte) (int, error)
-			WriteString(string) (int, error)
-		}
-		saveToBuffer = func(line []byte) {
-			if line != nil {
-				bw.Write(line)
-				bw.WriteString("\n")
-			}
-		}
-		if parallel { // use buffered writer, don't need extra buffer
-			w := BufWriter(wr)
-			flushBuffer = func() error {
-				return w.Flush()
-			}
-			bw = w
-		} else { // if not parallel, need buffer to save content for later write
-			w := bytes.NewBuffer(make([]byte, 0, FILE_BUFSIZE))
-			flushBuffer = func() error {
-				TruncateAndSeekWriter(wr)
-				_, err := wr.Write(w.Bytes())
-				return err
-			}
-			bw = w
-		}
-	}
-	if filter == nil {
-		filter = func(line []byte) ([]byte, error) {
-			return line, nil
-		}
-	}
-	for {
-		if line, _, err = br.ReadLine(); err == nil {
-			if line, err = filter(line); err == nil {
-				saveToBuffer(line)
-				continue
-			}
-			earlyStop = true
-		}
-		break
-	}
-	if !earlyStop {
-		flushBuffer()
-	}
-	if err == io.EOF {
-		err = nil
-	}
-	return
 }
 
 // CloseFd close io.Closer when it's effective

@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"fmt"
 	"strconv"
 
 	. "github.com/cosiner/golib/errors"
@@ -21,9 +22,9 @@ const (
 // such as: 1K/k -> 1024, 1M/m -> 1024*1024
 func Str2Bytes(size string) (uint64, error) {
 	var base uint64 = 1
-	s := []byte(size)
-	s = bytes.TrimSpace(s)
-	switch size[len(size)-1] {
+	s := bytes.TrimSpace([]byte(size))
+	fmt.Println(s, len(s))
+	switch s[len(s)-1] {
 	case 'K', 'k':
 		base *= KBYTE_BASE
 	case 'M', 'm':
