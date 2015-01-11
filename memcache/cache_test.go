@@ -29,5 +29,7 @@ func TestLRUCache(t *testing.T) {
 	tt.AssertEq("LRUCache", "a", cache.Get("a").(string))
 
 	cache.Set("d", "nc")
-	tt.AssertNE("LRUCache", nil, cache.Get("a"))
+	tt.AssertEq("LRUCache", nil, cache.Get("b"))
+	cache.Set("e", "nc")
+	tt.AssertEq("LRUCache", nil, cache.Get("c"))
 }

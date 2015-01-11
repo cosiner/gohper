@@ -105,7 +105,7 @@ func (lc *lruCache) set(key string, val interface{}, forceSet bool) (ret bool) {
 		if !forceSet {
 			ret = false
 		} else if lc.cap() == lc.len() {
-			elem = lc.cacheData.Back() // remove last and reuse for new value
+			elem = lc.cacheData.Back() // remove last and reuse entry for new value
 			entry = elem.Value.(*lruCacheEntry)
 			lc.cacheData.Remove(elem)
 			delete(lc.cacheIndex, entry.key)

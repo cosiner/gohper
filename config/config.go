@@ -2,8 +2,9 @@
 package config
 
 import (
-	"github.com/cosiner/golib/types"
 	"strconv"
+
+	"github.com/cosiner/golib/types"
 )
 
 // ConfigParser is a interface of actual parser
@@ -12,20 +13,18 @@ type ConfigParser interface {
 	ParseString(content string) error
 	// ParseFile parse from file
 	ParseFile(confFileName string) (err error)
-	// SetDefsec set default section
-	SetDefSec(section string)
 	// SetCurrSec set current section
 	SetCurrSec(section string)
-	// CurrSec return current section
+	// DefSec return default section name
+	DefSec() string
+	// CurrSec return current section name
 	CurrSec() string
 	// ValFrom return value from section with gived key
 	ValFrom(key, section string) (val string, has bool)
+	// HasSection check whether section exist in config
+	HasSection(section string) bool
 	// SectionVals return all key-value pairs from section
 	SectionVals(section string) map[string]string
-	// Sections return all sections
-	Sections() []string
-	// Clear clear parse result
-	Clear()
 }
 
 // Config implements some common config function
@@ -33,19 +32,27 @@ type Config struct {
 	ConfigParser
 }
 
+// ConfigType is supported config file type, currently only ini format
+type ConfigType int8
+
+const (
+	// INI is the ini/conf format config, multi same section will be merged
+	INI ConfigType = iota
+)
+
 // NewConfig return a config parser, default use ini config parser
-func NewConfig() *Config {
-	return &Config{newIniConfig()}
+func NewConfig(typ ConfigType) *Config {
+	switch typ {
+	case INI:
+		return &Config{newIniConfig()}
+	default:
+		return nil
+	}
 }
 
 // NewConfigWith use a gived parser
 func NewConfigWith(parser ConfigParser) *Config {
 	return &Config{parser}
-}
-
-// ValFrom return value with gived key in the section
-func (c *Config) ValFrom(key string, section string) (string, bool) {
-	return c.ConfigParser.ValFrom(key, section)
 }
 
 // Val return value from current section
@@ -54,12 +61,12 @@ func (c *Config) Val(key string) (string, bool) {
 }
 
 // ValDef return value from current section, if no this key, return default value
-func (c *Config) ValDef(key string, defVal string) string {
-	if val, has := c.Val(key); !has {
-		return defVal
-	} else {
-		return val
+func (c *Config) ValDef(key string, defVal string) (val string) {
+	val, has := c.Val(key)
+	if !has {
+		val = defVal
 	}
+	return
 }
 
 // BoolValFrom return bool value

@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	e "github.com/cosiner/golib/errors"
+
 	t "github.com/cosiner/golib/time"
 	"github.com/cosiner/golib/types"
 )
@@ -44,7 +46,7 @@ var (
 // default use file logger, and default started
 func NewLogger(flushInterval int, level Level, bufSize, maxSize uint64, logDir string) (*Logger, error) {
 	if level == LEVEL_MAX || level < LEVEL_MIN {
-		return nil, Err("Invalid log level:" + level.Name())
+		return nil, e.Err("Invalid log level:" + level.Name())
 	}
 
 	if bufSize == 0 {
@@ -90,7 +92,7 @@ func NewEmptyLogger(flushInterval int, level Level) *Logger {
 // SetLogWriter set log writer, writer must not be nil
 func (logger *Logger) SetLogWriter(lw LogWriter) error {
 	if lw == nil {
-		return Err("LogWrite can't be nil")
+		return e.Err("LogWrite can't be nil")
 	}
 	if logger.lw != nil {
 		logger.mu.Lock()

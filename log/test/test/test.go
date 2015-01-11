@@ -1,7 +1,7 @@
 package test
 
 import (
-	"mlib/log"
+	"github.com/cosiner/gomodule/log"
 )
 
 func WarnLog() {

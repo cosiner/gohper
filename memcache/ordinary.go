@@ -7,6 +7,7 @@ import (
 
 const capUnlimit int = math.MaxInt32
 
+// ordiCache is ordinary cache, there is no limit of cache item count
 type ordiCache struct {
 	cache map[string]interface{}
 	*sync.RWMutex

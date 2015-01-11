@@ -3,7 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"mlib/config"
+	"github.com/cosiner/gomodule/config"
 
 	. "github.com/cosiner/golib/errors"
 )

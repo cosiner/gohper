@@ -13,6 +13,7 @@ type colParser struct {
 	SqlBean
 }
 
+// Bind bind a sqlbean to parser
 func (cp *colParser) Bind(sb SqlBean) {
 	cp.SqlBean = sb
 }
