@@ -114,7 +114,7 @@ const COLUMN_BUFSIZE = 64
 // result like : col1+suffix+sep+col2+suffix+sep
 func (cp *colParser) colsJoin(suffix, sep string, fields []Field) (col string) {
 	if len(fields) != 0 {
-		var buf *bytes.Buffer = bytes.NewBuffer(make([]byte, COLUMN_BUFSIZE))
+		var buf *bytes.Buffer = bytes.NewBuffer(make([]byte, 0, COLUMN_BUFSIZE))
 		suffix = suffix + sep
 		for _, f := range fields {
 			cp.MustValid(f)
@@ -162,7 +162,7 @@ func (cp *colParser) PanicUnknownField(field Field) {
 
 // func (cp *colParser) colsAndVals(suffix, sep string, fields []Field) (
 // 	col string, vals []interface{}) {
-// 	buf := bytes.NewBuffer(make([]byte, COLUMN_BUFSIZE))
+// 	buf := bytes.NewBuffer(make([]byte, 0, COLUMN_BUFSIZE))
 // 	vals := make([]interface{}, len(fields))
 // 	suffix = suffix + sep
 // 	for index, f := range fields {
@@ -185,7 +185,7 @@ func (cp *colParser) PanicUnknownField(field Field) {
 // 		cp.MustValid(e)
 // 		fs.AddField(e)
 // 	}
-// 	buf := bytes.NewBuffer(make([]byte, COLUMN_BUFSIZE))
+// 	buf := bytes.NewBuffer(make([]byte, 0, COLUMN_BUFSIZE))
 // 	vals := make([]interface{}, len(fields))
 // 	suffix = suffix + sep
 // 	for _, f := range cp.Fields() {
