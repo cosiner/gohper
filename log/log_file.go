@@ -5,104 +5,133 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+
+	"github.com/cosiner/golib/errors"
+
+	"github.com/cosiner/golib/sys"
+	"github.com/cosiner/golib/types"
 )
 
 const (
 	// log dir permission when create
 	_LOGDIR_PERM = 0755
+	CONF_BUFSIZE = "bufsize"
+	CONF_MAXSIZE = "maxsize"
+	CONF_LOGDIR  = "logdir"
 )
 
 // logBuffer represent a log writer for a special level
 type logBuffer struct {
-	lw   *logWriter
-	file *os.File
+	writer *FileLogWriter
+	file   *os.File
 	*bufio.Writer
 	level  Level
 	nbytes uint64
 }
 
 // newLogBuffer create a new log buffer
-func newLogBuffer(lw *logWriter, level Level) (*logBuffer, error) {
-	lb := &logBuffer{lw, nil, nil, level, 0}
-	return lb, lb.rotateFile()
+func newLogBuffer(writer *FileLogWriter, level Level) (*logBuffer, error) {
+	buf := &logBuffer{writer, nil, nil, level, 0}
+	return buf, buf.newLogFile()
 }
 
-// rotateFile create a new log file
-func (lb *logBuffer) rotateFile() (err error) {
-	if lb.file != nil {
-		lb.Flush()
-		lb.file.Close()
+// newLogFile create a new log file
+func (buf *logBuffer) newLogFile() (err error) {
+	if buf.file != nil {
+		buf.Flush()
+		buf.file.Close()
 	}
-	lb.file, err = createLogFile(lb.lw.logDir, lb.level.Name())
-	lb.nbytes = 0
+	buf.file, err = createLogFile(buf.writer.logDir, buf.level.String())
+	buf.nbytes = 0
 	if err == nil {
-		lb.Writer = bufio.NewWriterSize(lb.file, int(lb.lw.bufSize))
+		buf.Writer = bufio.NewWriterSize(buf.file, int(buf.writer.bufSize))
 	}
 	return
 }
 
 // flush flush log buffer
-func (lb *logBuffer) flush() (err error) {
-	err = lb.Flush()
-	err = lb.file.Sync()
+func (buf *logBuffer) flush() (err error) {
+	err = buf.Flush()
+	err = buf.file.Sync()
 	return
 }
 
 // close close the log buffer
-func (lb *logBuffer) close() {
-	lb.Flush()
-	lb.file.Close()
+func (buf *logBuffer) close() {
+	buf.Flush()
+	buf.file.Close()
 	return
 }
 
 // write write log message to log file
-func (lb *logBuffer) write(msg string) (err error) {
-	if lb.nbytes+uint64(len(msg)) >= lb.lw.maxSize {
-		if err = lb.rotateFile(); err != nil {
+func (buf *logBuffer) write(msg string) (err error) {
+	if buf.nbytes+uint64(len(msg)) >= buf.writer.maxSize {
+		if err = buf.newLogFile(); err != nil {
 			return
 		}
 	}
-	n, err := lb.WriteString(msg)
-	if msg[len(msg)-1] != '\n' {
-		lb.WriteByte('\n')
-	}
-	lb.nbytes += uint64(n)
+	n, err := buf.WriteString(msg)
+	buf.nbytes += uint64(n)
 	return
 }
 
 // logWrite is actuall log writer, output is local file
-type logWriter struct {
+type FileLogWriter struct {
 	level   Level
 	bufSize uint64
 	maxSize uint64
 	logDir  string
-	files   [_LEVEL_NUM]*logBuffer
+	files   [LEVEL_MAX + 1]*logBuffer
 }
 
-// newLogWriter create a new log writer
-func newLogWriter(level Level, bufSize, maxSize uint64, logDir string) (lw *logWriter, err error) {
-	err = os.Mkdir(logDir, _LOGDIR_PERM)
-	if err == nil || strings.Contains(err.Error(), "file exists") {
-		err = nil
-		lw = &logWriter{level: level,
-			logDir:  logDir,
-			bufSize: bufSize,
-			maxSize: maxSize}
-		for l := level; l < LEVEL_MAX; l++ {
-			lw.files[l], err = newLogBuffer(lw, l)
-			if err != nil {
-				return nil, err
+// parseConf parse a pair of config
+func (writer *FileLogWriter) parseConf(pair *types.Pair) (err error) {
+	err = errors.Errorf("Wrong config format %s", pair.String())
+	if pair.HasKey() && pair.HasValue() {
+		switch strings.ToLower(pair.Key) {
+		case CONF_BUFSIZE:
+			bufsize, err := strconv.Atoi(pair.Value)
+			if err == nil {
+				writer.bufSize = uint64(bufsize)
 			}
+		case CONF_MAXSIZE:
+			maxSize, err := strconv.Atoi(pair.Value)
+			if err == nil {
+				writer.maxSize = uint64(maxSize)
+			}
+		case CONF_LOGDIR:
+			writer.logDir, err = writer.logDir, nil
 		}
 	}
-	return lw, err
+	return
+}
+
+// Config resolv config
+func (writer *FileLogWriter) Config(conf string) (err error) {
+	confs := strings.FieldsFunc(conf, func(r rune) bool {
+		return r == '&'
+	})
+	if len(confs) == 0 {
+		return errors.Err("No config found")
+	} else {
+		writer.logDir = filepath.Join(os.TempDir(), "gologs")
+		for _, c := range confs {
+			if err := writer.parseConf(types.ParsePair(c, "=")); err != nil {
+				return err
+			}
+		}
+		return sys.MkdirWithParent(writer.logDir)
+	}
 }
 
 // Write write log to log file
-func (lw *logWriter) Write(log *Log) (err error) {
-	for l := lw.level; l <= log.level; l++ {
-		if err = lw.files[l].write(log.msg); err != nil {
+func (writer *FileLogWriter) Write(log *Log) (err error) {
+	for l := writer.level; l <= log.Level; l++ {
+		err = writer.files[l].write(
+			fmt.Sprintf("[%s] %s %s", log.Level.String(), dateTime(), log.Message))
+		if err != nil {
 			return
 		}
 	}
@@ -110,39 +139,38 @@ func (lw *logWriter) Write(log *Log) (err error) {
 }
 
 // Flush flush log writer
-func (lw *logWriter) Flush() {
-	for l := lw.level; l < LEVEL_MAX; l++ {
-		lw.files[l].flush()
+func (writer *FileLogWriter) Flush() {
+	for l := writer.level; l <= LEVEL_MAX; l++ {
+		writer.files[l].flush()
 	}
 }
 
 // Close close log writer
-func (lw *logWriter) Close() {
-	for l := lw.level; l < LEVEL_MAX; l++ {
-		lw.files[l].close()
-		lw.files[l] = nil
+func (writer *FileLogWriter) Close() {
+	for l := writer.level; l <= LEVEL_MAX; l++ {
+		writer.files[l].close()
+		writer.files[l] = nil
 	}
 }
 
 // ResetLevel reset log level
-func (lw *logWriter) ResetLevel(level Level) error {
-	var l Level
-	for l = LEVEL_MIN; l < level; l++ {
-		if lb := lw.files[l]; lb != nil {
-			lb.close()
+func (writer *FileLogWriter) ResetLevel(level Level) (err error) {
+	for l := LEVEL_MIN; l < level; l++ {
+		if buf := writer.files[l]; buf != nil {
+			buf.close()
 		}
-		lw.files[l] = nil
+		writer.files[l] = nil
 	}
-	var err error
-	for ; l < LEVEL_MAX; l++ {
-		if lw.files[l] == nil {
-			if lw.files[l], err = newLogBuffer(lw, l); err != nil {
-				return err
+	for l := level; l <= LEVEL_MAX; l++ {
+		if writer.files[l] == nil {
+			writer.files[l], err = newLogBuffer(writer, l)
+			if err != nil {
+				return
 			}
 		}
 	}
-	lw.level = level
-	return err
+	writer.level = level
+	return
 }
 
 // createLogFile create log file in the format:level.log.yyyymmdd-HHMMSS.pid

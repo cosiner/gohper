@@ -6,170 +6,195 @@ import (
 	"sync"
 	"time"
 
-	e "github.com/cosiner/golib/errors"
-
+	"github.com/cosiner/golib/errors"
 	t "github.com/cosiner/golib/time"
-	"github.com/cosiner/golib/types"
 )
+
+var (
+	timeNow  = time.Now
+	dateTime = t.DateTime
+)
+
+// Log represend a log with level and log message
+type Log struct {
+	Level   Level
+	Message string
+	Time    string
+}
+
+// String return a log as string with format "[level] time message"
+func (l *Log) String() string {
+	return fmt.Sprintf("[%s] %s %s", l.Level.String(), l.Time, l.Message)
+}
+
+// buildLog format log
+func NewLogf(level Level, format string, v ...interface{}) *Log {
+	return &Log{
+		Level:   level,
+		Message: fmt.Sprintf(format, v...),
+		Time:    dateTime(),
+	}
+}
+
+func NewLog(level Level, v ...interface{}) *Log {
+	return &Log{
+		Level:   level,
+		Message: fmt.Sprint(v...),
+		Time:    dateTime(),
+	}
+}
+
+func NewLogln(level Level, v ...interface{}) *Log {
+	return &Log{
+		Level:   level,
+		Message: fmt.Sprintln(v...),
+		Time:    dateTime(),
+	}
+}
 
 // LogWriter is actual log writer
 type LogWriter interface {
+	Config(conf string) error
 	Write(log *Log) error
 	ResetLevel(level Level) error
 	Flush()
 	Close()
 }
 
-// Log represend a log with level and log message
-type Log struct {
-	level Level
-	msg   string
+type ConsoleLogWriter struct {
 }
 
-// Logger
-type Logger struct {
-	mu            *sync.Mutex
-	level         Level
-	lw            LogWriter
-	flushInterval time.Duration
-	logs          chan *Log
-	flushexit     chan bool
-}
-
-var (
-	DEF_LOGDIR = os.TempDir() + "/logs"
-	timeNow    = time.Now
-	dateTime   = t.DateTime
-)
-
-// NewLogger return a logger, if parameter is wrong, it will be automicly set to default value
-// default use file logger, and default started
-func NewLogger(flushInterval int, level Level, bufSize, maxSize uint64, logDir string) (*Logger, error) {
-	if level == LEVEL_MAX || level < LEVEL_MIN {
-		return nil, e.Err("Invalid log level:" + level.Name())
-	}
-
-	if bufSize == 0 {
-		bufSize = DEF_BUFSIZE
-	}
-	if maxSize == 0 {
-		maxSize = DEF_FILESIZE
-	}
-	if types.TrimSpace(logDir) == "" {
-		logDir = DEF_LOGDIR
-	}
-
-	var logger *Logger
-	lw, err := newLogWriter(level, bufSize, maxSize, logDir)
-	logger = NewEmptyLogger(flushInterval, level)
-	if err == nil {
-		logger.lw = lw
-		logger.Start()
-	}
-	return logger, err
-}
-
-// NewEmptyLogger new an empty logger, can't be used directly
-// to use it, must SetLogWriter, then Start it, and commonly,
-// assign it to global variable log.L
-func NewEmptyLogger(flushInterval int, level Level) *Logger {
-	if flushInterval <= 0 {
-		flushInterval = DEF_FLUSHINTERVAL
-	}
-	if level < LEVEL_MIN || level > LEVEL_OFF {
-		level = DEF_LEVEL
-	}
-
-	logger := &Logger{mu: new(sync.Mutex),
-		level:         level,
-		lw:            nil,
-		logs:          make(chan *Log, DEF_BACKLOG),
-		flushexit:     make(chan bool),
-		flushInterval: time.Duration(flushInterval) * time.Second}
-	return logger
-}
-
-// SetLogWriter set log writer, writer must not be nil
-func (logger *Logger) SetLogWriter(lw LogWriter) error {
-	if lw == nil {
-		return e.Err("LogWrite can't be nil")
-	}
-	if logger.lw != nil {
-		logger.mu.Lock()
-		logger.lw.Close()
-		logger.mu.Unlock()
-	}
-	logger.lw = lw
-	lw.ResetLevel(logger.level)
+func (clw *ConsoleLogWriter) Config(conf string) error {
 	return nil
 }
 
+func (clw *ConsoleLogWriter) Write(log *Log) error {
+	_, err := fmt.Printf("[%s] %s %s", log.Level.String(), dateTime(), log.Message)
+	return err
+}
+
+func (clw *ConsoleLogWriter) ResetLevel(level Level) {}
+func (clw *ConsoleLogWriter) Flush()                 {}
+func (clw *ConsoleLogWriter) Close()                 {}
+
+type LoggerSignal uint8
+
+const (
+	SIGNAL_FLUSH LoggerSignal = iota // flush all writer
+	SIGNAL_STOP                      // stop logger
+	SIGNAL_PAUSE                     // pause logger
+	SIGNAL_EXIT                      // exit process
+)
+
+// Logger
+type Logger struct {
+	*sync.RWMutex
+	level         Level
+	writers       []LogWriter
+	flushInterval time.Duration
+	logs          chan *Log
+	signal        chan LoggerSignal
+	running       bool
+}
+
+// NewLogger return a logger, if parameter is wrong, it will be automicly set to default value
+// default use file logger, and default started
+func NewLogger(flushInterval int, level Level) *Logger {
+	errors.Assert(level >= LEVEL_MIN && level <= LEVEL_MAX,
+		UnknownLevelErr(level.String()))
+	errors.Assert(flushInterval > 0,
+		errors.Errorf("Flush interval should not be negative:%d", flushInterval))
+	return &Logger{RWMutex: new(sync.RWMutex),
+		level:         level,
+		logs:          make(chan *Log, DEF_BACKLOG),
+		signal:        make(chan LoggerSignal),
+		flushInterval: time.Duration(flushInterval) * time.Second,
+		running:       false,
+	}
+}
+
+// SetLogWriter set log writer, writer must not be nil
+func (logger *Logger) AddLogWriter(writer LogWriter) (err error) {
+	if writer != nil {
+		logger.Lock()
+		logger.writers = append(logger.writers, writer)
+		err = writer.ResetLevel(logger.level)
+		logger.Unlock()
+	}
+	return
+}
+
 // LogLevel return logger's level
-func (logger *Logger) LogLevel() Level {
-	return logger.level
+func (logger *Logger) LogLevel() (l Level) {
+	logger.RLock()
+	l = logger.level
+	logger.RUnlock()
+	return
 }
 
 // SetLevel change logger's level
 func (logger *Logger) SetLevel(level Level) (err error) {
+	errors.Assert(level >= LEVEL_MIN && level <= LEVEL_MAX,
+		UnknownLevelErr(level.String()))
+	logger.Lock()
 	logger.level = level
-	if logger.lw != nil {
-		logger.mu.Lock()
-		err = logger.lw.ResetLevel(level)
-		logger.mu.Unlock()
+	for _, writer := range logger.writers {
+		err = writer.ResetLevel(level)
+		if err != nil {
+			break
+		}
 	}
+	logger.Unlock()
 	return
 }
 
-// lockFor is a convenience for function need to lock
-func (logger *Logger) lockFor(fn func()) {
-	logger.mu.Lock()
-	defer logger.mu.Unlock()
-	fn()
-}
-
-// lockWrite lock then call logwriter to write log
-func (logger *Logger) lockWrite(log *Log) (err error) {
-	logger.lockFor(func() {
-		err = logger.lw.Write(log)
-	})
-	return
-}
-
-// LockFlush flush logwriter
-func (logger *Logger) LockFlush() {
-	logger.lockFor(func() {
-		logger.lw.Flush()
-	})
-}
-
-// FlushAndExit flush logger then exit
-func (logger *Logger) FlushAndExit() {
-	logger.flushexit <- true
+func (logger *Logger) Signal(signal LoggerSignal) {
+	logger.signal <- signal
 }
 
 // Start start logger
 func (logger *Logger) Start() {
+	logger.Lock()
+	logger.running = true
+	logger.Unlock()
 	go func() {
 		ticker := time.Tick(logger.flushInterval)
 		for {
 			select {
 			case log := <-logger.logs:
-				logger.lockWrite(log)
-			case <-ticker:
-				logger.LockFlush()
-			case fe := <-logger.flushexit:
-				if fe {
-					// if len(logger.logs) > 0 {
-					// 	logger.FlushAndExit()
-					// 	continue
-					// }
-					close(logger.flushexit)
-					logger.lockFor(func() {
-						close(logger.logs)
-						logger.lw.Close()
-					})
-					os.Exit(0)
+				logger.RLock()
+				for _, writer := range logger.writers {
+					writer.Write(log)
 				}
+				logger.Unlock()
+			case <-ticker:
+				logger.Lock()
+				for _, writer := range logger.writers {
+					writer.Flush()
+				}
+				logger.Unlock()
+			case signal := <-logger.signal:
+				logger.Lock()
+				switch signal {
+				case SIGNAL_FLUSH:
+					for _, writer := range logger.writers {
+						writer.Flush()
+					}
+				case SIGNAL_PAUSE:
+					logger.running = false
+				case SIGNAL_STOP:
+					logger.running = false
+					logger.Unlock()
+					return
+				case SIGNAL_EXIT:
+					logger.running = false
+					for _, writer := range logger.writers {
+						writer.Close()
+					}
+					logger.Unlock()
+					os.Exit(1)
+				}
+				logger.Unlock()
 			}
 		}
 	}()
@@ -177,43 +202,30 @@ func (logger *Logger) Start() {
 
 // logf format the log, send it to log write's goroutine
 func (logger *Logger) logf(level Level, format string, v ...interface{}) {
-	if log := logger.buildLog(level, format, v...); log != nil {
-		logger.logs <- log
+	logger.RLock()
+	r, l := logger.running, logger.level
+	logger.RUnlock()
+	if r && level >= l {
+		logger.logs <- NewLogf(level, format, v...)
 	}
 }
 
-// buildLog format log
-func (logger *Logger) buildLog(level Level, format string, v ...interface{}) (log *Log) {
-	if logger.level != LEVEL_OFF && level >= logger.level {
-		format = fmt.Sprintf("[%s]%s %s", level.Name(), dateTime(), format)
-		msg := fmt.Sprintf(format, v...)
-		log = &Log{level, msg}
+// logln  send log to log write's goroutine with an new line
+func (logger *Logger) logln(level Level, v ...interface{}) {
+	logger.RLock()
+	r, l := logger.running, logger.level
+	logger.RUnlock()
+	if r && level >= l {
+		logger.logs <- NewLogln(level, v...)
 	}
-	return
 }
 
-// Debugf log for debug message
-func (logger *Logger) Debugf(format string, v ...interface{}) {
-	logger.logf(LEVEL_DEBUG, format, v...)
-}
-
-// Infof log for info message
-func (logger *Logger) Infof(format string, v ...interface{}) {
-	logger.logf(LEVEL_INFO, format, v...)
-}
-
-// Warnf log for warning message
-func (logger *Logger) Warnf(format string, v ...interface{}) {
-	logger.logf(LEVEL_WARN, format, v...)
-}
-
-// Errorf log for error message
-func (logger *Logger) Errorf(format string, v ...interface{}) {
-	logger.logf(LEVEL_ERROR, format, v...)
-}
-
-// Fatalf log for fatal message
-func (logger *Logger) Fatalf(format string, v ...interface{}) {
-	logger.lockWrite(logger.buildLog(LEVEL_FATAL, format, v...))
-	logger.FlushAndExit()
+// log send log to log write's goroutine
+func (logger *Logger) log(level Level, v ...interface{}) {
+	logger.RLock()
+	r, l := logger.running, logger.level
+	logger.RUnlock()
+	if r && level >= l {
+		logger.logs <- NewLog(level, v...)
+	}
 }
