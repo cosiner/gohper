@@ -51,3 +51,10 @@ func (o *Once) UnDo() {
 	atomic.StoreUint32(&o.done, 0)
 	o.m.Unlock()
 }
+
+// LockDo do function in lock
+func LockDo(lock sync.Locker, fn func()) {
+	lock.Lock()
+	fn()
+	lock.Unlock()
+}

@@ -6,7 +6,7 @@ package types
 
 // u_1 is uint 1
 const (
-	uint0       uint   = 0
+	Uint0       uint   = 0
 	unitLenLogN        = 6 // log64 = 6
 	unitLen            = 1 << unitLenLogN
 	unitMax     uint64 = 1<<unitLen - 1
@@ -124,6 +124,15 @@ func (bs *BitSet) FlipAll() *BitSet {
 	})
 }
 
+// Except set all bits except given index to 1, the except bits set to 0
+func (bs *BitSet) Except(index ...uint) *BitSet {
+	bs.SetAll()
+	for _, i := range index {
+		bs.UnSet(i)
+	}
+	return bs
+}
+
 // IsSet check whether or not index bit is set
 func (bs *BitSet) IsSet(index uint) bool {
 	return index < bs.Len() && (bs.set[unitPos(index)]&(1<<unitIndex(index))) != 0
@@ -135,6 +144,15 @@ func (bs *BitSet) SetTo(index uint, value bool) *BitSet {
 		return bs.Set(index)
 	}
 	return bs.UnSet(index)
+}
+
+// Bits return all index of bits set to 1
+func (bs *BitSet) Bits() (res []uint) {
+	res = make([]uint, 0, bs.BitCount())
+	for i, l := Uint0, bs.Len(); i < l && bs.IsSet(i); i++ {
+		res = append(res, i)
+	}
+	return
 }
 
 // BitCount count 1 bits
@@ -206,7 +224,7 @@ func (bs *BitSet) bitsetOp(b *BitSet, lenFn func(*uint), opFn func(index uint)) 
 		return bs
 	}
 	lenFn(&length)
-	for i, n := uint0, unitCount(length); i < n; i++ {
+	for i, n := Uint0, unitCount(length); i < n; i++ {
 		opFn(i)
 	}
 	return bs
@@ -263,7 +281,7 @@ func unitIndex(index uint) uint {
 
 // unitOp iter the bitset unit, apply function to each unit
 func (bs *BitSet) unitOp(f func(index uint)) *BitSet {
-	for i, n := uint0, unitCount(bs.Len()); i < n; i++ {
+	for i, n := Uint0, unitCount(bs.Len()); i < n; i++ {
 		f(i)
 	}
 	return bs

@@ -181,3 +181,35 @@ func CamelString(s string) string {
 	}
 	return string(data)
 }
+
+// AbridgeString extract first letter and all upper case letter
+// from string as it's abridge case
+func AbridgeString(str string) (s string) {
+	if l := len(str); l != 0 {
+		ret := []byte{str[0]}
+		for i := 1; i < l; i++ {
+			b := str[i]
+			if IsUpper(b) {
+				ret = append(ret, b)
+			}
+		}
+		s = string(ret)
+	}
+	return
+}
+
+// AbridgeStringToLower extract first letter and all upper case letter
+// from string as it's abridge case, and convert it to lower case
+func AbridgeStringToLower(str string) (s string) {
+	if l := len(str); l != 0 {
+		ret := []byte{LowerCase(str[0])}
+		for i := 1; i < l; i++ {
+			b := str[i]
+			if IsUpper(b) {
+				ret = append(ret, LowerCase(b))
+			}
+		}
+		s = string(ret)
+	}
+	return
+}
