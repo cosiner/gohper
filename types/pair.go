@@ -42,7 +42,7 @@ func parsePair(str string, index int) *Pair {
 
 // String return pair's display string, format as key=value
 func (p *Pair) String() string {
-	return fmt.Sprint("%s=%s", p.Key, p.Value)
+	return fmt.Sprint("(%s:%s)", p.Key, p.Value)
 }
 
 // Trim trim all space of pair's key and value

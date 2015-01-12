@@ -37,7 +37,7 @@ func TestWriteV(t *testing.T) {
 
 func TestWriteL(t *testing.T) {
 	tt := test.WrapTest(t)
-	buffer := bytes.NewBuffer(make([]byte, 0))
+	buffer := bytes.NewBuffer([]byte{})
 	bw := NewBufVWriter(buffer)
 	bw.WriteLString("abc", "de")
 	bw.Flush()

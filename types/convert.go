@@ -124,14 +124,14 @@ func BytesToHexStr(src []byte) string {
 
 // BytesToHex transfer binary to hex bytes
 func BytesToHex(src []byte) []byte {
-	dst := make([]byte, 2*len(src))
+	dst := make([]byte, 0, 2*len(src))
 	hex.Encode(dst, src)
 	return dst
 }
 
 // HexToBytes transfer hex bytes to binary
 func HexToBytes(src []byte) []byte {
-	dst := make([]byte, len(src)/2)
+	dst := make([]byte, 0, len(src)/2)
 	hex.Decode(dst, src)
 	return dst
 }
