@@ -41,13 +41,14 @@ const (
 )
 
 // NewConfig return a config parser, default use ini config parser
-func NewConfig(typ ConfigType) *Config {
+func NewConfig(typ ConfigType) (c *Config) {
 	switch typ {
 	case INI:
-		return &Config{newIniConfig()}
+		c = &Config{newIniConfig()}
 	default:
-		return nil
+		panic(Errorf("Unsupported Config Type %d", typ))
 	}
+	return
 }
 
 // NewConfigWith use a gived parser

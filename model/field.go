@@ -12,33 +12,54 @@ type (
 )
 
 // NewFieldSet create a new field set use given fieldcount as length,
-// initial with given fields
-func NewFieldSet(fieldCount uint, fields ...Field) FieldSet {
+// initial with given fields, every field will be valid by the given valid
+// function
+func NewFieldSet(fieldCount uint, valid func(field Field), fields ...Field) FieldSet {
 	bs := types.NewBitSet(fieldCount)
+	if valid == nil {
+		valid = func(_ Field) {}
+	}
 	for _, f := range fields {
-		bs.Set(uint(f))
+		valid(f)
+		bs.Set(f.UNum())
 	}
 	return FieldSet{bs}
 }
 
 // HasField check whether or not fieldset has given field
 func (fs FieldSet) HasField(field Field) bool {
-	return fs.bs.IsSet(uint(field))
+	return fs.bs.IsSet(field.UNum())
 }
 
 // AddField add an field to fieldset
 func (fs FieldSet) AddField(field Field) {
-	fs.bs.Set(uint(field))
+	fs.bs.Set(field.UNum())
 }
 
 // RemoveField remove field from fieldset
 func (fs FieldSet) RemoveField(field Field) {
-	fs.bs.UnSet(uint(field))
+	fs.bs.UnSet(field.UNum())
 }
 
 // ChangeField add field if has is true, alse remove field
 func (fs FieldSet) ChangeField(field Field, has bool) {
-	fs.bs.SetTo(uint(field), has)
+	fs.bs.SetTo(field.UNum(), has)
+}
+
+func (fs FieldSet) FlipAll() {
+	fs.bs.FlipAll()
+}
+
+// Fields return all fields in this field set
+func (fs FieldSet) Fields() (res []Field) {
+	bs := fs.bs
+	res = make([]Field, 0, bs.BitCount())
+	for i := types.Uint0; i < fs.Len(); i++ {
+		if bs.IsSet(i) {
+			res = append(res, NewField(uint(i)))
+		}
+	}
+	return
 }
 
 // FieldCount return all fields' count exist in fieldset
@@ -50,6 +71,11 @@ func (fs FieldSet) FieldCount() uint {
 // Len return fieldset's length
 func (fs FieldSet) Len() uint {
 	return fs.bs.Len()
+}
+
+// NewField create a new field from a number
+func NewField(num uint) Field {
+	return Field(num)
 }
 
 // Num display field as number
