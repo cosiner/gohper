@@ -23,9 +23,9 @@ const (
 	LEVEL_ERROR
 	LEVEL_FATAL
 	unknownLevel
-	LEVEL_ALL = LEVEL_DEBUG
-	LEVEL_MIN = LEVEL_DEBUG
-	LEVEL_MAX = LEVEL_FATAL
+	LEVEL_ALL  = LEVEL_DEBUG
+	_LEVEL_MIN = LEVEL_DEBUG
+	_LEVEL_MAX = LEVEL_FATAL
 
 	DEF_FLUSHINTERVAL = 30               // flush interval for a flush timer
 	DEF_BUFSIZE       = 1024 * 10        // bufsize for log buffer
@@ -37,7 +37,7 @@ const (
 // String return level name, if level is no more than level_off, return actual name
 // else return UNKNOWN
 func (l Level) String() string {
-	if l <= LEVEL_MAX {
+	if l <= _LEVEL_MAX {
 		return levelName[l]
 	} else {
 		return "UNKNOWN"
@@ -48,7 +48,7 @@ func (l Level) String() string {
 func ParseLevel(str string) (level Level, err error) {
 	levelStr := types.TrimUpper(str)
 	level = unknownLevel
-	for l := LEVEL_MIN; l <= LEVEL_MAX; l++ {
+	for l := _LEVEL_MIN; l <= _LEVEL_MAX; l++ {
 		if levelStr == levelName[l] {
 			level = l
 			break

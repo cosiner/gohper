@@ -1,16 +1,38 @@
 package log
 
 //==================format======================================================
-var logger *Logger
+var (
+	logger       *Logger
+	nilFunc      = func() {}
+	Start        = nilFunc
+	Stop         = nilFunc
+	Flush        = nilFunc
+	Exit         = nilFunc
+	LogLevel     = func() Level { return unknownLevel }
+	SetLevel     = func(_ Level) error { return nil }
+	AddLogWriter = func(_ LogWriter) error { return nil }
+)
 
 // Init init global logger
 func Init(flushInterval int, level Level) {
 	logger = NewLogger(flushInterval, level)
+	Start = logger.Start
+	Stop = logger.Stop
+	Flush = logger.Flush
+	Exit = logger.Exit
+	LogLevel = logger.LogLevel
+	SetLevel = logger.SetLevel
+	AddLogWriter = logger.AddLogWriter
 }
 
 // GlobalLogger return current global logger
 func GlobalLogger() *Logger {
 	return logger
+}
+
+// AddConsoleWriter add an console log writer
+func AddConsoleWriter() {
+	logger.AddLogWriter(new(ConsoleLogWriter))
 }
 
 // Debugf log for debug message
@@ -36,7 +58,7 @@ func Errorf(format string, v ...interface{}) {
 // Fatalf log for fatal message
 func Fatalf(format string, v ...interface{}) {
 	logger.logf(LEVEL_FATAL, format, v...)
-	logger.Signal(SIGNAL_EXIT)
+	logger.Exit()
 }
 
 // Debugln log for debug message
@@ -62,7 +84,7 @@ func Errorln(v ...interface{}) {
 // Fatalln log for fatal message
 func Fatalln(v ...interface{}) {
 	logger.logln(LEVEL_FATAL, v...)
-	logger.Signal(SIGNAL_EXIT)
+	logger.Exit()
 }
 
 // Debug log for debug message
@@ -88,5 +110,5 @@ func Error(v ...interface{}) {
 // Fatalflog for fatal message
 func Fatal(v ...interface{}) {
 	logger.log(LEVEL_FATAL, v...)
-	logger.Signal(SIGNAL_EXIT)
+	logger.Exit()
 }
