@@ -4,6 +4,8 @@ package config
 import (
 	"strconv"
 
+	. "github.com/cosiner/golib/errors"
+
 	"github.com/cosiner/golib/types"
 )
 

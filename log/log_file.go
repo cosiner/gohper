@@ -97,7 +97,7 @@ func (writer *FileLogWriter) parseConf(pair *types.Pair) (err error) {
 	if pair.HasKey() && pair.HasValue() {
 		key := strings.ToLower(pair.Key)
 		if key == CONF_LOGDIR {
-			writer.logdir, err = writer.logdir, nil
+			writer.logdir, err = pair.Value, nil
 		} else if size, e := types.Str2Bytes(pair.Value); e == nil {
 			if key == CONF_BUFSIZE {
 				writer.bufsize, err = size, nil

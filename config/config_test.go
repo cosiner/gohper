@@ -9,7 +9,7 @@ import (
 func TestConf(t *testing.T) {
 	cfg := NewConfig(INI)
 	cfg.ParseString(`
-aa=bb
+aa="ccdd"
 [db]
 driver=mysql
 host=localhost
@@ -22,7 +22,7 @@ pool_max_open=100
 pool_max_idle=20
 		`)
 	val, _ := cfg.Val("aa")
-	test.AssertEq(t, "C1", "bb", val)
+	test.AssertEq(t, "C1", "\"ccdd\"", val)
 
 	_, has := cfg.Val("driver")
 	test.AssertFalse(t, "C2", has)

@@ -5,6 +5,13 @@ import (
 	"fmt"
 )
 
+var printSql = func(_ string) {}
+
+// EnableSqlPrint enable print sql
+func EnableSqlPrint() {
+	printSql = func(sql string) { fmt.Println(sql) }
+}
+
 // Insert insert model's field to database
 func Insert(db *sql.DB, model Model, fields []Field, needId bool) (int64, error) {
 	cols, ph := model.ColsSepPH(fields)
@@ -34,6 +41,7 @@ func SelectOne(db *sql.DB, model Model, fields []Field, whereField []Field) erro
 		model.ColsPH(whereField))
 	args := model.FieldVals(whereField)
 	row := db.QueryRow(sql, args...)
+	printSql(sql)
 	return row.Scan(model.FieldPtrs(fields)...)
 }
 
@@ -51,6 +59,7 @@ func ExecUpdate(db *sql.DB, s string, args []interface{}) (int64, error) {
 
 // Exec execute a sql
 func Exec(db *sql.DB, s string, args []interface{}, needId bool) (ret int64, err error) {
+	printSql(s)
 	res, err := db.Exec(s, args...)
 	if err == nil {
 		ret, err = ResolveResult(res, needId)
@@ -62,6 +71,7 @@ func Exec(db *sql.DB, s string, args []interface{}, needId bool) (ret int64, err
 func BatchExec(db *sql.DB, s string, fn func(error) []interface{}, needId, needTx bool) (ret []int64, err error) {
 	var res sql.Result
 	stmt, err, deferFn := TxOrNot(db, needTx, s)
+	printSql(s)
 	if deferFn != nil {
 		defer deferFn()
 	}
