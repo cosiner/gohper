@@ -28,7 +28,7 @@ const (
 // IsExist check whether or not file/dir exist
 func IsExist(fname string) bool {
 	_, err := os.Stat(ExpandHome(fname))
-	return err == nil
+	return err == nil || !os.IsNotExist(err)
 }
 
 // IsFile check whether or not file exist

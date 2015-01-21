@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"strings"
 	"unicode"
+
+	. "github.com/cosiner/golib/errors"
 )
 
 // IsLower check letter is lower case or not
@@ -44,6 +46,22 @@ func UpperCase(b byte) byte {
 		b = b - 'a' + 'A'
 	}
 	return b
+}
+
+// TrimQuote trim quote for string, if quote don't match, return an error
+func TrimQuote(str string) (s string, err error) {
+	s = str
+	if l := len(str); l > 0 {
+		c := s[0]
+		if c == '\'' || c == '"' || c == '`' {
+			if s[l-1] == c {
+				s = s[1 : l-1]
+			} else {
+				err = Errorf("Quote don't match:%s", s)
+			}
+		}
+	}
+	return
 }
 
 // TrimSpace is only call strings.TrimSpace

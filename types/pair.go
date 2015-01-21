@@ -47,9 +47,35 @@ func (p *Pair) String() string {
 
 // Trim trim all space of pair's key and value
 func (p *Pair) Trim() *Pair {
-	p.Key = strings.TrimSpace(p.Key)
-	p.Value = strings.TrimSpace(p.Value)
+	p.Key = TrimSpace(p.Key)
+	p.Value = TrimSpace(p.Value)
 	return p
+}
+
+// TrimQuote trim quote for pair's key and value
+func (p *Pair) TrimQuote() (err error) {
+	var key, value string
+	key, err = TrimQuote(p.Key)
+	if err == nil {
+		value, err = TrimQuote(p.Value)
+		if err == nil {
+			p.Key, p.Value = key, value
+		}
+	}
+	return
+}
+
+// TrimAll trim space and quote for pair
+func (p *Pair) TrimAll() (err error) {
+	var key, value string
+	key, err = TrimQuote(p.Key)
+	if err == nil {
+		value, err = TrimQuote(p.Value)
+		if err == nil {
+			p.Key, p.Value = TrimSpace(key), TrimSpace(value)
+		}
+	}
+	return
 }
 
 // NoKey check whether pair has key or not

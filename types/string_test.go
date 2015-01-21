@@ -30,3 +30,11 @@ func TestAbridgeString(t *testing.T) {
 	tt.AssertEq("Abr1", "ABC", AbridgeString("AaaBbbCcc"))
 	tt.AssertEq("Abr2", "ABC", AbridgeString("AaaBbbCcc"))
 }
+
+func TestTrimQuote(t *testing.T) {
+	tt := test.WrapTest(t)
+	s, err := TrimQuote("\"aaa\"")
+	tt.AssertEq("TrimQuote1", "aaa", s)
+	tt.AssertEq("TrimQuote1", err, nil)
+
+}
