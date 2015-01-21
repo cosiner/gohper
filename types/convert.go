@@ -2,7 +2,6 @@ package types
 
 import (
 	"encoding/hex"
-	"fmt"
 	"reflect"
 	"strconv"
 	"unsafe"
@@ -81,11 +80,6 @@ func Str2IntDef(s string, def int) int {
 		val = def
 	}
 	return val
-}
-
-// Int2Str convert integer to string use fmt.Sprintf
-func Int2Str(val int) string {
-	return fmt.Sprintf("%d", val)
 }
 
 // HexStr2Uint convert a hexadecimal string to uint

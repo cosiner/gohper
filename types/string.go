@@ -2,6 +2,8 @@ package types
 
 import (
 	"bytes"
+	"fmt"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -121,6 +123,19 @@ func RepeatJoin(s1, s2 string, count int) string {
 	}
 	str := strings.Repeat(s1+s2, count)
 	return str[:len(str)-len(s2)]
+}
+
+// JoinInt join int slice as string
+func JoinInt(v []int, sep string) (str string) {
+	if len(v) > 0 {
+		buf := bytes.NewBuffer([]byte{})
+		buf.WriteString(strconv.Itoa(v[0]))
+		for _, s := range v[1:] {
+			buf.WriteString(fmt.Sprintf("%s%d", sep, s))
+		}
+		str = buf.String()
+	}
+	return
 }
 
 // StringReader is a wrapper of strings.NewReader
