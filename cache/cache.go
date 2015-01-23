@@ -1,12 +1,13 @@
-// Package memcache Implement a simple memory cache container for go,
+// Package cache Implement a simple memory cache container for go,
 // it has three type container, ordinarry cache, don't limit capaticy,
 // random eliminate cache, based on ordinary cache, and lru eliminate cache
 // random and lru cache can dynamic change  the cache capacity, ordinary cache's
 // ChangeCap function make no difference
-package memcache
+package cache
 
 import (
 	. "github.com/cosiner/golib/errors"
+	"github.com/cosiner/golib/types"
 )
 
 // CacheType is implemented cache algorithm
@@ -20,6 +21,8 @@ func (ct CacheType) String() (str string) {
 		str = "Random-eliminate"
 	case LRU:
 		str = "LRU-eliminate"
+	case REDIS:
+		str = "Redis"
 	}
 	return
 }
@@ -31,12 +34,14 @@ const (
 	RANDOM
 	// LRU is lru eliminate algorithm
 	LRU
+	// REDIS is redis cacher
+	REDIS
 )
 
 // MemCache is cache interface
 // all method a safe for concurrent
 type MemCache interface {
-	Init(maxSize int)
+	Init(config string) error
 	// Get by key
 	Get(key string) interface{}
 	// Set key-value pair, if no remaining space, trigger a elimination
@@ -46,6 +51,8 @@ type MemCache interface {
 	Update(key string, val interface{}) bool
 	// Remove key-value pair
 	Remove(key string)
+	// IsExist check whether item exist
+	IsExist(key string) bool
 	// Len return current cache count
 	Len() int
 	// Cap return cache capacity
@@ -55,8 +62,7 @@ type MemCache interface {
 // Cacher return actual cache container
 // for cacher with elimination:Random and LRU, maxsize is the max capcity of cache
 // for ordinary cache, it only used to initial cache space
-func Cacher(typ CacheType, maxSize int) (cache MemCache) {
-	Assert(maxSize > 0, Errorf("Invalid  max size"))
+func Cacher(typ CacheType, config string) (cache MemCache, err error) {
 	switch typ {
 	case ORDINARY:
 		cache = new(ordiCache)
@@ -64,9 +70,22 @@ func Cacher(typ CacheType, maxSize int) (cache MemCache) {
 		cache = new(randCache)
 	case LRU:
 		cache = new(lruCache)
+	case REDIS:
+		cache = new(RedisCache)
 	default:
 		panic("Unsupported Cache Type")
 	}
-	cache.Init(maxSize)
-	return cache
+	return cache, cache.Init(config)
+}
+
+func parseMaxSize(config string) (maxsize int, err error) {
+	pair := types.ParsePair(config, "=")
+	if pair.NoKey() || pair.NoValue() || pair.Key != "maxsize" {
+		err = Err("Wrong format of config")
+	} else {
+		if maxsize, err = pair.IntValue(); err != nil || maxsize <= 0 {
+			err = Err("Wrong format of config")
+		}
+	}
+	return
 }

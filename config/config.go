@@ -40,6 +40,8 @@ type ConfigType int8
 const (
 	// INI is the ini/conf format config, multi same section will be merged
 	INI ConfigType = iota
+	// LINE is the format like :k=v&k=v... config, no different sections
+	LINE
 )
 
 // NewConfig return a config parser, default use ini config parser
@@ -47,6 +49,8 @@ func NewConfig(typ ConfigType) (c *Config) {
 	switch typ {
 	case INI:
 		c = &Config{newIniConfig()}
+	case LINE:
+		c = &Config{newLineConfig()}
 	default:
 		panic(Errorf("Unsupported Config Type %d", typ))
 	}
@@ -93,11 +97,11 @@ func (c *Config) IntValFrom(key, section string, defaultval int) int {
 }
 
 // BoolVal return bool value from current section
-func (c *Config) BoolVal(key string, defaultval bool) bool {
+func (c *Config) BoolValDef(key string, defaultval bool) bool {
 	return c.BoolValFrom(key, c.CurrSec(), defaultval)
 }
 
 // IntVal return integer value from current section
-func (c *Config) IntVal(key string, defaultval int) int {
+func (c *Config) IntValDef(key string, defaultval int) int {
 	return c.IntValFrom(key, c.CurrSec(), defaultval)
 }

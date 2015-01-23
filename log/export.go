@@ -31,8 +31,21 @@ func GlobalLogger() *Logger {
 }
 
 // AddConsoleWriter add an console log writer
-func AddConsoleWriter() {
-	logger.AddLogWriter(new(ConsoleLogWriter))
+func AddConsoleWriter(conf string) error {
+	clw := new(ConsoleLogWriter)
+	if err := clw.Config(conf); err != nil {
+		return err
+	}
+	return logger.AddLogWriter(clw)
+}
+
+// AddFileWriter add file log writer to logger
+func AddFileWriter(conf string) error {
+	flw := new(FileLogWriter)
+	if err := flw.Config(conf); err != nil {
+		return err
+	}
+	return logger.AddLogWriter(flw)
 }
 
 // Debugf log for debug message

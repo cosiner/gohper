@@ -1,13 +1,20 @@
-package memcache
+package cache
+
+import "sync"
 
 type randCache struct {
 	maxSize int
 	ordiCache
 }
 
-func (rc *randCache) Init(maxSize int) {
-	rc.maxSize = maxSize
-	rc.ordiCache.Init(maxSize)
+func (rc *randCache) Init(config string) (err error) {
+	var maxsize int
+	if maxsize, err = parseMaxSize(config); err == nil {
+		rc.ordiCache.cache = make(map[string]interface{}, maxsize)
+		rc.maxSize = maxsize
+		rc.ordiCache.RWMutex = new(sync.RWMutex)
+	}
+	return
 }
 
 func (rc *randCache) Cap() int {

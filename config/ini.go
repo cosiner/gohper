@@ -140,8 +140,8 @@ func parseLine(line []byte) (pair *types.Pair, result lineType) {
 		result = _BLANK
 		return
 	}
-	pair = types.ParsePair(string(line), "=").Trim()
-	if pair.NoKey() {
+	pair = types.ParsePair(string(line), "=")
+	if pair.TrimAll() != nil || pair.NoKey() {
 		result = _ERRFORMAT
 	} else {
 		key := pair.Key

@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
-	"github.com/cosiner/golib/errors"
+	"github.com/cosiner/gomodule/config"
 
 	"github.com/cosiner/golib/sys"
 	"github.com/cosiner/golib/types"
@@ -15,10 +14,10 @@ import (
 
 const (
 	// log dir permission when create
-	_LOGDIR_PERM = 0755
-	CONF_BUFSIZE = "bufsize"
-	CONF_MAXSIZE = "maxsize"
-	CONF_LOGDIR  = "logdir"
+	_LOGDIR_PERM  = 0755
+	_CONF_BUFSIZE = "bufsize"
+	_CONF_MAXSIZE = "maxsize"
+	_CONF_LOGDIR  = "logdir"
 )
 
 //==============================================================================
@@ -91,40 +90,24 @@ type FileLogWriter struct {
 	files   [_LEVEL_MAX + 1]*logBuffer
 }
 
-// parseConf parse a pair of config
-func (writer *FileLogWriter) parseConf(pair *types.Pair) (err error) {
-	err = errors.Errorf("Wrong config format %s", pair.String())
-	if pair.HasKey() && pair.HasValue() {
-		key := strings.ToLower(pair.Key)
-		if key == CONF_LOGDIR {
-			writer.logdir, err = pair.Value, nil
-		} else if size, e := types.Str2Bytes(pair.Value); e == nil {
-			if key == CONF_BUFSIZE {
-				writer.bufsize, err = size, nil
-			} else if key == CONF_MAXSIZE {
-				writer.maxsize, err = size, nil
+// Config resolv config, format like bufsize=xxx&maxsize=xxx&logdir=xxx
+func (writer *FileLogWriter) Config(conf string) (err error) {
+	c := config.NewConfig(config.LINE)
+	if err = c.ParseString(conf); err == nil {
+		var bufsize, maxsize uint64
+		bufsize, err = types.Str2Bytes(c.ValDef(_CONF_BUFSIZE, "10K"))
+		if err == nil {
+			maxsize, err = types.Str2Bytes(c.ValDef(_CONF_MAXSIZE, "10M"))
+			if err == nil {
+				writer.bufsize = bufsize
+				writer.maxsize = maxsize
+				writer.logdir = c.ValDef(_CONF_LOGDIR,
+					filepath.Join(os.TempDir(), "gologs"))
+				return sys.MkdirWithParent(writer.logdir)
 			}
 		}
 	}
 	return
-}
-
-// Config resolv config
-func (writer *FileLogWriter) Config(conf string) (err error) {
-	confs := strings.FieldsFunc(conf, func(r rune) bool {
-		return r == '&'
-	})
-	if len(confs) == 0 {
-		return errors.Err("No config found")
-	} else {
-		writer.logdir = filepath.Join(os.TempDir(), "gologs")
-		for _, c := range confs {
-			if err := writer.parseConf(types.ParsePair(c, "=")); err != nil {
-				return err
-			}
-		}
-		return sys.MkdirWithParent(writer.logdir)
-	}
 }
 
 // Write write log to log file

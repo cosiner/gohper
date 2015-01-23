@@ -6,10 +6,10 @@ import (
 	"github.com/cosiner/golib/test"
 )
 
-func TestConf(t *testing.T) {
+func TestIni(t *testing.T) {
 	cfg := NewConfig(INI)
 	cfg.ParseString(`
-aa="ccdd"
+aa='ccdd'
 [db]
 driver=mysql
 host=localhost
@@ -22,7 +22,7 @@ pool_max_open=100
 pool_max_idle=20
 		`)
 	val, _ := cfg.Val("aa")
-	test.AssertEq(t, "C1", "\"ccdd\"", val)
+	test.AssertEq(t, "C1", "ccdd", val)
 
 	_, has := cfg.Val("driver")
 	test.AssertFalse(t, "C2", has)
@@ -30,7 +30,16 @@ pool_max_idle=20
 	test.AssertEq(t, "C3", cfg.DefSec(), cfg.CurrSec())
 
 	cfg.SetCurrSec("db")
-	test.AssertEq(t, "C4", 3306, cfg.IntVal("port", 0))
+	test.AssertEq(t, "C4", 3306, cfg.IntValDef("port", 0))
+}
+
+func TestLine(t *testing.T) {
+	tt := test.WrapTest(t)
+	c := NewConfig(LINE)
+	c.ParseString("aa=1&bb=2&&dd=123")
+	tt.AssertEq("Line1", 1, c.IntValDef("aa", -1))
+	tt.AssertEq("Line2", 2, c.IntValDef("bb", -1))
+	tt.AssertEq("Line3", "123", c.ValDef("dd", ""))
 }
 
 func BenchmarkConf(b *testing.B) {

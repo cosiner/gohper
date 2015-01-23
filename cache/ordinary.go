@@ -1,4 +1,4 @@
-package memcache
+package cache
 
 import (
 	"math"
@@ -13,9 +13,13 @@ type ordiCache struct {
 	*sync.RWMutex
 }
 
-func (oc *ordiCache) Init(maxsize int) {
-	oc.cache = make(map[string]interface{}, maxsize)
-	oc.RWMutex = new(sync.RWMutex)
+func (oc *ordiCache) Init(config string) (err error) {
+	var maxsize int
+	if maxsize, err = parseMaxSize(config); err == nil {
+		oc.cache = make(map[string]interface{}, maxsize)
+		oc.RWMutex = new(sync.RWMutex)
+	}
+	return
 }
 
 func (oc *ordiCache) Len() int {
@@ -38,6 +42,13 @@ func (oc *ordiCache) Get(key string) (val interface{}) {
 	val = oc.cache[key]
 	oc.RUnlock()
 	return
+}
+
+func (oc *ordiCache) IsExist(key string) bool {
+	oc.RLock()
+	_, has := oc.cache[key]
+	oc.RUnlock()
+	return has
 }
 
 func (oc *ordiCache) Remove(key string) {

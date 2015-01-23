@@ -1,4 +1,4 @@
-package memcache
+package cache
 
 import (
 	"sync"
@@ -27,11 +27,13 @@ type lruCache struct {
 }
 
 // Init init lru cacher
-func (lc *lruCache) Init(maxSize int) {
+func (lc *lruCache) Init(config string) (err error) {
 	lc.cacheData = list.New()
-	lc.maxSize = maxSize
-	lc.cacheIndex = make(map[string]*list.Element, maxSize)
-	lc.RWMutex = new(sync.RWMutex)
+	if lc.maxSize, err = parseMaxSize(config); err == nil {
+		lc.cacheIndex = make(map[string]*list.Element, lc.maxSize)
+		lc.RWMutex = new(sync.RWMutex)
+	}
+	return
 }
 
 // Len return current cache count
@@ -71,6 +73,13 @@ func (lc *lruCache) Get(key string) (val interface{}) {
 	}
 	lc.RUnlock()
 	return
+}
+
+func (lc *lruCache) IsExist(key string) bool {
+	lc.RLock()
+	_, has := lc.cacheIndex[key]
+	lc.RUnlock()
+	return has
 }
 
 // Remove remove key and it's value from cache
