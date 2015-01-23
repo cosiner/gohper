@@ -1,8 +1,6 @@
 package regexp
 
-import (
-	"testing"
-)
+import "testing"
 
 var pattern = MustCompile("(?m)^func\\ (?:\\(.*\\)\\ )?(?P<funcname>\\S+)\\(")
 var code = `
@@ -26,4 +24,9 @@ func TestMatch(t *testing.T) {
 	t.Log(pattern.SingleSubmatchAtIndex(code, 1))
 	t.Log(pattern.SingleSubmatchMap(code))
 	t.Log(pattern.SingleSubmatchWithName(code, "funcname"))
+}
+
+func TestNoMatch(t *testing.T) {
+	r := MustCompile("1234.*")
+	t.Log(r.SingleSubmatchMap("001234a"))
 }

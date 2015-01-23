@@ -36,5 +36,19 @@ func TestTrimQuote(t *testing.T) {
 	s, err := TrimQuote("\"aaa\"")
 	tt.AssertEq("TrimQuote1", "aaa", s)
 	tt.AssertEq("TrimQuote1", err, nil)
+}
 
+func TestStringIndexN(t *testing.T) {
+	tt := test.WrapTest(t)
+	tt.AssertEq("IndexN1", 3, StrIndexN("123123123", "12", 2))
+	tt.AssertEq("IndexN2", 6, StrIndexN("123123123", "12", 3))
+	tt.AssertEq("IndexN3", -1, StrIndexN("123123123", "12", 4))
+}
+
+func TestStringLastIndexN(t *testing.T) {
+	tt := test.WrapTest(t)
+	tt.AssertEq("LastIndexN1", 6, StrLastIndexN("123123123", "12", 1))
+	tt.AssertEq("LastIndexN2", 3, StrLastIndexN("123123123", "12", 2))
+	tt.AssertEq("LastIndexN3", 0, StrLastIndexN("123123123", "12", 3))
+	tt.AssertEq("LastIndexN4", -1, StrLastIndexN("123123123", "12", 4))
 }

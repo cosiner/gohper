@@ -14,6 +14,11 @@ type Regexp struct {
 	*regexp.Regexp
 }
 
+// WrapRegexp wrap standard regexp
+func WrapRegexp(r *regexp.Regexp) *Regexp {
+	return &Regexp{r}
+}
+
 // Compile is a package function of regexp.Compile
 func Compile(pattern string) (r *Regexp, err error) {
 	rgx, err := regexp.Compile(pattern)
@@ -37,62 +42,86 @@ func MustCompile(pattern string) *Regexp {
 	return &Regexp{regexp.MustCompile(pattern)}
 }
 
-// SingleSubmatch return first matched groups
-func (r *Regexp) SingleSubmatch(s string) []string {
-	return r.FindStringSubmatch(s)[1:]
+// SingleSubmatch return first matched groups, remove first whole matched string
+func (r *Regexp) SingleSubmatch(s string) (m []string, match bool) {
+	if m = r.FindStringSubmatch(s); m != nil {
+		m, match = m[1:], true
+	}
+	return
 }
 
-// SingleSubmatch return first matched groups
-func (r *Regexp) SingleSubmatchAtIndex(s string, index int) string {
-	return r.FindStringSubmatch(s)[index]
+// SingleSubmatchAtIndex return single matched string in given index, if index is
+// 0, return the whole match string
+func (r *Regexp) SingleSubmatchAtIndex(s string, index int) (ms string, match bool) {
+	if index >= 0 && index < len(r.SubexpNames()) {
+		if m := r.FindStringSubmatch(s); m != nil {
+			ms, match = m[index], true
+		}
+	}
+	return
 }
 
-// AllSubmatch return all matched group
-func (r *Regexp) AllSubmatch(s string) (res [][]string) {
-	for _, match := range r.FindAllStringSubmatch(s, -1) {
-		res = append(res, match[1:])
+// AllSubmatch return all matched groups
+func (r *Regexp) AllSubmatch(s string) (res [][]string, match bool) {
+	if m := r.FindAllStringSubmatch(s, -1); m != nil {
+		for _, sm := range m {
+			res = append(res, sm[1:])
+		}
+		match = true
 	}
 	return
 }
 
 // AllSubmatchAtIndex return all matched group at gived index
 // if index is 0, return whole matched string
-// else return group string at the index
-func (r *Regexp) AllSubmatchAtIndex(s string, index int) (res []string) {
-	for _, match := range r.FindAllStringSubmatch(s, -1) {
-		res = append(res, match[index])
+func (r *Regexp) AllSubmatchAtIndex(s string, index int) (res []string, match bool) {
+	if index >= 0 && index < len(r.SubexpNames()) {
+		if m := r.FindAllStringSubmatch(s, -1); m != nil {
+			for _, sm := range m {
+				res = append(res, sm[index])
+			}
+			match = true
+		}
 	}
 	return
 }
 
 // SingleSubmatchMap return first group string in map
-func (r *Regexp) SingleSubmatchMap(s string) map[string]string {
-	matchNames := r.SubexpNames()
-	matchMap := make(map[string]string, len(matchNames))
-	for i, val := range r.FindStringSubmatch(s)[1:] { // remove first whole matched string
-		matchMap[matchNames[i+1]] = val // matchNames start at index 1
+func (r *Regexp) SingleSubmatchMap(s string) (matchMap map[string]string, match bool) {
+	if m := r.FindStringSubmatch(s); m != nil {
+		matchNames := r.SubexpNames()
+		matchMap = make(map[string]string, len(matchNames))
+		for i, val := range m[1:] { // remove first whole matched string
+			matchMap[matchNames[i+1]] = val // matchNames start at index 1
+		}
+		match = true
 	}
-	return matchMap
+	return
 }
 
 // SingleSubmatchWithName return first match string with the name
-func (r *Regexp) SingleSubmatchWithName(s, name string) (res string) {
+func (r *Regexp) SingleSubmatchWithName(s, name string) (res string, match bool) {
 	if index := types.StringIn(name, r.SubexpNames()); index >= 0 {
-		res = r.FindStringSubmatch(s)[index]
+		if m := r.FindStringSubmatch(s); m != nil {
+			res, match = m[index], true
+		}
 	}
 	return
 }
 
 // AllSubmatchMap return all matched group with group name
-func (r *Regexp) AllSubmatchMap(s string) (matchMaps []map[string]string) {
-	matchNames := r.SubexpNames()
-	l := len(matchNames)
-	for _, singleMatch := range r.FindAllStringSubmatch(s, -1) {
-		matchMap := make(map[string]string, l-1) // first matchName is null
-		for j, val := range singleMatch[1:] {    // remove first whole matched string
-			matchMap[matchNames[j+1]] = val // matchnames start at index 1
+func (r *Regexp) AllSubmatchMap(s string) (matchMaps []map[string]string, match bool) {
+	if m := r.FindAllStringSubmatch(s, -1); m != nil {
+		matchNames := r.SubexpNames()
+		l := len(matchNames)
+		for _, singleMatch := range m {
+			matchMap := make(map[string]string, l-1) // first matchName is null
+			for j, val := range singleMatch[1:] {    // remove first whole matched string
+				matchMap[matchNames[j+1]] = val // matchnames start at index 1
+			}
+			matchMaps = append(matchMaps, matchMap)
 		}
-		matchMaps = append(matchMaps, matchMap)
+		match = true
 	}
 	return
 }
@@ -100,10 +129,13 @@ func (r *Regexp) AllSubmatchMap(s string) (matchMaps []map[string]string) {
 // AllSubmatchMap return all matched group with group name
 // if name is "", return the whole matched string
 // else return single matched group string with the name
-func (r *Regexp) AllSubmatchWithName(s, name string) (matchs []string) {
+func (r *Regexp) AllSubmatchWithName(s, name string) (matchs []string, match bool) {
 	if index := types.StringIn(name, r.SubexpNames()); index >= 0 {
-		for _, singleMatch := range r.FindAllStringSubmatch(s, -1) {
-			matchs = append(matchs, singleMatch[index])
+		if m := r.FindAllStringSubmatch(s, -1); m != nil {
+			for _, singleMatch := range m {
+				matchs = append(matchs, singleMatch[index])
+			}
+			match = true
 		}
 	}
 	return
