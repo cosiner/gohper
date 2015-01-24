@@ -38,9 +38,9 @@ const (
 	REDIS
 )
 
-// MemCache is cache interface
+// Cache is cache interface
 // all method a safe for concurrent
-type MemCache interface {
+type Cache interface {
 	Init(config string) error
 	// Get by key
 	Get(key string) interface{}
@@ -59,10 +59,10 @@ type MemCache interface {
 	Cap() int
 }
 
-// Cacher return actual cache container
+// NewCache return a actual cache container
 // for cacher with elimination:Random and LRU, maxsize is the max capcity of cache
 // for ordinary cache, it only used to initial cache space
-func Cacher(typ CacheType, config string) (cache MemCache, err error) {
+func NewCache(typ CacheType, config string) (cache Cache, err error) {
 	switch typ {
 	case ORDINARY:
 		cache = new(ordiCache)
@@ -73,7 +73,7 @@ func Cacher(typ CacheType, config string) (cache MemCache, err error) {
 	case REDIS:
 		cache = new(RedisCache)
 	default:
-		panic("Unsupported Cache Type")
+		return nil, Err("Not supported cache type")
 	}
 	return cache, cache.Init(config)
 }

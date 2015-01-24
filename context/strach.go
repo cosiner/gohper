@@ -17,7 +17,7 @@ func strachTmpls() []string {
 	return _initStrach.tmplNames
 }
 
-func strachAddFuncHandler(pattern stirng, handler *funcHandler) {
+func strachAddFuncHandler(pattern string, handler *funcHandler) {
 	_initStrach.funcHandlers[pattern] = handler
 }
 

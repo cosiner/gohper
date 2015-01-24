@@ -4,8 +4,6 @@ package config
 import (
 	"strconv"
 
-	. "github.com/cosiner/golib/errors"
-
 	"github.com/cosiner/golib/types"
 )
 
@@ -51,8 +49,6 @@ func NewConfig(typ ConfigType) (c *Config) {
 		c = &Config{newIniConfig()}
 	case LINE:
 		c = &Config{newLineConfig()}
-	default:
-		panic(Errorf("Unsupported Config Type %d", typ))
 	}
 	return
 }

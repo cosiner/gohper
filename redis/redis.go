@@ -62,6 +62,7 @@ func (rc *RedisStore) IsExist(key string) (bool, error) {
 	_, err := rc.Query("EXISTS", key)
 	return err == nil, err
 }
+
 func (rc *RedisStore) IsHExist(h, key string) (bool, error) {
 	_, err := rc.Query("HEXISTS", h, key)
 	return err == nil, err
@@ -75,6 +76,10 @@ func (rc *RedisStore) HGet(h, key string) (interface{}, error) {
 	return rc.Query("HGET", h, key)
 }
 
+func (rc *RedisStore) Set(key string, val interface{}) error {
+	return rc.Update("SET", key, val)
+}
+
 func (rc *RedisStore) HSet(h, key string, val interface{}) error {
 	return rc.Update("HSET", h, key, val)
 }
@@ -85,10 +90,6 @@ func (rc *RedisStore) SetWithExpire(key string, val interface{}, timeout uint64)
 
 func (rc *RedisStore) SetExpire(key string, timeout uint64) error {
 	return rc.Update("SETEX", key, timeout)
-}
-
-func (rc *RedisStore) Set(key string, val interface{}) error {
-	return rc.Update("SET", key, val)
 }
 
 func (rc *RedisStore) Modify(key string, val interface{}) (success bool, err error) {

@@ -4,15 +4,14 @@ import (
 	"github.com/cosiner/golib/regexp/urlmatcher"
 )
 
-type Router struct {
-	routes []*struct {
-		*urlmatcher.Matcher
-		Handler
-	}
+type route struct {
+	*urlmatcher.Matcher
+	Handler
 }
+type Router []*route
 
 func (rt *Router) InitHandler(initFn func(h Handler) bool) {
-	for _, r := range rt.routes {
+	for _, r := range *rt {
 		if !initFn(r.Handler) {
 			break
 		}
@@ -20,30 +19,26 @@ func (rt *Router) InitHandler(initFn func(h Handler) bool) {
 	return
 }
 
-func (rt *Router) AddFuncRoute(pattern string, method string, handleFunc HandlerFunc) {
+func (rt *Router) AddFuncRoute(pattern string, method string, handleFunc HandlerFunc) (err error) {
 	fHandler := strachFuncHandler(pattern)
 	if fHandler == nil {
 		fHandler = newFuncHandler()
-		strachAddFuncHandler(pattern, fHandler)
-		rt.AddRoute(pattern, fHandler)
+		if err = fHandler.setMethod(method, handleFunc); err == nil {
+			if err = rt.AddRoute(pattern, fHandler); err == nil {
+				strachAddFuncHandler(pattern, fHandler)
+			}
+		}
+	} else {
+		err = fHandler.setMethod(method, handleFunc)
 	}
-	switch method {
-	case GET:
-		fHandler.Get = handleFunc
-	case POST:
-		fHandler.Post = handleFunc
-	case PUT:
-		fHandler.Put = handleFunc
-	case DELETE:
-		fHandler.Delete = handleFunc
-	}
+	return
 }
 
-func (rt *Router) addRoute(pattern string, handler Handler) (err error) {
+func (rt *Router) AddRoute(pattern string, handler Handler) (err error) {
 	var matcher *urlmatcher.Matcher
 	if matcher, err = urlmatcher.Compile(pattern); err == nil {
-		rt.routes = append(rt.routes,
-			&Route{
+		*rt = append(*rt,
+			&route{
 				Matcher: matcher,
 				Handler: handler,
 			})
@@ -51,8 +46,8 @@ func (rt *Router) addRoute(pattern string, handler Handler) (err error) {
 	return
 }
 
-func (rt *Router) handler(url string) (handler Handler, urlStories map[string]string) {
-	routes := rt.routes
+func (rt *Router) Handler(url string) (handler Handler, urlStories map[string]string) {
+	routes := *rt
 	for i := len(routes) - 1; i >= 0; i-- {
 		r := routes[i]
 		if vals, match := r.Match(url); match {
