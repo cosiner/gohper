@@ -10,6 +10,12 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
+var (
+	ToString = redis.String
+	ToBytes  = redis.Bytes
+	ToInt    = redis.Int
+)
+
 // Redis store
 type RedisStore struct {
 	connPool *redis.Pool // redis connection pool
@@ -24,6 +30,12 @@ func NewRedisStore(conf string) (*RedisStore, error) {
 func (rc *RedisStore) Init(conf string) error {
 	c := config.NewConfig(config.LINE)
 	c.ParseString(conf)
+	return rc.InitWith(c.SectionVals(""))
+}
+
+func (rc *RedisStore) InitWith(conf map[string]string) error {
+	c := config.NewConfig(config.LINE)
+	c.SetSectionVals(c.DefSec(), conf)
 	maxidle := c.IntValDef("maxidle", 3)
 	idleTimeout := c.IntValDef("idletimeout", 180)
 	if maxidle < 0 || idleTimeout < 0 {

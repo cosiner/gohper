@@ -80,3 +80,8 @@ func (lc *lineConfig) HasSection(section string) bool {
 func (lc *lineConfig) SectionVals(section string) map[string]string {
 	return lc.values
 }
+
+// SetSectionVals set replace all section values
+func (lc *lineConfig) SetSectionVals(section string, values map[string]string) {
+	lc.values = values
+}

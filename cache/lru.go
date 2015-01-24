@@ -23,7 +23,7 @@ type lruCache struct {
 	cacheData  *list.List
 	cacheIndex map[string]*list.Element
 	maxSize    int
-	*sync.RWMutex
+	lock       *sync.RWMutex
 }
 
 // Init init lru cacher
@@ -31,7 +31,7 @@ func (lc *lruCache) Init(config string) (err error) {
 	lc.cacheData = list.New()
 	if lc.maxSize, err = parseMaxSize(config); err == nil {
 		lc.cacheIndex = make(map[string]*list.Element, lc.maxSize)
-		lc.RWMutex = new(sync.RWMutex)
+		lc.lock = new(sync.RWMutex)
 	}
 	return
 }
@@ -39,9 +39,9 @@ func (lc *lruCache) Init(config string) (err error) {
 // Len return current cache count
 // it's safe for concurrent
 func (lc *lruCache) Len() int {
-	lc.RLock()
+	lc.lock.RLock()
 	length := lc.len()
-	lc.RUnlock()
+	lc.lock.RUnlock()
 	return length
 }
 
@@ -52,9 +52,9 @@ func (lc *lruCache) len() int {
 
 // Cap return cache capacity
 func (lc *lruCache) Cap() int {
-	// lc.RLock() current it's not need
+	// lc.lock.RLock() current it's not need
 	c := lc.cap()
-	// lc.RUnlock()
+	// lc.lock.RUnlock()
 	return c
 }
 
@@ -65,32 +65,32 @@ func (lc *lruCache) cap() int {
 
 // Get return value of the key, if not exist, nil returned
 func (lc *lruCache) Get(key string) (val interface{}) {
-	lc.RLock()
+	lc.lock.RLock()
 	elem, has := lc.cacheIndex[key]
 	if has {
 		val = elem.Value.(*lruCacheEntry).val
 		lc.cacheData.MoveToFront(elem)
 	}
-	lc.RUnlock()
+	lc.lock.RUnlock()
 	return
 }
 
 func (lc *lruCache) IsExist(key string) bool {
-	lc.RLock()
+	lc.lock.RLock()
 	_, has := lc.cacheIndex[key]
-	lc.RUnlock()
+	lc.lock.RUnlock()
 	return has
 }
 
 // Remove remove key and it's value from cache
 func (lc *lruCache) Remove(key string) {
-	lc.Lock()
+	lc.lock.Lock()
 	elem, has := lc.cacheIndex[key]
 	if has {
 		lc.cacheData.Remove(elem)
 		delete(lc.cacheIndex, key)
 	}
-	lc.Unlock()
+	lc.lock.Unlock()
 }
 
 // Set add an key-value to cache, if key already exist in cache, update it's value
@@ -109,7 +109,7 @@ func (lc *lruCache) Update(key string, val interface{}) bool {
 func (lc *lruCache) set(key string, val interface{}, forceSet bool) (ret bool) {
 	var entry *lruCacheEntry
 	ret = true
-	lc.Lock()
+	lc.lock.Lock()
 	if elem, has := lc.cacheIndex[key]; !has {
 		if !forceSet {
 			ret = false
@@ -127,6 +127,6 @@ func (lc *lruCache) set(key string, val interface{}, forceSet bool) (ret bool) {
 		elem.Value.(*lruCacheEntry).val = val
 		lc.cacheData.MoveToFront(elem)
 	}
-	lc.Unlock()
+	lc.lock.Unlock()
 	return
 }

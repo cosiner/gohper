@@ -1,6 +1,8 @@
 package context
 
 import (
+	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"encoding/xml"
 	"html/template"
@@ -9,12 +11,16 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	. "github.com/cosiner/golib/errors"
-
 	"github.com/cosiner/gomodule/cache"
+	"github.com/cosiner/gomodule/config"
 	"github.com/cosiner/gomodule/log"
+	"github.com/cosiner/gomodule/redis"
 )
 
 //==============================================================================
@@ -69,8 +75,9 @@ func errorHandlerBuilder(header int) HandlerFunc {
 }
 
 var (
-	ForbiddenHandler = errorHandlerBuilder(http.StatusForbidden)
-	NotFoundHandler  = errorHandlerBuilder(http.StatusNotFound)
+	forbiddenHandler        = errorHandlerBuilder(http.StatusForbidden)
+	notFoundHandler         = errorHandlerBuilder(http.StatusNotFound)
+	methodNotAllowedHandler = errorHandlerBuilder(http.StatusMethodNotAllowed)
 )
 
 type Handler interface {
@@ -91,10 +98,10 @@ type funcHandler struct {
 
 func newFuncHandler() *funcHandler {
 	return &funcHandler{
-		get:    ForbiddenHandler,
-		post:   ForbiddenHandler,
-		put:    ForbiddenHandler,
-		delete: ForbiddenHandler,
+		get:    methodNotAllowedHandler,
+		post:   methodNotAllowedHandler,
+		put:    methodNotAllowedHandler,
+		delete: methodNotAllowedHandler,
 	}
 }
 
@@ -131,27 +138,84 @@ func (fh *funcHandler) Finish()              {}
 //==============================================================================
 //                           Server
 //==============================================================================
-const DEF_TMPL_SUFFIX = ".tmpl"
+var tmplSuffix = map[string]bool{"tmpl": true, "html": true}
 
-func isTemplate(name string) bool {
-	return strings.HasSuffix(name, DEF_TMPL_SUFFIX) ||
-		strings.HasSuffix(name, "html")
+func isTemplate(name string) (is bool) {
+	index := strings.LastIndex(name, ".")
+	if is = (index >= 0); is {
+		is = tmplSuffix[name[index+1:]]
+	}
+	return
 }
 
+type sessionNode struct {
+	refs int
+	sess *Session
+}
 type Server struct {
 	cache.Cache
 	*Router
-	tmpl             *template.Template
-	NotFoundHandler  HandlerFunc
-	ForbiddenHandler HandlerFunc
-	SessionStore     SessionStore
+	tmpl                    *template.Template
+	NotFoundHandler         HandlerFunc
+	ForbiddenHandler        HandlerFunc
+	MethodNotAllowedHandler HandlerFunc
+	SessionStore            SessionStore
+	sessionExpire           uint64
+	sessions                map[string]*sessionNode
+	sessionLock             *sync.Mutex
 }
 
 func NewServer() *Server {
-	s := new(Server)
-	s.ForbiddenHandler = ForbiddenHandler
-	s.NotFoundHandler = NotFoundHandler
-	return s
+	return &Server{
+		ForbiddenHandler:        forbiddenHandler,
+		NotFoundHandler:         notFoundHandler,
+		MethodNotAllowedHandler: methodNotAllowedHandler,
+		sessions:                make(map[string]*sessionNode),
+		sessionLock:             new(sync.Mutex),
+	}
+}
+
+func generateId() string {
+	return strconv.Itoa(int(time.Now().UnixNano()) / 10)
+}
+
+func (s *Server) session(id string) *Session {
+	s.sessionLock.Lock()
+	sn := s.sessions[id]
+	sn.refs++
+	s.sessionLock.Unlock()
+	return sn.sess
+}
+
+func (s *Server) addSession(sess *Session) *Session {
+	sn := &sessionNode{refs: 1, sess: sess}
+	s.sessionLock.Lock()
+	s.sessions[sess.id] = sn
+	s.sessionLock.Unlock()
+	return sess
+}
+
+func (s *Server) getSession(id string) *Session {
+	return s.addSession(getSession(s, id, s.SessionStore))
+}
+
+func (s *Server) newSession() *Session {
+	return s.addSession(newSession(s, generateId()))
+}
+
+func (s *Server) storeSession(sess *Session) {
+	id := sess.id
+	s.sessionLock.Lock()
+	sn := s.sessions[id]
+	if sn == nil {
+		panic("Unexpected: session haven't stored in server.sessions")
+	}
+	sn.refs--
+	if sn.refs == 0 {
+		delete(s.sessions, id)
+		sn.sess.store(s.SessionStore)
+	}
+	s.sessionLock.Unlock()
 }
 
 func (s *Server) AddTemplates(names ...string) (err error) {
@@ -195,6 +259,21 @@ func (s *Server) Delete(pattern string, handlerFunc HandlerFunc) {
 	s.AddFuncRoute(pattern, DELETE, handlerFunc)
 }
 
+// TODO:response add header cookie to store session id
+func (s *Server) readySession(resp *Response, req *Request) {
+	var sess *Session
+	if id := req.SessionId(); id == "" {
+		sess = s.newSession()
+		resp.setSessionCookie(id)
+	} else {
+		if sess = s.session(id); sess == nil {
+			sess = s.getSession(id)
+			resp.setSessionCookie(id)
+		}
+	}
+	req.session = sess
+}
+
 func (s *Server) ServeHTTP(w http.ResponseWriter, request *http.Request) {
 	var (
 		handleFunc = s.NotFoundHandler
@@ -214,7 +293,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, request *http.Request) {
 			mi = methodIndicator{Handler: handler}
 		}
 		if handleFunc = mi.IndicateMethod(method); handleFunc == nil {
-			handleFunc = s.ForbiddenHandler
+			handleFunc = s.MethodNotAllowedHandler
+		} else if s.SessionStore != nil {
+			s.readySession(resp, req)
 		}
 	}
 	handleFunc(resp, req)
@@ -233,7 +314,9 @@ func (s *Server) Start(listenAddr, sessionConf string) {
 	strachDestroy()
 	log.Debugln("Init Session Container")
 	if s.SessionStore != nil {
-		if err = s.SessionStore.Init(sessionConf); err != nil {
+		c := config.NewConfig(config.LINE)
+		s.sessionExpire = uint64(c.IntValDef("expire", 600))
+		if err = s.SessionStore.Init(c.SectionVals(c.DefSec())); err != nil {
 			hasErr = true
 			log.Errorln(err)
 		}
@@ -257,25 +340,93 @@ func (s *Server) Start(listenAddr, sessionConf string) {
 //==============================================================================
 
 type SessionStore interface {
-	Init(conf string) error
-	IsExist(key string) (bool, error)
-	IsHExist(h, key string) (bool, error)
-	Get(key string) (interface{}, error)
-	HGet(h, key string) (interface{}, error)
-	Set(key string, val interface{}) error
-	HSet(h, key string, val interface{}) error
-	SetExpire(key string, timeout uint64) error
-	SetWithExpire(key string, val interface{}, timeout uint64) error
-	Remove(key string) error
-	Incr(key string) error
-	Decr(key string) error
+	Init(conf map[string]string) error
+	Save(id string, values map[string]interface{}, expire uint64) error
+	Get(id string) (map[string]interface{}, error)
+}
+
+type redisStore struct {
+	store *redis.RedisStore
+}
+
+func (rstore *redisStore) Init(conf map[string]string) error {
+	return rstore.store.InitWith(conf)
+}
+
+func (rstore *redisStore) Save(id string, values map[string]interface{}, expire uint64) (err error) {
+	var (
+		buffer  = bytes.NewBuffer([]byte{})
+		encoder = gob.NewEncoder(buffer)
+	)
+	if err = encoder.Encode(values); err == nil {
+		err = rstore.store.SetWithExpire(id, buffer.Bytes(), expire)
+	}
+	return
+}
+
+func (rstore *redisStore) Get(id string) (vals map[string]interface{}, err error) {
+	if bs, err := redis.ToBytes(rstore.store.Get(id)); err == nil {
+		vals = make(map[string]interface{})
+		if len(bs) != 0 {
+			decoder := gob.NewDecoder(bytes.NewBuffer(bs))
+			err = decoder.Decode(vals)
+		}
+	}
+	return
 }
 
 type Session struct {
 	id     string
 	server *Server
-	store  SessionStore
+	lock   *sync.RWMutex
+	values map[string]interface{}
 }
+
+func newSession(s *Server, id string) *Session {
+	return &Session{
+		id:     id,
+		server: s,
+		lock:   new(sync.RWMutex),
+		values: make(map[string]interface{}),
+	}
+}
+
+func getSession(s *Server, id string, store SessionStore) *Session {
+	values, err := store.Get(id)
+	if err == nil {
+		if values == nil {
+			values = make(map[string]interface{})
+		}
+		return &Session{
+			id:     id,
+			server: s,
+			lock:   new(sync.RWMutex),
+			values: values,
+		}
+	}
+	return nil
+}
+
+func (sess *Session) store(store SessionStore) {
+	sess.lock.RLock()
+	store.Save(sess.id, sess.values, sess.server.sessionExpire)
+	sess.lock.RUnlock()
+}
+
+func (sess *Session) Set(key string, val interface{}) {
+	sess.lock.Lock()
+	sess.values[key] = val
+	sess.lock.Unlock()
+}
+
+func (sess *Session) Get(key string) interface{} {
+	sess.lock.RLock()
+	val := sess.values[key]
+	sess.lock.RUnlock()
+	return val
+}
+
+const _COOKIE_SESSION = "session"
 
 //==============================================================================
 //                           Request
@@ -305,7 +456,14 @@ func (req *Request) setSession(s *Session) {
 }
 
 func (req *Request) Cookie(name string) string {
+	if c, err := req.Request.Cookie(name); err == nil {
+		return c.Value
+	}
 	return ""
+}
+
+func (req *Request) SessionId() string {
+	return req.Cookie(_COOKIE_SESSION)
 }
 
 //==============================================================================
@@ -316,27 +474,39 @@ type Response struct {
 	http.ResponseWriter
 }
 
-func (r *Response) Render(tmplName string, val interface{}) error {
-	return r.s.tmpl.ExecuteTemplate(r, tmplName, val)
+func (resp *Response) SetCookie(name, value string) {
+	http.SetCookie(resp, &http.Cookie{Name: name, Value: value})
 }
 
-func (r *Response) WriteString(str string) error {
-	_, err := io.WriteString(r, str)
+func (resp *Response) setSessionCookie(id string) {
+	resp.SetCookie(_COOKIE_SESSION, id)
+}
+
+func (resp *Response) Redirect(req *Request, url string) {
+	http.Redirect(resp, req.Request, url, http.StatusTemporaryRedirect)
+}
+
+func (resp *Response) Render(tmplName string, val interface{}) error {
+	return resp.s.tmpl.ExecuteTemplate(resp, tmplName, val)
+}
+
+func (resp *Response) WriteString(str string) error {
+	_, err := io.WriteString(resp, str)
 	return err
 }
 
-func (r *Response) WriteJson(val interface{}) error {
+func (resp *Response) WriteJson(val interface{}) error {
 	bs, err := json.Marshal(val)
 	if err == nil {
-		_, err = r.Write(bs)
+		_, err = resp.Write(bs)
 	}
 	return err
 }
 
-func (r *Response) WriteXml(val interface{}) error {
+func (resp *Response) WriteXml(val interface{}) error {
 	bs, err := xml.Marshal(val)
 	if err == nil {
-		_, err = r.Write(bs)
+		_, err = resp.Write(bs)
 	}
 	return err
 }

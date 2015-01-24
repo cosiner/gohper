@@ -25,6 +25,8 @@ type ConfigParser interface {
 	HasSection(section string) bool
 	// SectionVals return all key-value pairs from section
 	SectionVals(section string) map[string]string
+	// SetsectionVals set section values
+	SetSectionVals(section string, values map[string]string)
 }
 
 // Config implements some common config function

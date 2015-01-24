@@ -44,9 +44,9 @@ type Cache interface {
 	Init(config string) error
 	// Get by key
 	Get(key string) interface{}
-	// Set key-value pair, if no remaining space, trigger a elimination
 	// if key already exist, will be replaced
 	Set(key string, val interface{})
+	// SetValues replace all values
 	// Update only update exist key-value pair, if key not exist, return false
 	Update(key string, val interface{}) bool
 	// Remove key-value pair

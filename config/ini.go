@@ -91,6 +91,11 @@ func (ic *iniConfig) SectionVals(section string) map[string]string {
 	return ic.values[section]
 }
 
+// SetSectionVals set section vlaues
+func (ic *iniConfig) SetSectionVals(section string, values map[string]string) {
+	ic.values[section] = values
+}
+
 // bind bind key-value to current section
 func (ic *iniConfig) bind(key, value string) {
 	if ic.currSec == "" {

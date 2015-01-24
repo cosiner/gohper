@@ -12,7 +12,7 @@ func (rc *randCache) Init(config string) (err error) {
 	if maxsize, err = parseMaxSize(config); err == nil {
 		rc.ordiCache.cache = make(map[string]interface{}, maxsize)
 		rc.maxSize = maxsize
-		rc.ordiCache.RWMutex = new(sync.RWMutex)
+		rc.ordiCache.lock = new(sync.RWMutex)
 	}
 	return
 }
@@ -37,7 +37,7 @@ func (rc *randCache) Update(key string, val interface{}) bool {
 }
 
 func (rc *randCache) set(key string, val interface{}, forceSet bool) (ret bool) {
-	rc.Lock()
+	rc.lock.Lock()
 	v := rc.cache[key]
 	if v != nil || forceSet {
 		if rc.len() == rc.cap() {
@@ -49,6 +49,6 @@ func (rc *randCache) set(key string, val interface{}, forceSet bool) (ret bool) 
 		rc.cache[key] = val
 		ret = true
 	}
-	rc.Unlock()
+	rc.lock.Unlock()
 	return
 }
