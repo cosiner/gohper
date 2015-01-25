@@ -96,8 +96,8 @@ func TrimSplit(s, sep string) []string {
 	return sp
 }
 
-// BytesTrimSplit split string and return trim space string
-func BytesTrimSplit(s, sep []byte) [][]byte {
+// TrimBytesSplit split string and return trim space string
+func TrimBytesSplit(s, sep []byte) [][]byte {
 	sp := bytes.Split(s, sep)
 	for i, n := 0, len(sp); i < n; i++ {
 		sp[i] = bytes.TrimSpace(sp[i])

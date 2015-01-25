@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	_START      = iota           // _START means ready to match '{''
-	_INPARSE                     // _INPARSE means already matched '{', ready to match '}'
-	_INGROUP                     // _INGROUP means match group name
-	_INREGEX                     // _INREGEX means match regexp string
-	_DEF_REGEXP = "[a-zA-Z0-9]*" // _DEF_REGEXP is  the default regexp for url section {group}
+	_START      = iota    // _START means ready to match '{''
+	_INPARSE              // _INPARSE means already matched '{', ready to match '}'
+	_INGROUP              // _INGROUP means match group name
+	_INREGEX              // _INREGEX means match regexp string
+	_DEF_REGEXP = "[^/]*" // _DEF_REGEXP is  the default regexp for url section {group}
 )
 
 // Matcher is an url matcher that match
@@ -28,6 +28,8 @@ type Matcher struct {
 	// Match match given url, reutrn matched values and if it is match or not
 	// if matcher is a literal matcher, no matched value will be returned
 	Match func(url string) (map[string]string, bool)
+	// MatchOnly only return whether url is match, don't extract url stories
+	MatchOnly func(url string) bool
 }
 
 // IsLiteral check whether it's a literal matcher
@@ -37,7 +39,11 @@ func (m *Matcher) IsLiteral() bool {
 
 // literalMatch match literal url
 func (m *Matcher) literalMatch(url string) (vals map[string]string, match bool) {
-	return nil, literalMatch(m.literalPattern, strings.Split(url, "/"))
+	return regexp.NIL_MAP, m.literalMatchOnly(url)
+}
+
+func (m *Matcher) literalMatchOnly(url string) bool {
+	return literalMatch(m.literalPattern, strings.Split(url, "/"))
 }
 
 // literalMatch match two url section, return true only when literal pattern is
@@ -52,19 +58,6 @@ func literalMatch(literalPattern []string, urlPattern []string) (match bool) {
 		}
 	}
 	return
-}
-
-// LiteralMatch use a set of matcher to match an url, return first  matched
-// matcher, for literal matcher no grouped values for regexp returned
-// nil was returned if no match
-func LiteralMatch(matcher []*Matcher, url string) *Matcher {
-	urlPattern := strings.Split(url, "/")
-	for _, m := range matcher {
-		if literalMatch(m.literalPattern, urlPattern) {
-			return m
-		}
-	}
-	return nil
 }
 
 // Compile compile string like "{groupname:regexp} {groupname} {:regexp}" to regexp
@@ -122,8 +115,10 @@ func newMatcher(isLiteral bool, literalPattern, regexpPattern string) (matcher *
 	if isLiteral {
 		matcher.literalPattern = strings.Split(literalPattern, "/")
 		matcher.Match = matcher.literalMatch
+		matcher.MatchOnly = matcher.literalMatchOnly
 	} else if matcher.regexpPattern, err = regexp.Compile(regexpPattern); err == nil {
 		matcher.Match = matcher.regexpPattern.SingleSubmatchMap
+		matcher.MatchOnly = matcher.regexpPattern.MatchString
 	}
 	return
 }

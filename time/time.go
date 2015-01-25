@@ -22,6 +22,16 @@ func FormatLayout(format string) string {
 	return string(format)
 }
 
+// NowTimeUnix is a wrapper of time.Now().Unix()
+func NowTimeUnix() uint64 {
+	return uint64(time.Now().Unix())
+}
+
+// NowTimeUnixNano is a wrapper of time.Now().UnixNano()
+func NowTimeUnixNano() uint64 {
+	return uint64(time.Now().UnixNano())
+}
+
 // NowTime return time string in gived format
 func NowTime(format string) string {
 	return time.Now().Format(FormatLayout(format))

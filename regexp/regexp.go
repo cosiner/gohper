@@ -8,6 +8,9 @@ import (
 	"github.com/cosiner/golib/types"
 )
 
+// NIL_MAP is an empty map, it SHOULD NOT BE MODIFYED for common shared
+var NIL_MAP = make(map[string]string)
+
 // Regexp is a package type of regexp.Regexp that provide some useful function
 // to access grouped value via index or group name in regexp's Find* result
 type Regexp struct {
@@ -88,6 +91,7 @@ func (r *Regexp) AllSubmatchAtIndex(s string, index int) (res []string, match bo
 
 // SingleSubmatchMap return first group string in map
 func (r *Regexp) SingleSubmatchMap(s string) (matchMap map[string]string, match bool) {
+	matchMap = NIL_MAP
 	if m := r.FindStringSubmatch(s); m != nil {
 		matchNames := r.SubexpNames()
 		matchMap = make(map[string]string, len(matchNames))
