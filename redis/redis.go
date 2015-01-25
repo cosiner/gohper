@@ -30,12 +30,6 @@ func NewRedisStore(conf string) (*RedisStore, error) {
 func (rc *RedisStore) Init(conf string) error {
 	c := config.NewConfig(config.LINE)
 	c.ParseString(conf)
-	return rc.InitWith(c.SectionVals(""))
-}
-
-func (rc *RedisStore) InitWith(conf map[string]string) error {
-	c := config.NewConfig(config.LINE)
-	c.SetSectionVals(c.DefSec(), conf)
 	maxidle := c.IntValDef("maxidle", 3)
 	idleTimeout := c.IntValDef("idletimeout", 180)
 	if maxidle < 0 || idleTimeout < 0 {
@@ -71,13 +65,11 @@ func (rc *RedisStore) Update(cmd string, args ...interface{}) error {
 }
 
 func (rc *RedisStore) IsExist(key string) (bool, error) {
-	_, err := rc.Query("EXISTS", key)
-	return err == nil, err
+	return redis.Bool(rc.Query("EXISTS", key))
 }
 
 func (rc *RedisStore) IsHExist(h, key string) (bool, error) {
-	_, err := rc.Query("HEXISTS", h, key)
-	return err == nil, err
+	return redis.Bool(rc.Query("HEXISTS", h, key))
 }
 
 func (rc *RedisStore) Get(key string) (interface{}, error) {
