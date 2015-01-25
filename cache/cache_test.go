@@ -7,7 +7,7 @@ import (
 )
 
 func TestRandomCache(t *testing.T) {
-	cache, _ := Cacher(RANDOM, "maxsize=1")
+	cache, _ := NewCache(RANDOM, "maxsize=1")
 	cache.Set("aaa", "sss")
 	test.AssertEq(t, "RandomCache1", "sss", cache.Get("aaa").(string))
 
@@ -22,7 +22,7 @@ func TestRandomCache(t *testing.T) {
 
 func TestLRUCache(t *testing.T) {
 	tt := test.WrapTest(t)
-	cache, _ := Cacher(LRU, "maxsize=3")
+	cache, _ := NewCache(LRU, "maxsize=3")
 	cache.Set("a", "a")
 	cache.Set("b", "b")
 	cache.Set("c", "c")
@@ -38,7 +38,7 @@ func TestLRUCache(t *testing.T) {
 
 func TestRedisCache(t *testing.T) {
 	tt := test.WrapTest(t)
-	cache, err := Cacher(REDIS, "addr=127.0.0.1:6379")
+	cache, err := NewCache(REDIS, "addr=127.0.0.1:6379")
 	if err != nil {
 		panic(err)
 	}

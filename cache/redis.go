@@ -17,6 +17,19 @@ func (rc *RedisCache) Init(config string) error {
 	return err
 }
 
+func (rc *RedisCache) InitVals(config string, values map[string]interface{}) error {
+	rs, err := redis.NewRedisStore(config)
+	if err == nil {
+		rc.redisStore = rs
+		for k, v := range values {
+			if err = rs.Set(k, v); err != nil {
+				break
+			}
+		}
+	}
+	return err
+}
+
 // Get by key
 func (rc *RedisCache) Get(key string) interface{} {
 	v, err := rc.redisStore.Get(key)

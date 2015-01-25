@@ -36,6 +36,20 @@ func (lc *lruCache) Init(config string) (err error) {
 	return
 }
 
+// Init init lru cacher
+func (lc *lruCache) InitVals(config string, values map[string]interface{}) (err error) {
+	lc.cacheData = list.New()
+	if lc.maxSize, err = parseMaxSize(config); err == nil {
+		fixSize(values, lc.maxSize)
+		lc.cacheIndex = make(map[string]*list.Element, lc.maxSize)
+		lc.lock = new(sync.RWMutex)
+		for k, v := range values {
+			lc.cacheIndex[k] = lc.cacheData.PushFront(v)
+		}
+	}
+	return
+}
+
 // Len return current cache count
 // it's safe for concurrent
 func (lc *lruCache) Len() int {

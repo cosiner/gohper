@@ -7,73 +7,89 @@ import (
 
 const capUnlimit int = math.MaxInt32
 
-// ordiCache is ordinary cache, there is no limit of cache item count
-type ordiCache struct {
-	cache map[string]interface{}
-	lock  *sync.RWMutex
+// OrdinaryCache is ordinary cache, there is no limit of cache item count
+type OrdinaryCache struct {
+	values map[string]interface{}
+	lock   *sync.RWMutex
 }
 
-func (oc *ordiCache) Init(config string) (err error) {
-	var maxsize int
-	if maxsize, err = parseMaxSize(config); err == nil {
-		oc.cache = make(map[string]interface{}, maxsize)
-		oc.lock = new(sync.RWMutex)
+func (oc *OrdinaryCache) Init(_ string) error {
+	oc.values = make(map[string]interface{})
+	oc.lock = new(sync.RWMutex)
+	return nil
+}
+
+func (oc *OrdinaryCache) InitVals(_ string, values map[string]interface{}) error {
+	if values != nil {
+		oc.values = values
+	} else {
+		oc.values = make(map[string]interface{})
 	}
-	return
+	oc.lock = new(sync.RWMutex)
+	return nil
 }
 
-func (oc *ordiCache) Len() int {
+func (oc *OrdinaryCache) Len() int {
 	oc.lock.RLock()
 	length := oc.len()
 	oc.lock.RUnlock()
 	return length
 }
 
-func (oc *ordiCache) len() int {
-	return len(oc.cache)
+func (oc *OrdinaryCache) len() int {
+	return len(oc.values)
 }
 
-func (oc *ordiCache) Cap() int {
+func (oc *OrdinaryCache) Cap() int {
 	return capUnlimit
 }
 
-func (oc *ordiCache) Get(key string) (val interface{}) {
+func (oc *OrdinaryCache) Get(key string) (val interface{}) {
 	oc.lock.RLock()
-	val = oc.cache[key]
+	val = oc.values[key]
 	oc.lock.RUnlock()
 	return
 }
 
-func (oc *ordiCache) IsExist(key string) bool {
+func (oc *OrdinaryCache) IsExist(key string) bool {
 	oc.lock.RLock()
-	_, has := oc.cache[key]
+	_, has := oc.values[key]
 	oc.lock.RUnlock()
 	return has
 }
 
-func (oc *ordiCache) Remove(key string) {
+func (oc *OrdinaryCache) Remove(key string) {
 	oc.lock.Lock()
-	delete(oc.cache, key)
+	delete(oc.values, key)
 	oc.lock.Unlock()
 }
 
-func (oc *ordiCache) Set(key string, val interface{}) {
+func (oc *OrdinaryCache) Set(key string, val interface{}) {
 	oc.set(key, val, true)
 }
 
-func (oc *ordiCache) Update(key string, val interface{}) bool {
+func (oc *OrdinaryCache) Update(key string, val interface{}) bool {
 	return oc.set(key, val, false)
 }
 
 // set bind value to key
 // allowAdd means if or not allow add new value when key don't exist
-func (oc *ordiCache) set(key string, val interface{}, allowAdd bool) (ret bool) {
+func (oc *OrdinaryCache) set(key string, val interface{}, allowAdd bool) (ret bool) {
 	oc.lock.Lock()
-	v := oc.cache[key]
+	v := oc.values[key]
 	if v != nil || allowAdd {
-		oc.cache[key] = val
+		oc.values[key] = val
 		ret = true
 	}
 	oc.lock.Unlock()
 	return
+}
+
+// AccessAllValues access all values exist in cacher
+// for no copy and safety access, so need an function parameter
+// rather than return values map's reference
+func (oc *OrdinaryCache) AccessAllValues(fn func(map[string]interface{})) {
+	oc.lock.RLock()
+	fn(oc.values)
+	oc.lock.RUnlock()
 }

@@ -42,6 +42,7 @@ const (
 // all method a safe for concurrent
 type Cache interface {
 	Init(config string) error
+	InitVals(config string, values map[string]interface{}) error
 	// Get by key
 	Get(key string) interface{}
 	// if key already exist, will be replaced
@@ -61,11 +62,11 @@ type Cache interface {
 
 // NewCache return a actual cache container
 // for cacher with elimination:Random and LRU, maxsize is the max capcity of cache
-// for ordinary cache, it only used to initial cache space
+// for ordinary cache, no config need, no error returned
 func NewCache(typ CacheType, config string) (cache Cache, err error) {
 	switch typ {
 	case ORDINARY:
-		cache = new(ordiCache)
+		cache = new(OrdinaryCache)
 	case RANDOM:
 		cache = new(randCache)
 	case LRU:
@@ -78,6 +79,30 @@ func NewCache(typ CacheType, config string) (cache Cache, err error) {
 	return cache, cache.Init(config)
 }
 
+// NewOrdinaryCache return an ordinary cache
+func NewOrdinaryCache() *OrdinaryCache {
+	c := new(OrdinaryCache)
+	c.Init("")
+	return c
+}
+
+// NewOrdinaryCacheVals return an ordinary cache with init values
+func NewOrdinaryCacheVals(values map[string]interface{}) *OrdinaryCache {
+	c := new(OrdinaryCache)
+	c.InitVals("", values)
+	return c
+}
+
+// fixSize fix values's size by random remove the rest elemtents
+func fixSize(values map[string]interface{}, size int) {
+	for k := range values {
+		if len(values) > size {
+			delete(values, k)
+		}
+	}
+}
+
+// parseMaxSize parse maxsize  from config string
 func parseMaxSize(config string) (maxsize int, err error) {
 	pair := types.ParsePair(config, "=")
 	if pair.NoKey() || pair.NoValue() || pair.Key != "maxsize" {
