@@ -160,12 +160,14 @@ type Logger struct {
 	running       bool
 }
 
-// NewLogger return a logger, panic an error on parameter
+// NewLogger return a logger, if params is wrong, use default value
 func NewLogger(flushInterval int, level Level) *Logger {
-	errors.Assert(level >= _LEVEL_MIN && level <= _LEVEL_MAX,
-		UnknownLevelErr(level.String()))
-	errors.Assert(flushInterval > 0,
-		errors.Errorf("Flush interval should not be negative:%d", flushInterval))
+	if level < _LEVEL_MIN || level > _LEVEL_MAX {
+		level = DEF_LEVEL
+	}
+	if flushInterval <= 0 {
+		flushInterval = DEF_FLUSHINTERVAL
+	}
 	return &Logger{RWMutex: new(sync.RWMutex),
 		level:         level,
 		logs:          make(chan *Log, DEF_BACKLOG),

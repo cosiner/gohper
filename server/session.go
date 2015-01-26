@@ -6,24 +6,42 @@ import (
 	"time"
 )
 
-//==============================================================================
-//                           Session
-//==============================================================================
-const _COOKIE_SESSION = "session"
+type (
+	// SessionStore is common interface of session store
+	SessionStore interface {
+		// Init init store with given config
+		Init(conf string) error
+		// IsExist check whether session with given id is exist
+		IsExist(id string) bool
+		// Save save values with given id and expire time
+		Save(id string, values Values, expire uint64)
+		// Get return values of given id
+		Get(id string) Values
+		// Rename move values exist in old id to new id
+		Rename(oldId, newId string)
+	}
+	// Session represent a server session
+	Session struct {
+		id string
+		*AttrContainer
+	}
+	// sessionNode is a session node record request count reference this session
+	sessionNode struct {
+		refs int
+		sess *Session
+	}
+	// sessionManager is a session manager for server that is responsible for
+	// get session from session store, generate session id, create new session
+	// and store exist session to session store
+	sessionManager struct {
+		store    SessionStore
+		expire   uint64
+		sessions map[string]*sessionNode
+		lock     *sync.Mutex
+	}
+)
 
-type SessionStore interface {
-	Init(conf string) error
-	IsExist(id string) bool
-	Save(id string, values map[string]interface{}, expire uint64)
-	Get(id string) map[string]interface{}
-	Rename(oldId, newId string)
-}
-
-type Session struct {
-	id string
-	*AttrContainer
-}
-
+// newSession create a new session with given id
 func newSession(id string) *Session {
 	return &Session{
 		id:            id,
@@ -31,34 +49,22 @@ func newSession(id string) *Session {
 	}
 }
 
-func newSessionWith(id string, values map[string]interface{}) *Session {
+// newSessionWith create a new session with given id an initial attributes
+func newSessionWith(id string, values Values) *Session {
 	return &Session{
 		id:            id,
 		AttrContainer: NewAttrContainerVals(values),
 	}
 }
 
+// sessionId return session's id
 func (sess *Session) sessionId() string {
 	return sess.id
 }
 
-//==============================================================================
-//                           Server Session
-//==============================================================================
-type sessionNode struct {
-	refs int
-	sess *Session
-}
-
-type serverSession struct {
-	store    SessionStore
-	expire   uint64
-	sessions map[string]*sessionNode
-	lock     *sync.Mutex
-}
-
-func newServerSession(store SessionStore, expire uint64) *serverSession {
-	return &serverSession{
+// newSessionManager create a new session manager with given store and expire
+func newSessionManager(store SessionStore, expire uint64) *sessionManager {
+	return &sessionManager{
 		store:    store,
 		expire:   expire,
 		sessions: make(map[string]*sessionNode),
@@ -66,62 +72,63 @@ func newServerSession(store SessionStore, expire uint64) *serverSession {
 	}
 }
 
-func (srvSess *serverSession) initStore(conf string) error {
-	return srvSess.store.Init(conf)
-}
-
-func (srvSess *serverSession) newSessionId() string {
-	srvSess.lock.Lock()
+// newSessionId generate new session id different from exists
+func (sm *sessionManager) newSessionId() string {
+	sm.lock.Lock()
 	for {
 		id := strconv.Itoa(int(time.Now().UnixNano() / 10))
-		if _, has := srvSess.sessions[id]; !has && !srvSess.store.IsExist(id) {
-			srvSess.lock.Unlock()
+		if _, has := sm.sessions[id]; !has && !sm.store.IsExist(id) {
+			sm.lock.Unlock()
 			return id
 		}
 	}
 }
 
-func (srvSess *serverSession) session(id string) (sess *Session) {
-	srvSess.lock.Lock()
-	sn := srvSess.sessions[id]
-	if sn != nil {
+// session return exist session
+func (sm *sessionManager) session(id string) (sess *Session) {
+	sm.lock.Lock()
+	sn := sm.sessions[id]
+	if sn != nil { // exist in session manager
 		sn.refs++
 		sess = sn.sess
-		srvSess.lock.Unlock()
+		sm.lock.Unlock()
 	} else {
-		srvSess.lock.Unlock()
-		if values := srvSess.store.Get(id); values != nil {
-			sess = srvSess.addSession(newSessionWith(id, values))
+		sm.lock.Unlock()
+		if values := sm.store.Get(id); values != nil { // get from session store
+			sess = sm.addSession(newSessionWith(id, values))
 		}
 	}
 	return
 }
 
-func (srvSess *serverSession) addSession(sess *Session) *Session {
+// addSession add a session to manager
+func (sm *sessionManager) addSession(sess *Session) *Session {
 	sn := &sessionNode{refs: 1, sess: sess}
-	srvSess.lock.Lock()
-	srvSess.sessions[sess.id] = sn
-	srvSess.lock.Unlock()
+	sm.lock.Lock()
+	sm.sessions[sess.id] = sn
+	sm.lock.Unlock()
 	return sess
 }
 
-func (srvSess *serverSession) newSession() *Session {
-	return srvSess.addSession(newSession(srvSess.newSessionId()))
+// newSession create a new session from strach
+func (sm *sessionManager) newSession() *Session {
+	return sm.addSession(newSession(sm.newSessionId()))
 }
 
-func (srvSess *serverSession) storeSession(sess *Session) {
-	id, lock := sess.id, srvSess.lock
+// storeSession store session to session store, given session must exist in manager
+func (sm *sessionManager) storeSession(sess *Session) {
+	id, lock := sess.id, sm.lock
 	lock.Lock()
-	sn := srvSess.sessions[id]
+	sn := sm.sessions[id]
 	if sn == nil {
 		panic("Unexpected: session haven't stored in server.sessions")
 	}
 	sn.refs--
 	if sn.refs == 0 {
-		delete(srvSess.sessions, id)
+		delete(sm.sessions, id)
 		lock.Unlock()
-		sn.sess.AccessAllAttrs(func(values map[string]interface{}) {
-			srvSess.store.Save(id, values, srvSess.expire)
+		sn.sess.AccessAllAttrs(func(values Values) {
+			sm.store.Save(id, values, sm.expire)
 		})
 	} else {
 		lock.Unlock()

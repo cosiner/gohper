@@ -1,39 +1,47 @@
 package server
 
 import (
-	"github.com/cosiner/gomodule/cache"
+	. "github.com/cosiner/gomodule/cache"
 )
 
-func _cache(ac *AttrContainer) *cache.OrdinaryCache {
-	return (*cache.OrdinaryCache)(ac)
-}
+type (
+	// Values is stored type of attribute container
+	Values map[string]interface{}
+	// AttrContainer peformed as an ordinary cache
+	AttrContainer OrdinaryCache
+)
 
-type AttrContainer cache.OrdinaryCache
-
+// NewAttrContainer return an new AttrContainer
 func NewAttrContainer() *AttrContainer {
-	return (*AttrContainer)(cache.NewOrdinaryCache())
+	return (*AttrContainer)(NewOrdinaryCache())
 }
 
-func NewAttrContainerVals(values map[string]interface{}) *AttrContainer {
-	return (*AttrContainer)(cache.NewOrdinaryCacheVals(values))
+// newAttrContainerVals return an new AttrContainer initial with given values
+func NewAttrContainerVals(values Values) *AttrContainer {
+	return (*AttrContainer)(NewOrdinaryCacheVals(values))
 }
 
+// Attr return exist attribute value by name
 func (ac *AttrContainer) Attr(name string) interface{} {
-	return _cache(ac).Get(name)
+	return (*OrdinaryCache)(ac).Get(name)
 }
 
+// SetAttr store name-value pair to container
 func (ac *AttrContainer) SetAttr(name string, value interface{}) {
-	_cache(ac).Set(name, value)
+	(*OrdinaryCache)(ac).Set(name, value)
 }
 
+// RemoveAttr remove an attribute by name
 func (ac *AttrContainer) RemoveAttr(name string) {
-	_cache(ac).Remove(name)
+	(*OrdinaryCache)(ac).Remove(name)
 }
 
+// IsAttrExist check whether given attribute is exist
 func (ac *AttrContainer) IsAttrExist(name string) bool {
-	return _cache(ac).IsExist(name)
+	return (*OrdinaryCache)(ac).IsExist(name)
 }
 
-func (ac *AttrContainer) AccessAllAttrs(fn func(map[string]interface{})) {
-	_cache(ac).AccessAllValues(fn)
+// AccessAllAttrs access all attributes exist in container
+func (ac *AttrContainer) AccessAllAttrs(fn func(Values)) {
+	(*OrdinaryCache)(ac).AccessAllValues(func(values map[string]interface{}) { fn(values) })
 }

@@ -7,78 +7,97 @@ import (
 	"github.com/cosiner/gomodule/config"
 )
 
+type (
+	// memStoreNode represent a store node of memStore
+	// contains created time and it's expire
+	memStoreNode struct {
+		time, expire uint64
+		value        Values
+	}
+
+	// memStore is a store in memory with expire manage
+	memStore struct {
+		values map[string]*memStoreNode
+		rmChan chan string
+		lock   *sync.RWMutex
+	}
+)
+
+// unixNow return now time as unix time seconds
 func unixNow() uint64 {
 	return uint64(time.Now().Unix())
 }
 
-type memStoreNode struct {
-	time, expire uint64
-	value        map[string]interface{}
-}
-
-func newMemStoreNode(val map[string]interface{}, expire uint64) *memStoreNode {
-	return &memStoreNode{
-		time:   unixNow(),
-		expire: expire,
-		value:  val,
+// newMemStoreNode create a new store node for memStore
+func newMemStoreNode(values Values, expire uint64) (msn *memStoreNode) {
+	if expire != 0 {
+		msn = &memStoreNode{
+			time:   unixNow(),
+			expire: expire,
+			value:  values,
+		}
 	}
+	return
 }
 
+// isExpired check whether store node is expired now
 func (msn *memStoreNode) isExpired() bool {
 	return msn.isExpiredTill(unixNow())
 }
 
-func (msn *memStoreNode) isExpiredTill(t uint64) (expired bool) {
-	if msn.time+msn.expire <= t {
+// isExpiredTill check whether store node is expired till given time
+func (msn *memStoreNode) isExpiredTill(time uint64) (expired bool) {
+	if msn.time+msn.expire <= time {
 		expired = true
 	}
 	return
 }
 
-type MemStore struct {
-	values map[string]*memStoreNode
-	lock   *sync.RWMutex
-}
-
-func (ms *MemStore) Init(conf string) (err error) {
+// Init init memStore,  config is like "gcinterval=*&rmbacklog=*"
+func (ms *memStore) Init(conf string) (err error) {
 	c := config.NewConfig(config.LINE)
 	if err = c.ParseString(conf); err == nil {
 		ms.values = make(map[string]*memStoreNode)
+		ms.rmChan = make(chan string, c.IntValDef(SESSION_MEM_RMBACKLOG, DEF_SESSION_MEM_RMBACKLOG))
 		ms.lock = new(sync.RWMutex)
-		go ms.gc(c.IntValDef("gcinterval", 600))
+		go ms.gc(c.IntValDef(SESSION_MEM_GCINTERVAL, DEF_SESSION_MEM_GCINTERVAL))
 	}
 	return
 }
 
-func (ms *MemStore) IsExist(id string) bool {
-	ms.lock.RLock()
-	_, has := ms.values[id]
-	ms.lock.RUnlock()
-	return has
+// IsExist check whether given id of node is exist
+func (ms *memStore) IsExist(id string) bool {
+	return ms.Get(id) != nil
 }
 
-func (ms *MemStore) Get(id string) (val map[string]interface{}) {
+// Get return values bind with given id, if id already expired, then remove it
+func (ms *memStore) Get(id string) (values Values) {
 	ms.lock.RLock()
 	msn := ms.values[id]
 	ms.lock.RUnlock()
-	if msn != nil && !msn.isExpired() {
-		val = msn.value
+	if msn != nil && !ms.expiredRemove(msn, id) {
+		values = msn.value
 	}
 	return
 }
 
-func (ms *MemStore) Set(id string, val map[string]interface{}, expire uint64) {
-	ms.lock.Lock()
-	ms.values[id] = newMemStoreNode(val, expire)
-	ms.lock.Unlock()
+// Save save values with given id and expire time
+func (ms *memStore) Save(id string, values Values, expire uint64) {
+	if msn := newMemStoreNode(values, expire); msn != nil {
+		ms.lock.Lock()
+		ms.values[id] = msn
+		ms.lock.Unlock()
+	}
 }
 
-func (ms *MemStore) Rename(oldId, newId string) {
+// Rename perform rename operation that move all values of old id to new id
+// and delete old id
+func (ms *memStore) Rename(oldId, newId string) {
 	values := ms.values
 	ms.lock.RLock()
 	msn := values[oldId]
 	ms.lock.RUnlock()
-	if msn != nil {
+	if msn != nil && !ms.expiredRemove(msn, oldId) {
 		ms.lock.Lock()
 		delete(values, oldId)
 		values[newId] = msn
@@ -86,7 +105,16 @@ func (ms *MemStore) Rename(oldId, newId string) {
 	}
 }
 
-func (ms *MemStore) gc(inteval int) {
+// expiredRemove check whether store node is expired, if true, remove it
+func (ms *memStore) expiredRemove(msn *memStoreNode, id string) (expired bool) {
+	if expired = msn.isExpired(); expired {
+		ms.rmChan <- id
+	}
+	return
+}
+
+// gc perform expired store node collection for memStore
+func (ms *memStore) gc(inteval int) {
 	if inteval <= 0 {
 		return
 	}
@@ -101,6 +129,10 @@ func (ms *MemStore) gc(inteval int) {
 					delete(values, id)
 				}
 			}
+			ms.lock.Unlock()
+		case id := <-ms.rmChan:
+			ms.lock.Lock()
+			delete(values, id)
 			ms.lock.Unlock()
 		}
 	}
