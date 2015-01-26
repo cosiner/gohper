@@ -13,6 +13,7 @@ func TestMatch(t *testing.T) {
 	matcher, err := Compile("/{name:.*}aa/{age:.*}")
 	OnErrPanic(err)
 	matchMap, match := matcher.Match("/testaa/123")
+	tt.AssertEq("Match00", "/(?P<name>.*)aa/(?P<age>.*)", matcher.Pattern())
 	tt.AssertTrue("Match0", match)
 	tt.AssertEq("MATCH1", "test", matchMap["name"])
 	tt.AssertEq("MATCH2", "123", matchMap["age"])
@@ -20,6 +21,8 @@ func TestMatch(t *testing.T) {
 	// Match other regexp
 	matcher, err = Compile("/{name}Abc/{age}")
 	OnErrPanic(err)
+
+	tt.AssertEq("Match77", "/(?P<name>[^/]*)Abc/(?P<age>[^/]*)", matcher.Pattern())
 	matchMap, match = matcher.Match("/LosuAbc/123")
 	tt.AssertTrue("Match7", match)
 	tt.AssertEq("Match8", "Losu", matchMap["name"])
@@ -28,6 +31,7 @@ func TestMatch(t *testing.T) {
 	// Match Literal
 	matcher, err = Compile("/user/123")
 	OnErrPanic(err)
+	tt.AssertEq("Match33", "/user/123", matcher.Pattern())
 	_, match = matcher.Match("/user/123")
 	tt.AssertTrue("Match3", match)
 	_, match = matcher.Match("/user")
