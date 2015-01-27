@@ -9,13 +9,13 @@ import (
 
 type (
 	// memStoreNode represent a store node of memStore
-	// contains created time and it's expire
+	// contains created time and it's lifetime
 	memStoreNode struct {
-		time, expire uint64
-		value        Values
+		time, lifetime uint64
+		value          Values
 	}
 
-	// memStore is a store in memory with expire manage
+	// memStore is a store in memory with lifetime manage
 	memStore struct {
 		values map[string]*memStoreNode
 		rmChan chan string
@@ -29,12 +29,12 @@ func unixNow() uint64 {
 }
 
 // newMemStoreNode create a new store node for memStore
-func newMemStoreNode(values Values, expire uint64) (msn *memStoreNode) {
-	if expire != 0 {
+func newMemStoreNode(values Values, lifetime uint64) (msn *memStoreNode) {
+	if lifetime != 0 {
 		msn = &memStoreNode{
-			time:   unixNow(),
-			expire: expire,
-			value:  values,
+			time:     unixNow(),
+			lifetime: lifetime,
+			value:    values,
 		}
 	}
 	return
@@ -47,7 +47,7 @@ func (msn *memStoreNode) isExpired() bool {
 
 // isExpiredTill check whether store node is expired till given time
 func (msn *memStoreNode) isExpiredTill(time uint64) (expired bool) {
-	if msn.time+msn.expire <= time {
+	if msn.time+msn.lifetime <= time {
 		expired = true
 	}
 	return
@@ -81,9 +81,9 @@ func (ms *memStore) Get(id string) (values Values) {
 	return
 }
 
-// Save save values with given id and expire time
-func (ms *memStore) Save(id string, values Values, expire uint64) {
-	if msn := newMemStoreNode(values, expire); msn != nil {
+// Save save values with given id and lifetime time
+func (ms *memStore) Save(id string, values Values, lifetime uint64) {
+	if msn := newMemStoreNode(values, lifetime); msn != nil {
 		ms.lock.Lock()
 		ms.values[id] = msn
 		ms.lock.Unlock()

@@ -24,11 +24,11 @@ func (rstore *redisStore) IsExist(id string) bool {
 	return exist
 }
 
-// Save save values with given id and expire time
-func (rstore *redisStore) Save(id string, values Values, expire uint64) {
-	if expire != 0 {
+// Save save values with given id and lifetime
+func (rstore *redisStore) Save(id string, values Values, lifetime uint64) {
+	if lifetime != 0 {
 		if bs, err := encoding.GobEncode(values); err == nil {
-			go rstore.store.SetWithExpire(id, bs, expire)
+			go rstore.store.SetWithExpire(id, bs, lifetime)
 		}
 	}
 }

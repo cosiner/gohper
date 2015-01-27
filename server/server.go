@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,14 +16,14 @@ import (
 //==============================================================================
 //                           Server Init
 //==============================================================================
-
 // Server represent a web server
 type Server struct {
-	*AttrContainer
+	AttrContainer
 	*Router
 	*sessionManager
 	ErrorHandlers
-	tmpl *template.Template
+	tmpl          *template.Template
+	filterForward bool
 }
 
 // NewServer create a new server
@@ -72,42 +73,40 @@ func (s *Server) Start(listenAddr string) {
 //==============================================================================
 //                          Server Process
 //==============================================================================
-// handleWithFilter handle request and response
-func handleWithFilter(resp *Response, req *Request, handlerFunc HandlerFunc,
-	filters []Filter) {
-	for _, f := range filters {
-		if !f.Before(resp, req) {
-			break
-		}
-	}
-	handlerFunc(resp, req)
-	for _, f := range filters {
-		if !f.After(resp, req) {
-			break
-		}
-	}
-}
-
 // ServHttp serve for http reuest
 // find handler and resolve path, find filters, process
 func (s *Server) ServeHTTP(w http.ResponseWriter, request *http.Request) {
-	var (
-		handlerFunc HandlerFunc
-		resp        = newResponse(s, request, w)
-		req         = newRequest(s, request, resp)
-		path        = request.URL.Path
-	)
-	request.Method = parseRequestMethod(request.Method)
+	resp, req := s.setupContext(w, request)
+	s.serve(request.URL, resp, req, false)  // process
+	if sess := req.Session(); sess != nil { // store session
+		s.storeSession(sess)
+	}
+	resp.destroy() // destroy request, response
+	req.destroy()
+}
+
+// setupContext set up context for request and response
+func (s *Server) setupContext(w http.ResponseWriter, request *http.Request) (
+	*Response, *Request) {
+	ctx := newContext(s, w, request)
+	resp := newResponse(ctx, w)
+	req := newRequest(ctx, request)
+	ctx.setup(resp, req)
+	return resp, req
+}
+
+// serve do actually serve for request
+func (s *Server) serve(url *url.URL, resp *Response, req *Request, forward bool) {
+	var handlerFunc HandlerFunc
+	path := url.Path
+	method := parseRequestMethod(req.Method)
+	req.Method = method
 	handler, urlVars := s.handler(path)
 	if handler != nil {
 		req.setUrlVars(urlVars)
-		handlerFunc = indicateMethod(handler, request.Method)
+		handlerFunc = indicateMethod(handler, method)
 		if handlerFunc != nil {
-			filters := s.filters(path)
-			handleWithFilter(resp, req, handlerFunc, filters)
-			if sess := req.Session(); sess != nil {
-				s.storeSession(sess)
-			}
+			handleWithFilter(resp, req, handlerFunc, path, forward)
 			return // normal return
 		} else { // find handler but no handle function for this method
 			handlerFunc = s.MethodNotAllowedHandler()
@@ -116,6 +115,30 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, request *http.Request) {
 		handlerFunc = s.NotFoundHandler()
 	}
 	handlerFunc(resp, req) // error handle
+}
+
+// handleWithFilter handle request and response
+// if request is forward and server is configured to filter forward request
+// filters will not be triggered
+func (s *Server) handleWithFilter(resp *Response, req *Request, handlerFunc HandlerFunc,
+	path string, forward bool) {
+	if forward && !s.FilterForward() {
+		HandlerFunc(resp, req)
+	} else {
+		filters := s.filters(path)
+		i, l := 0, len(filters)
+		for ; i < l; i++ { // do before in added order
+			if !filters[i].Before(resp, req) {
+				break
+			}
+		}
+		handlerFunc(resp, req)
+		for i = l - 1; i >= 0; i-- { // do after in reverse order
+			if !filters[i].After(resp, req) {
+				break
+			}
+		}
+	}
 }
 
 //==============================================================================
@@ -266,4 +289,9 @@ func (s *Server) Before(pattern string, filterFunc FilterFunc) {
 // After register a function filter executed after handler for given url pattern
 func (s *Server) After(pattern string, filterFunc FilterFunc) {
 	s.addFuncFilter(pattern, _FILTER_AFTER, filterFunc)
+}
+
+// FilterForward also filter forward request, default false
+func (s *Server) FilterForward() {
+	s.filterForward = true
 }

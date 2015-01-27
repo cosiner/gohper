@@ -14,7 +14,7 @@ type _strach struct {
 	_routeMatchers    map[string]*urlmatcher.Matcher // route matchers
 	_sessionStore     SessionStore                   // sessionStore
 	_sessionStoreConf string                         // session store config
-	_sessionExpire    uint64                         // session expire
+	_sessionLifetime  uint64                         // session lifetime
 	_localeFiles      []string                       // locale files
 	_defaultLocale    string                         // default locale
 }
@@ -78,14 +78,14 @@ func (s *_strach) routeMatcher(pattern string) *urlmatcher.Matcher {
 	return s._routeMatchers[pattern]
 }
 
-func (s *_strach) setSessionStore(store SessionStore, conf string, expire uint64) {
+func (s *_strach) setSessionStore(store SessionStore, conf string, lifetime uint64) {
 	s._sessionStore = store
 	s._sessionStoreConf = conf
-	s._sessionExpire = expire
+	s._sessionLifetime = lifetime
 }
 
 func (s *_strach) sessionStore() (SessionStore, string, uint64) {
-	return s._sessionStore, s._sessionStoreConf, s._sessionExpire
+	return s._sessionStore, s._sessionStoreConf, s._sessionLifetime
 }
 
 func (s *_strach) addLocaleFile(path string) {

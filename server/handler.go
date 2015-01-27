@@ -98,10 +98,10 @@ func (fh *funcHandler) setMethod(method string, handlerFunc HandlerFunc) error {
 	return nil
 }
 
-// ErrorHandlerBuilder build an error handler with given http code
-func ErrorHandlerBuilder(httpCode int) HandlerFunc {
+// ErrorHandlerBuilder build an error handler with given status code
+func ErrorHandlerBuilder(statusCode int) HandlerFunc {
 	return func(resp *Response, req *Request) {
-		resp.WriteHeader(httpCode)
+		resp.ReportError(statusCode)
 	}
 }
 

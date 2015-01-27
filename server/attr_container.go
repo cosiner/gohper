@@ -5,43 +5,78 @@ import (
 )
 
 type (
+	// AttrContainer is a common container store attribute
+	AttrContainer interface {
+		Attr(name string) interface{}
+		SetAttr(name string, value interface{})
+		IsAttrExist(name string) bool
+		AccessAllAttrs(fn func(Values))
+	}
+
 	// Values is stored type of attribute container
 	Values map[string]interface{}
-	// AttrContainer peformed as an ordinary cache
-	AttrContainer OrdinaryCache
+	// lockedValues peformed as an ordinary cache with lock
+	lockedValues OrdinaryCache
 )
 
-// NewAttrContainer return an new AttrContainer
-func NewAttrContainer() *AttrContainer {
-	return (*AttrContainer)(NewOrdinaryCache())
+// NewAttrContainer return an new AttrContainer with lock
+func NewAttrContainer() AttrContainer {
+	return (*lockedValues)(NewOrdinaryCache())
 }
 
 // newAttrContainerVals return an new AttrContainer initial with given values
-func NewAttrContainerVals(values Values) *AttrContainer {
-	return (*AttrContainer)(NewOrdinaryCacheVals(values))
+// and lock
+func NewAttrContainerVals(values Values) AttrContainer {
+	return (*lockedValues)(NewOrdinaryCacheVals(values))
 }
 
 // Attr return exist attribute value by name
-func (ac *AttrContainer) Attr(name string) interface{} {
-	return (*OrdinaryCache)(ac).Get(name)
+func (v Values) Attr(name string) interface{} {
+	return v[name]
 }
 
 // SetAttr store name-value pair to container
-func (ac *AttrContainer) SetAttr(name string, value interface{}) {
-	(*OrdinaryCache)(ac).Set(name, value)
+func (v Values) SetAttr(name string, value interface{}) {
+	v[name] = value
 }
 
 // RemoveAttr remove an attribute by name
-func (ac *AttrContainer) RemoveAttr(name string) {
-	(*OrdinaryCache)(ac).Remove(name)
+func (v Values) RemoveAttr(name string) {
+	delete(v, name)
 }
 
 // IsAttrExist check whether given attribute is exist
-func (ac *AttrContainer) IsAttrExist(name string) bool {
-	return (*OrdinaryCache)(ac).IsExist(name)
+func (v Values) IsAttrExist(name string) bool {
+	_, has := v[name]
+	return has
 }
 
 // AccessAllAttrs access all attributes exist in container
-func (ac *AttrContainer) AccessAllAttrs(fn func(Values)) {
-	(*OrdinaryCache)(ac).AccessAllValues(func(values map[string]interface{}) { fn(values) })
+func (v Values) AccessAllAttrs(fn func(Values)) {
+	fn(v)
+}
+
+// Attr return exist attribute value by name
+func (lc *lockedValues) Attr(name string) interface{} {
+	return (*OrdinaryCache)(lc).Get(name)
+}
+
+// SetAttr store name-value pair to container
+func (lc *lockedValues) SetAttr(name string, value interface{}) {
+	(*OrdinaryCache)(lc).Set(name, value)
+}
+
+// RemoveAttr remove an attribute by name
+func (lc *lockedValues) RemoveAttr(name string) {
+	(*OrdinaryCache)(lc).Remove(name)
+}
+
+// IsAttrExist check whether given attribute is exist
+func (lc *lockedValues) IsAttrExist(name string) bool {
+	return (*OrdinaryCache)(lc).IsExist(name)
+}
+
+// AccessAllAttrs access all attributes exist in container
+func (lc *lockedValues) AccessAllAttrs(fn func(Values)) {
+	(*OrdinaryCache)(lc).AccessAllValues(func(values map[string]interface{}) { fn(values) })
 }

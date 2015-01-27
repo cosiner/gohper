@@ -13,8 +13,8 @@ type (
 		Init(conf string) error
 		// IsExist check whether session with given id is exist
 		IsExist(id string) bool
-		// Save save values with given id and expire time
-		Save(id string, values Values, expire uint64)
+		// Save save values with given id and lifetime time
+		Save(id string, values Values, lifetime uint64)
 		// Get return values of given id
 		Get(id string) Values
 		// Rename move values exist in old id to new id
@@ -23,7 +23,7 @@ type (
 	// Session represent a server session
 	Session struct {
 		id string
-		*AttrContainer
+		AttrContainer
 	}
 	// sessionNode is a session node record request count reference this session
 	sessionNode struct {
@@ -35,7 +35,7 @@ type (
 	// and store exist session to session store
 	sessionManager struct {
 		store    SessionStore
-		expire   uint64
+		lifetime uint64
 		sessions map[string]*sessionNode
 		lock     *sync.Mutex
 	}
@@ -62,11 +62,11 @@ func (sess *Session) sessionId() string {
 	return sess.id
 }
 
-// newSessionManager create a new session manager with given store and expire
-func newSessionManager(store SessionStore, expire uint64) *sessionManager {
+// newSessionManager create a new session manager with given store and lifetime
+func newSessionManager(store SessionStore, lifetime uint64) *sessionManager {
 	return &sessionManager{
 		store:    store,
-		expire:   expire,
+		lifetime: lifetime,
 		sessions: make(map[string]*sessionNode),
 		lock:     new(sync.Mutex),
 	}
@@ -128,7 +128,7 @@ func (sm *sessionManager) storeSession(sess *Session) {
 		delete(sm.sessions, id)
 		lock.Unlock()
 		sn.sess.AccessAllAttrs(func(values Values) {
-			sm.store.Save(id, values, sm.expire)
+			sm.store.Save(id, values, sm.lifetime)
 		})
 	} else {
 		lock.Unlock()

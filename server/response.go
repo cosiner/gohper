@@ -5,14 +5,16 @@ import (
 	"encoding/xml"
 	"io"
 	"net/http"
+
+	"github.com/cosiner/golib/types"
 )
 
 type (
 	// Response represent a response of request to user
 	Response struct {
-		server  *Server
-		request *http.Request
-		http.ResponseWriter
+		*context
+		w http.ResponseWriter
+		*types.WriterChain
 		header http.Header
 	}
 	// marshalFunc is the marshal function type
@@ -20,15 +22,23 @@ type (
 )
 
 // newResponse create a new Response, and set default content type to HTML
-func newResponse(s *Server, request *http.Request, w http.ResponseWriter) *Response {
+func newResponse(ctx *context, w http.ResponseWriter) *Response {
 	resp := &Response{
-		server:         s,
-		request:        request,
-		ResponseWriter: w,
-		header:         w.Header(),
+		context:     ctx,
+		w:           w,
+		WriterChain: types.NewWriterChain(w),
+		header:      w.Header(),
 	}
 	resp.SetContentType(CONTENTTYPE_HTML)
 	return resp
+}
+
+// destroy destroy all reference that response keep
+func (resp *Response) destroy() {
+	resp.context.destroy()
+	resp.w = nil
+	resp.WriterChain = nil
+	resp.header = nil
 }
 
 // SetHeader setup response header
@@ -52,12 +62,12 @@ func (resp *Response) contentType() string {
 }
 
 // newCookie create a new Cookie and return it's displayed string
-// parameter expire is time by second
-func newCookie(name, value string, expire int) string {
+// parameter lifetime is time by second
+func newCookie(name, value string, lifetime int) string {
 	return (&http.Cookie{
 		Name:   name,
 		Value:  value,
-		MaxAge: expire,
+		MaxAge: lifetime,
 	}).String()
 }
 
@@ -66,9 +76,9 @@ func (resp *Response) SetCookie(name, value string) {
 	resp.SetCookieWithExpire(name, value, 0)
 }
 
-// SetCookieWithExpire setup response cookie with expire
-func (resp *Response) SetCookieWithExpire(name, value string, expire int) {
-	resp.SetHeader(HEADER_SETCOOKIE, newCookie(name, value, expire))
+// SetCookieWithExpire setup response cookie with lifetime
+func (resp *Response) SetCookieWithExpire(name, value string, lifetime int) {
+	resp.SetHeader(HEADER_SETCOOKIE, newCookie(name, value, lifetime))
 }
 
 // DeleteClientCookie delete user briwser's cookie by name
@@ -83,18 +93,28 @@ func (resp *Response) setSessionCookie(id string) {
 
 // Redirect redirect to new url
 func (resp *Response) Redirect(url string) {
-	http.Redirect(resp, resp.request, url, http.StatusTemporaryRedirect)
+	http.Redirect(resp.w, resp.request, url, http.StatusTemporaryRedirect)
 }
 
 // PermanentRedirect permanently redirect current request url to new url
 func (resp *Response) PermanentRedirect(url string) {
-	http.Redirect(resp, resp.request, url, http.StatusMovedPermanently)
+	http.Redirect(resp.w, resp.request, url, http.StatusMovedPermanently)
 }
 
-// Render render data with a template, and setup content type to html
-func (resp *Response) Render(tmplName string, val interface{}) error {
+// BaseWriter return base response writer
+func (resp *Response) BaseWriter() http.ResponseWriter {
+	return resp.w
+}
+
+// Report Error report an http error with given status code
+func (resp *Response) ReportError(statusCode int) {
+	resp.w.WriteHeader(statusCode)
+}
+
+// Render render template with context
+func (resp *Response) Render(tmpl string) error {
 	resp.SetContentType(CONTENTTYPE_HTML)
-	return resp.server.RenderTemplate(resp, tmplName, val)
+	return resp.Server().RenderTemplate(resp, tmpl, resp.context)
 }
 
 // WriteString write sting to client
@@ -117,7 +137,6 @@ func (resp *Response) WriteXML(val interface{}) error {
 // type to given format
 func (resp *Response) marshalValue(format string, marshalFunc marshalFunc,
 	val interface{}) error {
-
 	bs, err := marshalFunc(val)
 	if err == nil {
 		if _, err = resp.Write(bs); err == nil {

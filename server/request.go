@@ -13,15 +13,14 @@ import (
 type (
 	// Request represent an income request
 	Request struct {
-		server   *Server
-		session  *Session
-		response *Response
+		*context
+		request *http.Request
+		method  string
 		// urlVars is the values extract from url path for REST url
 		urlVars map[string]string
 		// params represent user request's parameters,
 		// for GET it's exist in url, for other method, parse from form
 		params url.Values
-		*http.Request
 		header http.Header
 	}
 
@@ -30,40 +29,32 @@ type (
 )
 
 // newRequest create a new request
-// the parameter response is only used for request to setup session cookie
-// when user call request.Session()
-func newRequest(s *Server, request *http.Request, response *Response) *Request {
+func newRequest(ctx *context, request *http.Request) *Request {
 	return &Request{
-		server:   s,
-		Request:  request,
-		response: response,
-		header:   request.Header,
+		context: ctx,
+		request: request,
+		method:  parseRequestMethod(request.Method),
+		header:  request.Header,
 	}
 }
 
-// Server return the running server
-func (req *Request) Server() *Server {
-	return req.server
+// destroy destroy all reference that request keep
+func (req *Request) destroy() {
+	req.context.destroy()
+	req.request = nil
+	req.urlVars = nil
+	req.params = nil
+	req.header = nil
 }
 
-// Session return the session that request blong to
-func (req *Request) Session() (sess *Session) {
-	if sess = req.session; sess == nil { // no session
-		if id := req.cookieSessionId(); id != "" {
-			sess = req.server.session(id) // get session from server store
-		}
-		if sess == nil { // server stored session has been expired, create new session
-			sess := req.server.newSession()
-			req.response.setSessionCookie(sess.sessionId()) // write session cookie to response
-		}
-		req.session = sess
-	}
-	return
+// Method return method of request
+func (req *Request) Method() string {
+	return req.method
 }
 
 // Cookie return cookie value with given name
 func (req *Request) Cookie(name string) string {
-	if c, err := req.Request.Cookie(name); err == nil {
+	if c, err := req.request.Cookie(name); err == nil {
 		return c.Value
 	}
 	return ""
@@ -76,7 +67,7 @@ func (req *Request) cookieSessionId() string {
 
 // Header return header value with name
 func (req *Request) Header(name string) string {
-	return parseContentType(req.header.Get(name))
+	return req.header.Get(name)
 }
 
 // Param return request parameter with name
@@ -90,14 +81,14 @@ func (req *Request) Param(name string) (value string) {
 
 // Params return request parameters with name
 func (req *Request) Params(name string) []string {
-	params := req.params
+	params, request := req.params, req.request
 	if params == nil {
-		switch req.Method {
+		switch req.method {
 		case GET:
-			params = req.URL.Query()
+			params = request.URL.Query()
 		default:
-			req.ParseForm()
-			params = req.PostForm
+			request.ParseForm()
+			params = request.PostForm
 		}
 		req.params = params
 	}
@@ -119,7 +110,7 @@ func (req *Request) UrlVar(name string) (value string) {
 
 // ContentType extract content type form request header
 func (req *Request) ContentType() string {
-	return req.Header(HEADER_CONTENTTYPE)
+	return parseContentType(req.Header(HEADER_CONTENTTYPE))
 }
 
 // ResolveJSON resolve json data, request's content type MUST BE JSON
@@ -163,9 +154,19 @@ func (req *Request) unmarshalBodyInto(format string, unmarshalFunc unmarshalFunc
 		err = Errorf("Request body is not %s format", format)
 	} else {
 		var body []byte
-		if body, err = ioutil.ReadAll(req.Body); err == nil {
+		if body, err = ioutil.ReadAll(req.request.Body); err == nil {
 			err = unmarshalFunc(body, v)
 		}
 	}
 	return
+}
+
+// Forward forward to given address use exist request and response
+func (req *Request) Forward(addr string) error {
+	u, err := url.Parse(addr)
+	if err == nil {
+		req.forwarded = true
+		req.Server().serve(u, req.resp, req, true)
+	}
+	return err
 }

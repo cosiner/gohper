@@ -104,13 +104,13 @@ func (rc *RedisStore) HSet(h, key string, val interface{}) error {
 }
 
 // SetWithExpire bind an value to key and set it's expire time
-func (rc *RedisStore) SetWithExpire(key string, val interface{}, timeout uint64) error {
-	return rc.Update("SETEX", key, timeout, val)
+func (rc *RedisStore) SetWithExpire(key string, val interface{}, lifetime uint64) error {
+	return rc.Update("SETEX", key, lifetime, val)
 }
 
 // SetExpire set expire time for exist key
-func (rc *RedisStore) SetExpire(key string, timeout uint64) error {
-	return rc.Update("SETEX", key, timeout)
+func (rc *RedisStore) SetExpire(key string, lifetime uint64) error {
+	return rc.Update("SETEX", key, lifetime)
 }
 
 // Modify only update exist key's binding value to new value, if update success return true
