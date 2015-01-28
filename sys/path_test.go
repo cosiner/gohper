@@ -25,10 +25,6 @@ func TestLastDir(t *testing.T) {
 
 }
 
-func TestMkdirWithParent(t *testing.T) {
-	t.Log(MkdirWithParent(ExpandHome("~/test/test")))
-}
-
 func TestArch(t *testing.T) {
 	t.Log(runtime.GOOS)
 }

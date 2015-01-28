@@ -7,6 +7,32 @@ import (
 	"github.com/cosiner/golib/test"
 )
 
+func BenchmarkUnsafeBytesConvert(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = UnsafeBytes("aaa")
+	}
+}
+
+func BenchmarkNormalBytesConvert(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = []byte("aaa")
+	}
+}
+
+var bs = []byte("aaa")
+
+func BenchmarkUnsafeStringConvert(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = UnsafeString(bs)
+	}
+}
+
+func BenchmarkNormalStringConvert(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = string(bs)
+	}
+}
+
 func TestUnsafeString(t *testing.T) {
 	test.AssertEq(t, "UnsafeString", "abcde", UnsafeString([]byte("abcde")))
 }

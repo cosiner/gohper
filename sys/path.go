@@ -5,7 +5,6 @@ import (
 	"os/user"
 	"path/filepath"
 
-	. "github.com/cosiner/golib/errors"
 	"github.com/cosiner/golib/types"
 )
 
@@ -87,28 +86,28 @@ func IsRootPath(path string) bool {
 	return false
 }
 
-// MkdirWithParent create dirs with parent dir
-func MkdirWithParent(path string) error {
-	if IsDir(path) {
-		return nil
-	}
-	var err error
-	dirs := make([]string, 0, 4)
-	path = ExpandAbs(path)
-	for {
-		if os.Mkdir(path, DIR_PERM) != nil {
-			dirs = append(dirs, path)
-			path = filepath.Dir(path)
-			if IsRootPath(path) {
-				return Errorf("Can't make dir %s with parent, all subdirectory can't be created",
-					path)
-			}
-		} else {
-			break
-		}
-	}
-	for i := len(dirs) - 1; i >= 0; i-- {
-		err = os.Mkdir(dirs[i], DIR_PERM)
-	}
-	return err
-}
+// // MkdirWithParent create dirs with parent dir
+// func MkdirWithParent(path string) error {
+// 	if IsDir(path) {
+// 		return nil
+// 	}
+// 	var err error
+// 	dirs := make([]string, 0, 4)
+// 	path = ExpandAbs(path)
+// 	for {
+// 		if os.Mkdir(path, DIR_PERM) != nil {
+// 			dirs = append(dirs, path)
+// 			path = filepath.Dir(path)
+// 			if IsRootPath(path) {
+// 				return Errorf("Can't make dir %s with parent, all subdirectory can't be created",
+// 					path)
+// 			}
+// 		} else {
+// 			break
+// 		}
+// 	}
+// 	for i := len(dirs) - 1; i >= 0; i-- {
+// 		err = os.Mkdir(dirs[i], DIR_PERM)
+// 	}
+// 	return err
+// }
