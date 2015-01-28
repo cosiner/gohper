@@ -8,10 +8,10 @@ import (
 type context struct {
 	srv     *Server
 	sess    *Session
-	w       http.ResponseWriter
 	request *http.Request
-	resp    *Response
+	w       http.ResponseWriter
 	req     *Request
+	resp    *Response
 	AttrContainer
 }
 
@@ -25,20 +25,20 @@ func newContext(s *Server, w http.ResponseWriter, request *http.Request) *contex
 	}
 }
 
-// setup set up response and request
-func (ctx *context) setup(resp *Response, req *Request) {
-	ctx.resp = resp
+// init set up response and request that bind to this context
+func (ctx *context) init(req *Request, resp *Response) {
 	ctx.req = req
+	ctx.resp = resp
 }
 
 // destroy destroy all reference the context keep
 func (ctx *context) destroy() {
 	ctx.srv = nil
 	ctx.sess = nil
-	ctx.w = nil
 	ctx.request = nil
-	ctx.resp = nil
+	ctx.w = nil
 	ctx.req = nil
+	ctx.resp = nil
 	ctx.AttrContainer = nil
 }
 
@@ -54,11 +54,11 @@ func (ctx *context) Server() *Server {
 func (ctx *context) Session() (sess *Session) {
 	if sess = ctx.sess; sess == nil { // no session
 		if id := ctx.req.cookieSessionId(); id != "" {
-			sess = ctx.srv.session(id) // get session from server store
+			sess = ctx.srv.Session(id) // get session from server store
 		}
 		if sess == nil { // server stored session has been expired, create new session
-			sess := ctx.srv.newSession()
-			ctx.resp.setSessionCookie(sess.sessionId()) // write session cookie to response
+			sess := ctx.srv.NewSession()
+			ctx.resp.setSessionCookie(sess.Id()) // write session cookie to response
 		}
 		ctx.sess = sess
 	}

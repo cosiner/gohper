@@ -72,6 +72,7 @@ func (rc *RedisCache) Cap() int {
 	return capUnlimit
 }
 
-func (rc *RedisCache) RealStorer() *redis.RedisStore {
+// RealStore return the real redis store to do any other operation such as destroy
+func (rc *RedisCache) RealStore() *redis.RedisStore {
 	return rc.redisStore
 }

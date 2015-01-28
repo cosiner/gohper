@@ -8,7 +8,6 @@ import (
 
 	"github.com/cosiner/gomodule/config"
 
-	"github.com/cosiner/golib/sys"
 	"github.com/cosiner/golib/types"
 )
 
@@ -103,7 +102,7 @@ func (writer *FileLogWriter) Config(conf string) (err error) {
 				writer.maxsize = maxsize
 				writer.logdir = c.ValDef(_CONF_LOGDIR,
 					filepath.Join(os.TempDir(), "gologs"))
-				return sys.MkdirWithParent(writer.logdir)
+				return os.MkdirAll(writer.logdir, _LOGDIR_PERM)
 			}
 		}
 	}

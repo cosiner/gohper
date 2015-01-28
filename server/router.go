@@ -1,6 +1,8 @@
 package server
 
 import (
+	"net/url"
+
 	"github.com/cosiner/golib/regexp/urlmatcher"
 )
 
@@ -16,43 +18,56 @@ type (
 		*urlmatcher.Matcher
 		Filter
 	}
+	// Router is responsible for route manage and match
+	Router interface {
+		// Init init handlers and filters, parameter function's return value
+		// indicate whether continue init next handler
+		Init(func(Handler) (still bool), func(Filter) (still bool))
+		// Destroy destroy router, also responsible for destroy all handlers and filters
+		Destroy()
+		// AddFuncHandler add a function handler, method are defined as constant string
+		AddFuncHandler(pattern string, method string, handler HandlerFunc) error
+		// AddHandler add a handler
+		AddHandler(pattern string, handler Handler) error
+		// MatchHandler match given url to find a handler, also return match url variables
+		MatchHandler(url *url.URL) (handler Handler, urlVars map[string]string)
+		// AddFilter add a filter
+		AddFilter(pattern string, filter Filter) error
+		// MatchFilters match given url to find all matched filters
+		MatchFilters(url *url.URL) []Filter
+	}
 
-	// Router is a url router, the later added handler is first matched,
+	// router is a url router, the later added handler is first matched,
 	// and match only one, filters is matched as the order of added,
 	// and more than one can be matched
-	Router struct {
+	router struct {
 		handlerRoutes []*handlerRoute
 		filterRoutes  []*filterRoute
 	}
 )
 
 // NewRouter return a new router
-func NewRouter() *Router {
-	return new(Router)
+func NewRouter() Router {
+	return new(router)
 }
 
-// initHandler init router's handler with given function
-func (rt *Router) initHandler(initFn func(h Handler) bool) {
+// Init init router's handlers and filters with given function
+func (rt *router) Init(initHandler func(Handler) bool, initFilter func(Filter) bool) {
 	for _, r := range rt.handlerRoutes {
-		if !initFn(r.Handler) {
+		if !initHandler(r.Handler) {
 			break
 		}
 	}
-	return
-}
-
-// initHandler init router's filter with given function
-func (rt *Router) initFilter(initFn func(f Filter) bool) {
 	for _, r := range rt.filterRoutes {
-		if !initFn(r.Filter) {
+		if !initFilter(r.Filter) {
 			break
 		}
 	}
 	return
 }
 
-// destroy destroy router and it's handler routes, filter routes
-func (rt *Router) destroy() {
+// Destroy destroy router and it's handler routes, filter routes
+func (rt *router) Destroy() {
 	for _, h := range rt.handlerRoutes {
 		h.Destroy()
 	}
@@ -61,10 +76,10 @@ func (rt *Router) destroy() {
 	}
 }
 
-// addFuncHandler add function handler to router
+// AddFuncHandler add function handler to router
 // the given pattern and new funcFilter will be staged for later same pattern
 // function handler with different method
-func (rt *Router) addFuncHandler(pattern, method string, handleFunc HandlerFunc) (err error) {
+func (rt *router) AddFuncHandler(pattern, method string, handleFunc HandlerFunc) (err error) {
 	if fHandler := strach.funcHandler(pattern); fHandler == nil {
 		fHandler = new(funcHandler)
 		if err = fHandler.setMethod(method, handleFunc); err == nil {
@@ -81,7 +96,7 @@ func (rt *Router) addFuncHandler(pattern, method string, handleFunc HandlerFunc)
 // AddHandler add handler to router
 // the compiled url matcher will be staged for later added filter
 // that with same pattern
-func (rt *Router) AddHandler(pattern string, handler Handler) (err error) {
+func (rt *router) AddHandler(pattern string, handler Handler) (err error) {
 	matcher := strach.routeMatcher(pattern)
 	if matcher == nil {
 		if matcher, err = urlmatcher.Compile(pattern); err == nil {
@@ -100,8 +115,8 @@ func (rt *Router) AddHandler(pattern string, handler Handler) (err error) {
 
 // handler return matched handler and url variables of givel url path
 // handler is matched in the reverse order of they are added to router
-func (rt *Router) handler(path string) (handler Handler, urlVars map[string]string) {
-	routes := rt.handlerRoutes
+func (rt *router) MatchHandler(url *url.URL) (handler Handler, urlVars map[string]string) {
+	path, routes := url.Path, rt.handlerRoutes
 	for i := len(routes) - 1; i >= 0; i-- {
 		r := routes[i]
 		if vals, match := r.Match(path); match {
@@ -112,27 +127,11 @@ func (rt *Router) handler(path string) (handler Handler, urlVars map[string]stri
 	return
 }
 
-// addFuncFilter add function filter to router
-// the pattern and funcFilter will be staged for later added filter function
-// with same pattern and different filter time
-func (rt *Router) addFuncFilter(pattern string, when int, filterFunc FilterFunc) (err error) {
-	if fFilter := strach.funcFilter(pattern); fFilter == nil {
-		fFilter = new(funcFilter)
-		if err = fFilter.setFilterFunc(when, filterFunc); err == nil {
-			if err = rt.AddFilter(pattern, fFilter); err == nil {
-				strach.setFuncFilter(pattern, fFilter)
-			}
-		}
-	} else {
-		err = fFilter.setFilterFunc(when, filterFunc)
-	}
-	return
-}
-
-// AddFilter add filter to router
+// AddFilter add filter to router,
+// filter can be FilterFunc for FilterFunc is also a filter
 // the compiled url matcher will be staged for later added router
 // that with same pattern
-func (rt *Router) AddFilter(pattern string, filter Filter) (err error) {
+func (rt *router) AddFilter(pattern string, filter Filter) (err error) {
 	matcher := strach.routeMatcher(pattern)
 	if matcher == nil {
 		if matcher, err = urlmatcher.Compile(pattern); err == nil {
@@ -149,9 +148,10 @@ func (rt *Router) AddFilter(pattern string, filter Filter) (err error) {
 	return
 }
 
-// filters return matched filters of url path
+// MatchFilters return matched filters of url path
 // the order of filters is same as they are added to router
-func (rt *Router) filters(path string) (filters []Filter) {
+func (rt *router) MatchFilters(url *url.URL) (filters []Filter) {
+	path := url.Path
 	for _, r := range rt.filterRoutes {
 		if r.MatchOnly(path) {
 			filters = append(filters, r.Filter)

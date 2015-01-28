@@ -36,7 +36,7 @@ const (
 	DEF_SESSION_MEMSTORE_CONF  = "gcinterval=600&rmbacklog=10"
 	DEF_SESSION_MEM_GCINTERVAL = 600
 	DEF_SESSION_MEM_RMBACKLOG  = 10
-	DEF_SESSION_EXPIRE         = 600
+	DEF_SESSION_LIFETIME       = 600
 )
 
 // parseRequestMethod convert a string to request method, default use GET

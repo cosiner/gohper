@@ -104,12 +104,12 @@ func (rc *RedisStore) HSet(h, key string, val interface{}) error {
 }
 
 // SetWithExpire bind an value to key and set it's expire time
-func (rc *RedisStore) SetWithExpire(key string, val interface{}, lifetime uint64) error {
+func (rc *RedisStore) SetWithExpire(key string, val interface{}, lifetime int64) error {
 	return rc.Update("SETEX", key, lifetime, val)
 }
 
 // SetExpire set expire time for exist key
-func (rc *RedisStore) SetExpire(key string, lifetime uint64) error {
+func (rc *RedisStore) SetExpire(key string, lifetime int64) error {
 	return rc.Update("SETEX", key, lifetime)
 }
 
@@ -139,4 +139,9 @@ func (rc *RedisStore) Incr(key string) error {
 // Decr decrease value bind to given key
 func (rc *RedisStore) Decr(key string) error {
 	return rc.Update("DECR", key)
+}
+
+// Destroy destroy redis store
+func (rc *RedisStore) Destroy() {
+	rc.connPool.Close()
 }

@@ -10,12 +10,22 @@ type redisStore struct {
 	store *redis.RedisStore
 }
 
+// NewRedisStore create a session store background on redis
+func NewRedisStore() SessionStore {
+	return new(redisStore)
+}
+
 // Init init redis store, config like maxidle=*&idletimeout=*&addr=*
 func (rstore *redisStore) Init(conf string) (err error) {
 	if rstore.store == nil {
 		rstore.store, err = redis.NewRedisStore(conf)
 	}
 	return
+}
+
+// Destroy destroy redis store, release resources
+func (rstore *redisStore) Destroy() {
+	rstore.store.Destroy()
 }
 
 // IsExist check whether given id of node is exist
@@ -25,7 +35,7 @@ func (rstore *redisStore) IsExist(id string) bool {
 }
 
 // Save save values with given id and lifetime
-func (rstore *redisStore) Save(id string, values Values, lifetime uint64) {
+func (rstore *redisStore) Save(id string, values Values, lifetime int64) {
 	if lifetime != 0 {
 		if bs, err := encoding.GobEncode(values); err == nil {
 			go rstore.store.SetWithExpire(id, bs, lifetime)

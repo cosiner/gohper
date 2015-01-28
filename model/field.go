@@ -17,7 +17,7 @@ type (
 func NewFieldSet(fieldCount uint, valid func(field Field), fields ...Field) FieldSet {
 	bs := types.NewBitSet(fieldCount)
 	if valid == nil {
-		valid = func(_ Field) {}
+		valid = func(Field) {}
 	}
 	for _, f := range fields {
 		valid(f)

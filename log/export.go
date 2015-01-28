@@ -9,8 +9,8 @@ var (
 	Flush        = nilFunc
 	Exit         = nilFunc
 	LogLevel     = func() Level { return unknownLevel }
-	SetLevel     = func(_ Level) error { return nil }
-	AddLogWriter = func(_ LogWriter) error { return nil }
+	SetLevel     = func(Level) error { return nil }
+	AddLogWriter = func(LogWriter) error { return nil }
 )
 
 // Init init global logger

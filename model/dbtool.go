@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-var printSql = func(_ string) {}
+var printSql = func(string) {}
 
 // EnableSqlPrint enable print sql
 func EnableSqlPrint() {

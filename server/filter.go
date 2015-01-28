@@ -1,68 +1,48 @@
 package server
 
-import (
-	. "github.com/cosiner/golib/errors"
-)
-
 type (
 	// FilterFunc represent common filter function type,
-	// returned value means whether execute remains filters
-	FilterFunc func(*Response, *Request) bool
+	FilterFunc func(*Request, *Response, *FilterChain)
 
 	// Filter is an filter that run before or after handler,
 	// to modify or check request and response
 	// it will be inited on server started, destroyed on server stopped
 	Filter interface {
 		Init(*Server) error
-		Before(*Response, *Request) bool
-		After(*Response, *Request) bool
 		Destroy()
+		Filter(*Request, *Response, *FilterChain)
 	}
 
-	// funcFilter is a filter that use user customed filter function
-	funcFilter struct {
-		before FilterFunc
-		after  FilterFunc
+	// FilterChain represent a chain of filter, the last is final handler
+	FilterChain struct {
+		index   int
+		filters []Filter
+		handler HandlerFunc
 	}
 )
 
-// emptyFilterFunc is just an empty filter like it's name
-func emptyFilterFunc(_ *Response, _ *Request) bool { return true }
-
-// Init init funcFiliter, if one of it's filter function is nil,
-// then it will be inited as emptyFilterFunc defined above
-func (ff *funcFilter) Init(s *Server) error {
-	if ff.before == nil {
-		ff.before = emptyFilterFunc
-	}
-	if ff.after == nil {
-		ff.after = emptyFilterFunc
-	}
-	return nil
+func (FilterFunc) Init(*Server) error { return nil }
+func (FilterFunc) Destroy()           {}
+func (fn FilterFunc) Filter(req *Request, resp *Response, chain *FilterChain) {
+	fn(req, resp, chain)
 }
 
-// Before run before handler
-func (ff *funcFilter) Before(resp *Response, req *Request) bool {
-	return ff.before(resp, req)
-}
-
-// After run after handler
-func (ff *funcFilter) After(resp *Response, req *Request) bool {
-	return ff.after(resp, req)
-}
-
-// Destroy run when destroy filter
-func (ff *funcFilter) Destroy() {}
-
-// setFilterFunc setup filter function for funcFilter
-func (ff *funcFilter) setFilterFunc(when int, filterFunc FilterFunc) error {
-	switch when {
-	case _FILTER_BEFORE:
-		ff.before = filterFunc
-	case _FILTER_AFTER:
-		ff.after = filterFunc
-	default:
-		return Err("Unsupported filter time")
+// newFilterChain create a chain of filter
+func newFilterChain(filters []Filter, handler HandlerFunc) *FilterChain {
+	return &FilterChain{
+		index:   0,
+		filters: filters,
+		handler: handler,
 	}
-	return nil
+}
+
+// Filter call next filter, if there is no next filter,then call final handler
+func (chain *FilterChain) Filter(req *Request, resp *Response) {
+	index, filters := chain.index, chain.filters
+	chain.index++
+	if index == len(filters) {
+		chain.handler(req, resp)
+	} else {
+		filters[index].Filter(req, resp, chain)
+	}
 }

@@ -11,15 +11,17 @@ type (
 	// memStoreNode represent a store node of memStore
 	// contains created time and it's lifetime
 	memStoreNode struct {
-		time, lifetime uint64
-		value          Values
+		time     uint64
+		lifetime int64 // if lifetime < 0, means never expired
+		value    Values
 	}
 
 	// memStore is a store in memory with lifetime manage
 	memStore struct {
-		values map[string]*memStoreNode
-		rmChan chan string
-		lock   *sync.RWMutex
+		values      map[string]*memStoreNode
+		rmChan      chan string
+		destroyChan chan bool
+		lock        *sync.RWMutex
 	}
 )
 
@@ -29,7 +31,7 @@ func unixNow() uint64 {
 }
 
 // newMemStoreNode create a new store node for memStore
-func newMemStoreNode(values Values, lifetime uint64) (msn *memStoreNode) {
+func newMemStoreNode(values Values, lifetime int64) (msn *memStoreNode) {
 	if lifetime != 0 {
 		msn = &memStoreNode{
 			time:     unixNow(),
@@ -47,10 +49,17 @@ func (msn *memStoreNode) isExpired() bool {
 
 // isExpiredTill check whether store node is expired till given time
 func (msn *memStoreNode) isExpiredTill(time uint64) (expired bool) {
-	if msn.time+msn.lifetime <= time {
+	if msn.lifetime < 0 {
+		expired = false
+	} else if msn.time+uint64(msn.lifetime) <= time {
 		expired = true
 	}
 	return
+}
+
+// NewMemStore create a session store in memory
+func NewMemStore() SessionStore {
+	return new(memStore)
 }
 
 // Init init memStore,  config is like "gcinterval=*&rmbacklog=*"
@@ -59,10 +68,23 @@ func (ms *memStore) Init(conf string) (err error) {
 	if err = c.ParseString(conf); err == nil {
 		ms.values = make(map[string]*memStoreNode)
 		ms.rmChan = make(chan string, c.IntValDef(SESSION_MEM_RMBACKLOG, DEF_SESSION_MEM_RMBACKLOG))
+		ms.destroyChan = make(chan bool, 1)
 		ms.lock = new(sync.RWMutex)
 		go ms.gc(c.IntValDef(SESSION_MEM_GCINTERVAL, DEF_SESSION_MEM_GCINTERVAL))
 	}
 	return
+}
+
+// Destroy destroy memory store, release resources
+func (ms *memStore) Destroy() {
+	ms.destroyChan <- true
+	ms.lock.Lock()
+	ms.values = nil
+	ms.lock.Unlock()
+	<-ms.destroyChan
+	close(ms.rmChan)
+	close(ms.destroyChan)
+	ms.lock = nil
 }
 
 // IsExist check whether given id of node is exist
@@ -82,7 +104,7 @@ func (ms *memStore) Get(id string) (values Values) {
 }
 
 // Save save values with given id and lifetime time
-func (ms *memStore) Save(id string, values Values, lifetime uint64) {
+func (ms *memStore) Save(id string, values Values, lifetime int64) {
 	if msn := newMemStoreNode(values, lifetime); msn != nil {
 		ms.lock.Lock()
 		ms.values[id] = msn
@@ -134,6 +156,9 @@ func (ms *memStore) gc(inteval int) {
 			ms.lock.Lock()
 			delete(values, id)
 			ms.lock.Unlock()
+		case <-ms.destroyChan:
+			ms.destroyChan <- true
+			return
 		}
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"sync"
 )
 
+// capUnlimit means no limit size
 const capUnlimit int = math.MaxInt32
 
 // OrdinaryCache is ordinary cache, there is no limit of cache item count
@@ -13,12 +14,14 @@ type OrdinaryCache struct {
 	lock   *sync.RWMutex
 }
 
-func (oc *OrdinaryCache) Init(_ string) error {
+// Init init ordinary cache, no config need, no error returned
+func (oc *OrdinaryCache) Init(string) error {
 	oc.values = make(map[string]interface{})
 	oc.lock = new(sync.RWMutex)
 	return nil
 }
 
+// InitVals init ordinary cache with given initial value
 func (oc *OrdinaryCache) InitVals(_ string, values map[string]interface{}) error {
 	if values != nil {
 		oc.values = values
@@ -29,6 +32,7 @@ func (oc *OrdinaryCache) InitVals(_ string, values map[string]interface{}) error
 	return nil
 }
 
+// Len return elements count of ordinary cahce
 func (oc *OrdinaryCache) Len() int {
 	oc.lock.RLock()
 	length := oc.len()

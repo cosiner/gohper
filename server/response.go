@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"encoding/xml"
-	"io"
 	"net/http"
 
 	"github.com/cosiner/golib/types"
@@ -17,6 +16,7 @@ type (
 		*types.WriterChain
 		header http.Header
 	}
+
 	// marshalFunc is the marshal function type
 	marshalFunc func(interface{}) ([]byte, error)
 )
@@ -63,7 +63,7 @@ func (resp *Response) contentType() string {
 
 // newCookie create a new Cookie and return it's displayed string
 // parameter lifetime is time by second
-func newCookie(name, value string, lifetime int) string {
+func (*Response) newCookie(name, value string, lifetime int) string {
 	return (&http.Cookie{
 		Name:   name,
 		Value:  value,
@@ -78,7 +78,7 @@ func (resp *Response) SetCookie(name, value string) {
 
 // SetCookieWithExpire setup response cookie with lifetime
 func (resp *Response) SetCookieWithExpire(name, value string, lifetime int) {
-	resp.SetHeader(HEADER_SETCOOKIE, newCookie(name, value, lifetime))
+	resp.SetHeader(HEADER_SETCOOKIE, resp.newCookie(name, value, lifetime))
 }
 
 // DeleteClientCookie delete user briwser's cookie by name
@@ -101,11 +101,6 @@ func (resp *Response) PermanentRedirect(url string) {
 	http.Redirect(resp.w, resp.request, url, http.StatusMovedPermanently)
 }
 
-// BaseWriter return base response writer
-func (resp *Response) BaseWriter() http.ResponseWriter {
-	return resp.w
-}
-
 // Report Error report an http error with given status code
 func (resp *Response) ReportError(statusCode int) {
 	resp.w.WriteHeader(statusCode)
@@ -113,14 +108,12 @@ func (resp *Response) ReportError(statusCode int) {
 
 // Render render template with context
 func (resp *Response) Render(tmpl string) error {
-	resp.SetContentType(CONTENTTYPE_HTML)
-	return resp.Server().RenderTemplate(resp, tmpl, resp.context)
+	return resp.Server().renderTemplate(resp, tmpl, resp.context)
 }
 
 // WriteString write sting to client
-func (resp *Response) WriteString(str string) (err error) {
-	_, err = io.WriteString(resp, str)
-	return
+func (resp *Response) WriteString(data string) (int, error) {
+	return resp.Write(types.UnsafeBytes(data))
 }
 
 // WriteJSON write json data to client, and setup content type to json
@@ -144,4 +137,11 @@ func (resp *Response) marshalValue(format string, marshalFunc marshalFunc,
 		}
 	}
 	return err
+}
+
+// Flush flush response's output
+func (resp *Response) Flush() {
+	if flusher, is := resp.WriterChain.Writer.(http.Flusher); is {
+		flusher.Flush()
+	}
 }

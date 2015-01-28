@@ -8,7 +8,7 @@ import (
 
 type (
 	// HandlerFunc is the common request handler function type
-	HandlerFunc func(*Response, *Request)
+	HandlerFunc func(*Request, *Response)
 
 	// Handler is an common interface of request handler
 	// it will be inited on server started, destroyed on server stopped
@@ -17,11 +17,29 @@ type (
 	// EmptyHandler to your Handler, then implement interface MethodIndicator
 	Handler interface {
 		Init(*Server) error
-		Get(*Response, *Request)
-		Post(*Response, *Request)
-		Delete(*Response, *Request)
-		Put(*Response, *Request)
 		Destroy()
+		Get(*Request, *Response)
+		Post(*Request, *Response)
+		Delete(*Request, *Response)
+		Put(*Request, *Response)
+	}
+
+	// MethodIndicator is an interface for user handler to
+	// custom method handle functions
+	MethodIndicator interface {
+		// Handler return an method handle function by method name
+		// if nill returned, means access forbidden
+		Handler(method string) HandlerFunc
+	}
+
+	// ErrorHandlers is a collection of http error status handler
+	ErrorHandlers interface {
+		ForbiddenHandler() HandlerFunc
+		SetForbiddenHandler(HandlerFunc)
+		NotFoundHandler() HandlerFunc
+		SetNotFoundHandler(HandlerFunc)
+		MethodNotAllowedHandler() HandlerFunc
+		SetMethodNotAllowedHandler(HandlerFunc)
 	}
 
 	// EmptyHandler is an empty handler for user to embed
@@ -41,33 +59,46 @@ type (
 		put    HandlerFunc
 	}
 
-	// MethodIndicator is an interface for user handler to
-	// custom method handle functions
-	MethodIndicator interface {
-		// Method return an method handle function by method name
-		// if nill returned, means access forbidden
-		Method(method string) HandlerFunc
-	}
-
-	// standardIndicator is the standard method indicator
-	standardIndicator struct {
-		Handler
-	}
-
-	// ErrorHandlers is a collection of http error handler
-	ErrorHandlers map[int]HandlerFunc
+	// errorHandlers is a collection of http error handler
+	errorHandlers map[int]HandlerFunc
 )
 
+// IndicateHandler indicate handler function from a handler and method
+func IndicateHandler(method string, handler Handler) HandlerFunc {
+	switch handler := handler.(type) {
+	case MethodIndicator:
+		return handler.Handler(method)
+	default:
+		return standardIndicate(method, handler)
+	}
+}
+
+// standardIndicate normal indicate method handle function
+// each method indicate the function with same name, such as GET->Get...
+func standardIndicate(method string, handler Handler) (handlerFunc HandlerFunc) {
+	switch method {
+	case GET:
+		handlerFunc = handler.Get
+	case POST:
+		handlerFunc = handler.Post
+	case DELETE:
+		handlerFunc = handler.Delete
+	case PUT:
+		handlerFunc = handler.Put
+	}
+	return
+}
+
 // EmptyHandler methods
-func (eh EmptyHandler) Init(s *Server) error                { return nil }
-func (eh EmptyHandler) Get(resp *Response, req *Request)    {}
-func (eh EmptyHandler) Post(resp *Response, req *Request)   {}
-func (eh EmptyHandler) Delete(resp *Response, req *Request) {}
-func (eh EmptyHandler) Put(resp *Response, req *Request)    {}
-func (eh EmptyHandler) Destroy()                            {}
+func (EmptyHandler) Init(*Server) error         { return nil }
+func (EmptyHandler) Destroy()                   {}
+func (EmptyHandler) Get(*Request, *Response)    {}
+func (EmptyHandler) Post(*Request, *Response)   {}
+func (EmptyHandler) Delete(*Request, *Response) {}
+func (EmptyHandler) Put(*Request, *Response)    {}
 
 // funcHandler implements MethodIndicator interface for custom method handler
-func (fh *funcHandler) Method(method string) (handlerFunc HandlerFunc) {
+func (fh *funcHandler) Handler(method string) (handlerFunc HandlerFunc) {
 	switch method {
 	case GET:
 		handlerFunc = fh.get
@@ -100,42 +131,14 @@ func (fh *funcHandler) setMethod(method string, handlerFunc HandlerFunc) error {
 
 // ErrorHandlerBuilder build an error handler with given status code
 func ErrorHandlerBuilder(statusCode int) HandlerFunc {
-	return func(resp *Response, req *Request) {
+	return func(req *Request, resp *Response) {
 		resp.ReportError(statusCode)
 	}
 }
 
-// indicateMethod indicate handler function from a handler and method
-func indicateMethod(handler Handler, method string) HandlerFunc {
-	var indicator MethodIndicator
-	switch handler := handler.(type) {
-	case MethodIndicator:
-		indicator = handler
-	default:
-		indicator = standardIndicator{handler}
-	}
-	return indicator.Method(method)
-}
-
-// Method indicate method handle function, for standardIndicator,
-// each method indicate the function with same name, such as GET->Get...
-func (s standardIndicator) Method(method string) (handlerFunc HandlerFunc) {
-	switch method {
-	case GET:
-		handlerFunc = s.Get
-	case POST:
-		handlerFunc = s.Post
-	case DELETE:
-		handlerFunc = s.Delete
-	case PUT:
-		handlerFunc = s.Put
-	}
-	return
-}
-
-// NewErrorHandlers create new ErrorHandlers
+// NewErrorHandlers create new errorHandlers
 func NewErrorHandlers() ErrorHandlers {
-	return ErrorHandlers{
+	return errorHandlers{
 		http.StatusForbidden:        ErrorHandlerBuilder(http.StatusForbidden),
 		http.StatusNotFound:         ErrorHandlerBuilder(http.StatusNotFound),
 		http.StatusMethodNotAllowed: ErrorHandlerBuilder(http.StatusMethodNotAllowed),
@@ -143,31 +146,31 @@ func NewErrorHandlers() ErrorHandlers {
 }
 
 // ForbiddenHandler return forbidden error handler
-func (eh ErrorHandlers) ForbiddenHandler() HandlerFunc {
+func (eh errorHandlers) ForbiddenHandler() HandlerFunc {
 	return eh[http.StatusForbidden]
 }
 
 // SetForbiddenHandler set forbidden error handler
-func (eh ErrorHandlers) SetForbiddenhandler(handlerFunc HandlerFunc) {
+func (eh errorHandlers) SetForbiddenHandler(handlerFunc HandlerFunc) {
 	eh[http.StatusForbidden] = handlerFunc
 }
 
 // NotFoundHandler return notfound error handler
-func (eh ErrorHandlers) NotFoundHandler() HandlerFunc {
+func (eh errorHandlers) NotFoundHandler() HandlerFunc {
 	return eh[http.StatusNotFound]
 }
 
 // SetNotFoundHandler set notfound error handler
-func (eh ErrorHandlers) SetNotFoundHandler(handlerFunc HandlerFunc) {
+func (eh errorHandlers) SetNotFoundHandler(handlerFunc HandlerFunc) {
 	eh[http.StatusNotFound] = handlerFunc
 }
 
 // MethodNotAllowedHandler return methodnotallowed error handler
-func (eh ErrorHandlers) MethodNotAllowedHandler() HandlerFunc {
+func (eh errorHandlers) MethodNotAllowedHandler() HandlerFunc {
 	return eh[http.StatusMethodNotAllowed]
 }
 
 // SetMethodNotAllowedHandler set methodnotallowed error handler
-func (eh ErrorHandlers) SetMethodNotAllowedHandler(handlerFunc HandlerFunc) {
+func (eh errorHandlers) SetMethodNotAllowedHandler(handlerFunc HandlerFunc) {
 	eh[http.StatusMethodNotAllowed] = handlerFunc
 }

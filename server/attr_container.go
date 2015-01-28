@@ -24,7 +24,7 @@ func NewAttrContainer() AttrContainer {
 	return (*lockedValues)(NewOrdinaryCache())
 }
 
-// newAttrContainerVals return an new AttrContainer initial with given values
+// NewAttrContainerVals return an new AttrContainer initial with given values
 // and lock
 func NewAttrContainerVals(values Values) AttrContainer {
 	return (*lockedValues)(NewOrdinaryCacheVals(values))

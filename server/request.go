@@ -47,6 +47,11 @@ func (req *Request) destroy() {
 	req.header = nil
 }
 
+// setMethod set up request's method
+func (req *Request) setMethod(method string) {
+	req.method = method
+}
+
 // Method return method of request
 func (req *Request) Method() string {
 	return req.method
@@ -58,6 +63,16 @@ func (req *Request) Cookie(name string) string {
 		return c.Value
 	}
 	return ""
+}
+
+// RemoteAddr return remote address
+func (req *Request) RemoteAddr() string {
+	return req.request.RemoteAddr
+}
+
+// URL return request url
+func (req *Request) URL() *url.URL {
+	return req.request.URL
 }
 
 // cookieSessionId extract session id from cookie
@@ -113,6 +128,15 @@ func (req *Request) ContentType() string {
 	return parseContentType(req.Header(HEADER_CONTENTTYPE))
 }
 
+// Forward forward to given address use exist request and response
+func (req *Request) Forward(addr string) error {
+	u, err := url.Parse(addr)
+	if err == nil {
+		req.Server().serve(u, req, req.resp, true)
+	}
+	return err
+}
+
 // ResolveJSON resolve json data, request's content type MUST BE JSON
 func (req *Request) ResolveJSON() (data map[string]string, err error) {
 	return req.unmarshalBody(CONTENTTYPE_JSON, json.Unmarshal)
@@ -159,14 +183,4 @@ func (req *Request) unmarshalBodyInto(format string, unmarshalFunc unmarshalFunc
 		}
 	}
 	return
-}
-
-// Forward forward to given address use exist request and response
-func (req *Request) Forward(addr string) error {
-	u, err := url.Parse(addr)
-	if err == nil {
-		req.forwarded = true
-		req.Server().serve(u, req.resp, req, true)
-	}
-	return err
 }
