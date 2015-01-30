@@ -14,7 +14,7 @@ func TestRandomCache(t *testing.T) {
 	cache.Set("bbb", "bbb")
 	test.AssertEq(t, "RandomCache2", "bbb", cache.Get("bbb").(string))
 	test.AssertEq(t, "RandomCache5", 1, cache.Cap())
-	test.AssertEq(t, "RandomCache5", 1, cache.Len())
+	test.AssertEq(t, "RandomCache5", 1, cache.Size())
 	test.AssertEq(t, "RandomCache3", nil, cache.Get("aaa"))
 
 	test.AssertFalse(t, "RandomCache4", cache.Update("dddd", 133))
@@ -26,7 +26,7 @@ func TestLRUCache(t *testing.T) {
 	cache.Set("a", "a")
 	cache.Set("b", "b")
 	cache.Set("c", "c")
-	tt.AssertEq("LRUCACHE1", 3, cache.Len())
+	tt.AssertEq("LRUCACHE1", 3, cache.Size())
 	tt.AssertEq("LRUCACHE2", 3, cache.Cap())
 	tt.AssertEq("LRUCache3", "a", cache.Get("a").(string))
 

@@ -15,8 +15,6 @@ type CacheType int8
 
 func (ct CacheType) String() (str string) {
 	switch ct {
-	case ORDINARY:
-		str = "Ordinary"
 	case RANDOM:
 		str = "Random-eliminate"
 	case LRU:
@@ -28,10 +26,8 @@ func (ct CacheType) String() (str string) {
 }
 
 const (
-	// ORDINARY is normal cache, hs no elimination
-	ORDINARY CacheType = 1 << iota
 	// RANDOM is a random eliminate algorithm
-	RANDOM
+	RANDOM = iota
 	// LRU is lru eliminate algorithm
 	LRU
 	// REDIS is redis cacher
@@ -54,8 +50,8 @@ type Cache interface {
 	Remove(key string)
 	// IsExist check whether item exist
 	IsExist(key string) bool
-	// Len return current cache count
-	Len() int
+	// Size return current cache count
+	Size() int
 	// Cap return cache capacity
 	Cap() int
 }
@@ -65,8 +61,6 @@ type Cache interface {
 // for ordinary cache, no config need, no error returned
 func NewCache(typ CacheType, config string) (cache Cache, err error) {
 	switch typ {
-	case ORDINARY:
-		cache = new(OrdinaryCache)
 	case RANDOM:
 		cache = new(randCache)
 	case LRU:
@@ -77,20 +71,6 @@ func NewCache(typ CacheType, config string) (cache Cache, err error) {
 		return nil, Err("Not supported cache type")
 	}
 	return cache, cache.Init(config)
-}
-
-// NewOrdinaryCache return an ordinary cache
-func NewOrdinaryCache() *OrdinaryCache {
-	c := new(OrdinaryCache)
-	c.Init("")
-	return c
-}
-
-// NewOrdinaryCacheVals return an ordinary cache with init values
-func NewOrdinaryCacheVals(values map[string]interface{}) *OrdinaryCache {
-	c := new(OrdinaryCache)
-	c.InitVals("", values)
-	return c
 }
 
 // fixSize fix values's size by random remove the rest elemtents

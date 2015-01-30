@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/cosiner/gomodule/websocket"
+
 	. "github.com/cosiner/golib/errors"
 )
 
@@ -52,7 +54,7 @@ type (
 // NewServer create a new server
 func NewServer() *Server {
 	return &Server{
-		AttrContainer: NewAttrContainer(),
+		AttrContainer: NewLockedAttrContainer(),
 		Router:        NewRouter(),
 		ErrorHandlers: NewErrorHandlers(),
 	}
@@ -95,7 +97,7 @@ func (s *Server) start() {
 	}
 
 	if srvConf.SessionDisable {
-		s.SessionManager = newEmptySessionManager()
+		s.SessionManager = newPanicSessionManager()
 	} else {
 		log.Println("Init Session Store and Manager")
 		store, manager := srvConf.SessionStore, srvConf.SessionManager
@@ -111,6 +113,9 @@ func (s *Server) start() {
 		return true
 	}, func(filter Filter) bool {
 		OnErrPanic(filter.Init(s))
+		return true
+	}, func(websocketHandler WebSocketHandler) bool {
+		OnErrPanic(websocketHandler.Init(s))
 		return true
 	})
 
@@ -155,9 +160,20 @@ func (s *Server) StartTLS(listenAddr, certFile, keyFile string) {
 // ServHttp serve for http reuest
 // find handler and resolve path, find filters, process
 func (s *Server) ServeHTTP(w http.ResponseWriter, request *http.Request) {
+	url := request.URL
+	switch url.Scheme {
+	case "http", "https":
+		s.serveHttp(w, request)
+	case "ws", "wss":
+		s.serveWebsocket(w, request)
+	}
+}
+
+// serveHttp serve for http protocal
+func (s *Server) serveHttp(w http.ResponseWriter, request *http.Request) {
 	req, resp := s.setupContext(w, request)
-	s.serve(request.URL, req, resp, false)  // process
-	if sess := req.Session(); sess != nil { // store session
+	s.processHttpRequest(request.URL, req, resp, false) // process
+	if sess := req.Session(); sess != nil {             // store session
 		s.StoreSession(sess)
 	}
 	resp.destroy() // destroy request, response
@@ -174,8 +190,8 @@ func (s *Server) setupContext(w http.ResponseWriter, request *http.Request) (
 	return req, resp
 }
 
-// serve do actually serve for request
-func (s *Server) serve(url *url.URL, req *Request, resp *Response, forward bool) {
+// processHttpRequest do process http request
+func (s *Server) processHttpRequest(url *url.URL, req *Request, resp *Response, forward bool) {
 	var handlerFunc HandlerFunc
 	method := parseRequestMethod(req.Method())
 	req.setMethod(method)
@@ -193,6 +209,20 @@ func (s *Server) serve(url *url.URL, req *Request, resp *Response, forward bool)
 		handlerFunc = s.NotFoundHandler()
 	}
 	handlerFunc(req, resp) // error handle
+}
+
+// serveWebSocket serve for websocket protocal
+func (s *Server) serveWebsocket(w http.ResponseWriter, request *http.Request) {
+	conn, err := websocket.Upgrade(w, request, nil)
+	if err != nil {
+		return
+	}
+	handler, urlVars := s.MatchWebSocketHandler(request.URL)
+	if handler == nil {
+		conn.Close()
+		return
+	}
+	handler.Handle(newWebSocketConn(conn, urlVars))
 }
 
 // handleWithFilter handle request and response

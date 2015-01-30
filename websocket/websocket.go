@@ -9,7 +9,6 @@ package websocket
 import (
 	"bufio"
 	"crypto/tls"
-	"encoding/json"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -221,26 +220,20 @@ func (ws *Conn) Close() error {
 	}
 	return ws.rwc.Close()
 }
-
-func (ws *Conn) IsClientConn() bool { return ws.request == nil }
-func (ws *Conn) IsServerConn() bool { return ws.request != nil }
-
-// LocalAddr returns the WebSocket Origin for the connection for client, or
-// the WebSocket location for server.
-func (ws *Conn) LocalAddr() net.Addr {
-	if ws.IsClientConn() {
-		return &Addr{ws.config.Origin}
-	}
-	return &Addr{ws.config.Location}
-}
+func (ws *Conn) isClientConn() bool { return ws.request == nil }
+func (ws *Conn) isServerConn() bool { return ws.request != nil }
 
 // RemoteAddr returns the WebSocket location for the connection for client, or
 // the Websocket Origin for server.
 func (ws *Conn) RemoteAddr() net.Addr {
-	if ws.IsClientConn() {
+	if ws.isClientConn() {
 		return &Addr{ws.config.Location}
 	}
 	return &Addr{ws.config.Origin}
+}
+
+func (ws *Conn) Config() *Config {
+	return ws.config
 }
 
 var errSetDeadline = errors.New("websocket: cannot set deadline: not using a net.Conn")
@@ -268,144 +261,3 @@ func (ws *Conn) SetWriteDeadline(t time.Time) error {
 	}
 	return errSetDeadline
 }
-
-// Config returns the WebSocket config.
-func (ws *Conn) Config() *Config { return ws.config }
-
-// Request returns the http request upgraded to the WebSocket.
-// It is nil for client side.
-func (ws *Conn) Request() *http.Request { return ws.request }
-
-// Codec represents a symmetric pair of functions that implement a codec.
-type Codec struct {
-	Marshal   func(v interface{}) (data []byte, payloadType byte, err error)
-	Unmarshal func(data []byte, payloadType byte, v interface{}) (err error)
-}
-
-// Send sends v marshaled by cd.Marshal as single frame to ws.
-func (cd Codec) Send(ws *Conn, v interface{}) (err error) {
-	data, payloadType, err := cd.Marshal(v)
-	if err != nil {
-		return err
-	}
-	ws.wio.Lock()
-	defer ws.wio.Unlock()
-	w, err := ws.frameWriterFactory.NewFrameWriter(payloadType)
-	if err != nil {
-		return err
-	}
-	_, err = w.Write(data)
-	w.Close()
-	return err
-}
-
-// Receive receives single frame from ws, unmarshaled by cd.Unmarshal and stores in v.
-func (cd Codec) Receive(ws *Conn, v interface{}) (err error) {
-	ws.rio.Lock()
-	defer ws.rio.Unlock()
-	if ws.frameReader != nil {
-		_, err = io.Copy(ioutil.Discard, ws.frameReader)
-		if err != nil {
-			return err
-		}
-		ws.frameReader = nil
-	}
-again:
-	frame, err := ws.frameReaderFactory.NewFrameReader()
-	if err != nil {
-		return err
-	}
-	frame, err = ws.frameHandler.HandleFrame(frame)
-	if err != nil {
-		return err
-	}
-	if frame == nil {
-		goto again
-	}
-	payloadType := frame.PayloadType()
-	data, err := ioutil.ReadAll(frame)
-	if err != nil {
-		return err
-	}
-	return cd.Unmarshal(data, payloadType, v)
-}
-
-func marshal(v interface{}) (msg []byte, payloadType byte, err error) {
-	switch data := v.(type) {
-	case string:
-		return []byte(data), TextFrame, nil
-	case []byte:
-		return data, BinaryFrame, nil
-	}
-	return nil, UnknownFrame, ErrNotSupported
-}
-
-func unmarshal(msg []byte, payloadType byte, v interface{}) (err error) {
-	switch data := v.(type) {
-	case *string:
-		*data = string(msg)
-		return nil
-	case *[]byte:
-		*data = msg
-		return nil
-	}
-	return ErrNotSupported
-}
-
-/*
-Message is a codec to send/receive text/binary data in a frame on WebSocket connection.
-To send/receive text frame, use string type.
-To send/receive binary frame, use []byte type.
-
-Trivial usage:
-
-	import "websocket"
-
-	// receive text frame
-	var message string
-	websocket.Message.Receive(ws, &message)
-
-	// send text frame
-	message = "hello"
-	websocket.Message.Send(ws, message)
-
-	// receive binary frame
-	var data []byte
-	websocket.Message.Receive(ws, &data)
-
-	// send binary frame
-	data = []byte{0, 1, 2}
-	websocket.Message.Send(ws, data)
-
-*/
-var Message = Codec{marshal, unmarshal}
-
-func jsonMarshal(v interface{}) (msg []byte, payloadType byte, err error) {
-	msg, err = json.Marshal(v)
-	return msg, TextFrame, err
-}
-
-func jsonUnmarshal(msg []byte, payloadType byte, v interface{}) (err error) {
-	return json.Unmarshal(msg, v)
-}
-
-/*
-JSON is a codec to send/receive JSON data in a frame from a WebSocket connection.
-
-Trivial usage:
-
-	import "websocket"
-
-	type T struct {
-		Msg string
-		Count int
-	}
-
-	// receive JSON type T
-	var data T
-	websocket.JSON.Receive(ws, &data)
-
-	// send JSON type T
-	websocket.JSON.Send(ws, data)
-*/
-var JSON = Codec{jsonMarshal, jsonUnmarshal}

@@ -1,9 +1,9 @@
 package server
 
 import (
-	"encoding/json"
-	"encoding/xml"
 	"net/http"
+
+	"github.com/cosiner/golib/encoding"
 
 	"github.com/cosiner/golib/types"
 )
@@ -111,32 +111,24 @@ func (resp *Response) Render(tmpl string) error {
 	return resp.Server().renderTemplate(resp, tmpl, resp.context)
 }
 
+// BaseWriter return base response writer
+func (resp *Response) BaseWriter() http.ResponseWriter {
+	return resp.w
+}
+
 // WriteString write sting to client
 func (resp *Response) WriteString(data string) (int, error) {
-	return resp.Write(types.UnsafeBytes(data))
+	return encoding.WriteString(resp, data)
 }
 
 // WriteJSON write json data to client, and setup content type to json
 func (resp *Response) WriteJSON(val interface{}) error {
-	return resp.marshalValue(CONTENTTYPE_JSON, json.Marshal, val)
+	return encoding.WriteJSON(resp, val)
 }
 
 // WriteXML write xml data to client, and setup content type to xml
 func (resp *Response) WriteXML(val interface{}) error {
-	return resp.marshalValue(CONTENTTYPE_XML, xml.Marshal, val)
-}
-
-// marshalValue marshal value, and write it to client, setup response's content
-// type to given format
-func (resp *Response) marshalValue(format string, marshalFunc marshalFunc,
-	val interface{}) error {
-	bs, err := marshalFunc(val)
-	if err == nil {
-		if _, err = resp.Write(bs); err == nil {
-			resp.SetContentType(format)
-		}
-	}
-	return err
+	return encoding.WriteXML(resp, val)
 }
 
 // Flush flush response's output

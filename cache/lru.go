@@ -50,17 +50,17 @@ func (lc *lruCache) InitVals(config string, values map[string]interface{}) (err 
 	return
 }
 
-// Len return current cache count
+// Size return current cache count
 // it's safe for concurrent
-func (lc *lruCache) Len() int {
+func (lc *lruCache) Size() int {
 	lc.lock.RLock()
-	length := lc.len()
+	size := lc.size()
 	lc.lock.RUnlock()
-	return length
+	return size
 }
 
-// len is same as Len, but don't require read lock
-func (lc *lruCache) len() int {
+// size is same as Size, but don't require read lock
+func (lc *lruCache) size() int {
 	return len(lc.cacheIndex)
 }
 
@@ -127,7 +127,7 @@ func (lc *lruCache) set(key string, val interface{}, forceSet bool) (ret bool) {
 	if elem, has := lc.cacheIndex[key]; !has {
 		if !forceSet {
 			ret = false
-		} else if lc.cap() == lc.len() {
+		} else if lc.cap() == lc.size() {
 			elem = lc.cacheData.Back() // remove last and reuse entry for new value
 			entry = elem.Value.(*lruCacheEntry)
 			lc.cacheData.Remove(elem)

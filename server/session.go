@@ -65,16 +65,16 @@ type (
 		lock     *sync.Mutex
 	}
 
-	// emptySessionManager is a empty session manager, if use it, any operation
+	// panicSessionManager is a empty session manager, if use it, any operation
 	// to get session from it will cause panic
-	emptySessionManager struct{}
+	panicSessionManager struct{}
 )
 
 // newSession create a new session with given id
 func NewSession(id string) *Session {
 	return &Session{
 		id:            id,
-		AttrContainer: NewAttrContainer(),
+		AttrContainer: NewLockedAttrContainer(),
 	}
 }
 
@@ -82,7 +82,7 @@ func NewSession(id string) *Session {
 func NewSessionWith(id string, values Values) *Session {
 	return &Session{
 		id:            id,
-		AttrContainer: NewAttrContainerVals(values),
+		AttrContainer: NewLockedAttrContainerWith(values),
 	}
 }
 
@@ -91,13 +91,13 @@ func (sess *Session) Id() string {
 	return sess.id
 }
 
-// empty session manager
-func newEmptySessionManager() SessionManager               { return emptySessionManager{} }
-func (emptySessionManager) Init(SessionStore, int64) error { return nil }
-func (emptySessionManager) Session(string) *Session        { panic("Session has been disabled") }
-func (emptySessionManager) NewSession() *Session           { panic("Session has been disabled") }
-func (emptySessionManager) StoreSession(*Session)          { panic("Session has been disabled") }
-func (emptySessionManager) Destroy()                       {}
+// panic session manager
+func newPanicSessionManager() SessionManager               { return panicSessionManager{} }
+func (panicSessionManager) Init(SessionStore, int64) error { return nil }
+func (panicSessionManager) Session(string) *Session        { panic("Session has been disabled") }
+func (panicSessionManager) NewSession() *Session           { panic("Session has been disabled") }
+func (panicSessionManager) StoreSession(*Session)          { panic("Session has been disabled") }
+func (panicSessionManager) Destroy()                       {}
 
 // NewSessionManager create a new session manager
 func NewSessionManager() SessionManager {

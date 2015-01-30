@@ -1,8 +1,6 @@
 package server
 
-import (
-	"net/http"
-)
+import "net/http"
 
 // context is the request specified enviroment of request and response
 type context struct {
@@ -21,7 +19,7 @@ func newContext(s *Server, w http.ResponseWriter, request *http.Request) *contex
 		srv:           s,
 		w:             w,
 		request:       request,
-		AttrContainer: make(Values),
+		AttrContainer: NewAttrContainer(),
 	}
 }
 
@@ -29,6 +27,11 @@ func newContext(s *Server, w http.ResponseWriter, request *http.Request) *contex
 func (ctx *context) init(req *Request, resp *Response) {
 	ctx.req = req
 	ctx.resp = resp
+}
+
+// SetValues replace all attributes of context
+func (ctx *context) SetAttrs(attrs Values) {
+	ctx.AttrContainer = attrs
 }
 
 // destroy destroy all reference the context keep

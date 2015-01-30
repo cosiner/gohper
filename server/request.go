@@ -1,13 +1,11 @@
 package server
 
 import (
-	"encoding/json"
-	"encoding/xml"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 
-	. "github.com/cosiner/golib/errors"
+	"github.com/cosiner/golib/encoding"
 )
 
 type (
@@ -132,55 +130,35 @@ func (req *Request) ContentType() string {
 func (req *Request) Forward(addr string) error {
 	u, err := url.Parse(addr)
 	if err == nil {
-		req.Server().serve(u, req, req.resp, true)
+		req.Server().processHttpRequest(u, req, req.resp, true)
 	}
 	return err
 }
 
-// ResolveJSON resolve json data, request's content type MUST BE JSON
-func (req *Request) ResolveJSON() (data map[string]string, err error) {
-	return req.unmarshalBody(CONTENTTYPE_JSON, json.Unmarshal)
-}
-
-// ResolveJSONInto resolve json data into given parameter,
-// parameter MUST BE POINTER, request's content type MUST BE JSON
-func (req *Request) ResolveJSONInto(v interface{}) error {
-	return req.unmarshalBodyInto(CONTENTTYPE_JSON, json.Unmarshal, v)
-}
-
-// ResolveXML resolve xml data, request's content type MUST BE XML
-func (req *Request) ResolveXML() (data map[string]string, err error) {
-	return req.unmarshalBody(CONTENTTYPE_XML, xml.Unmarshal)
-}
-
-// ResolveXMLInto resolve xml data into given parameter
-// parameter MUST BE POINTER, request's content type MUST BE XML
-func (req *Request) ResolveXMLInto(v interface{}) (err error) {
-	return req.unmarshalBodyInto(CONTENTTYPE_XML, xml.Unmarshal, v)
-}
-
-// unmarshalBody unmarshal request body with given unmarshal function
-func (req *Request) unmarshalBody(format string, unmarshalFunc unmarshalFunc) (
-	map[string]string, error) {
-	data := make(map[string]string)
-	err := req.unmarshalBodyInto(format, unmarshalFunc, &data)
-	if err != nil {
-		data = nil
-	}
-	return data, err
-}
-
-// unmarshanBodyInto unmarshan request body into given parameter's memory space
-// parameter MUST BE POINTER, and request's content must equal to given format
-func (req *Request) unmarshalBodyInto(format string, unmarshalFunc unmarshalFunc,
-	v interface{}) (err error) {
-	if req.ContentType() != format {
-		err = Errorf("Request body is not %s format", format)
-	} else {
-		var body []byte
-		if body, err = ioutil.ReadAll(req.request.Body); err == nil {
-			err = unmarshalFunc(body, v)
-		}
-	}
+// ReadString read request body as string
+func (req *Request) ReadString() (s string) {
+	s, _ = encoding.ReadString(req.request.Body)
 	return
+}
+
+func (req *Request) Read(data []byte) (int, error) {
+	return req.request.Body.Read(data)
+}
+
+// ReadAll read request body as bytes
+func (req *Request) ReadAll() (bs []byte) {
+	bs, _ = ioutil.ReadAll(req.request.Body)
+	return
+}
+
+// ReadJSON read json data into given parameter,
+// parameter MUST BE POINTER, request's content type MUST BE JSON
+func (req *Request) ReadJSON(v interface{}) error {
+	return encoding.ReadJSON(req, v)
+}
+
+// ReadXML read xml data into given parameter
+// parameter MUST BE POINTER, request's content type MUST BE XML
+func (req *Request) ReadXML(v interface{}) (err error) {
+	return encoding.ReadXML(req, v)
 }

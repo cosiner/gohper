@@ -265,7 +265,7 @@ type hybiFrameHandler struct {
 }
 
 func (handler *hybiFrameHandler) HandleFrame(frame frameReader) (r frameReader, err error) {
-	if handler.conn.IsServerConn() {
+	if handler.conn.isServerConn() {
 		// The client MUST mask all frames sent to the server.
 		if frame.(*hybiFrameReader).header.MaskingKey == nil {
 			handler.WriteClose(closeStatusProtocolError)

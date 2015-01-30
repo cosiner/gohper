@@ -21,7 +21,8 @@ func checkOrigin(config *Config, req *http.Request) (err error) {
 // Upgrade hajack a normal http connection, convert it to websocket connection
 func Upgrade(w http.ResponseWriter, req *http.Request,
 	handshakeChecker HandshakeChecker) (conn *Conn, err error) {
-	var hs serverHandshaker = new(hybiServerHandshaker)
+	config := new(Config)
+	var hs serverHandshaker = &hybiServerHandshaker{Config: config}
 	rwc, buf, err := w.(http.Hijacker).Hijack()
 
 	code, err := hs.ReadHandshake(buf.Reader, req)

@@ -37,7 +37,7 @@ func (rstore *redisStore) IsExist(id string) bool {
 // Save save values with given id and lifetime
 func (rstore *redisStore) Save(id string, values Values, lifetime int64) {
 	if lifetime != 0 {
-		if bs, err := encoding.GobEncode(values); err == nil {
+		if bs, err := encoding.GOBEncode(values); err == nil {
 			go rstore.store.SetWithExpire(id, bs, lifetime)
 		}
 	}
@@ -47,7 +47,7 @@ func (rstore *redisStore) Save(id string, values Values, lifetime int64) {
 func (rstore *redisStore) Get(id string) (vals Values) {
 	if bs, err := redis.ToBytes(rstore.store.Get(id)); err == nil && len(bs) != 0 {
 		vals = make(Values)
-		encoding.GobDecode(bs, &vals)
+		encoding.GOBDecode(bs, &vals)
 	}
 	return
 }

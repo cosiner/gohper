@@ -63,13 +63,13 @@ func (rc *RedisCache) IsExist(key string) bool {
 	return exist
 }
 
-func (rc *RedisCache) Len() int {
+func (rc *RedisCache) Size() int {
 	return -1
 }
 
 // Cap return cache capacity
 func (rc *RedisCache) Cap() int {
-	return capUnlimit
+	return -1
 }
 
 // RealStore return the real redis store to do any other operation such as destroy
