@@ -13,11 +13,11 @@ type _strach struct {
 }
 
 var strach = &_strach{
-	_tmplNames:     make([]string, 10),
+	_tmplNames:     make([]string, 0, 10),
 	_tmplDelims:    [2]string{"{{", "}}"},
 	_funcHandlers:  make(map[string]*funcHandler),
 	_routeMatchers: make(map[string]Matcher),
-	_localeFiles:   make([]string, 2),
+	_localeFiles:   make([]string, 0, 2),
 }
 
 func (s *_strach) destroy() {

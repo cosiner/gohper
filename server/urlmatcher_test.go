@@ -17,7 +17,7 @@ func TestMatch(t *testing.T) {
 	OnErrPanic(err)
 	url.Path = "/testaa/123"
 	matchMap, match := matcher.Match(url)
-	tt.AssertEq("Match00", "/(?P<name>[a-zA-Z0-9]*)aa/(?P<age>[a-zA-Z0-9]*)", matcher.Pattern())
+	tt.AssertEq("Match00", "/(?P<name>[a-zA-Z0-9_]*)aa/(?P<age>[a-zA-Z0-9_]*)", matcher.Pattern())
 	tt.AssertTrue("Match0", match)
 	tt.AssertEq("MATCH1", "test", matchMap["name"])
 	tt.AssertEq("MATCH2", "123", matchMap["age"])
@@ -25,7 +25,7 @@ func TestMatch(t *testing.T) {
 	// Match other regexp
 	matcher, err = NewMatcher("/{name}Abc/{age}")
 	OnErrPanic(err)
-	tt.AssertEq("Match77", "/(?P<name>[a-zA-Z0-9]*)Abc/(?P<age>[a-zA-Z0-9]*)", matcher.Pattern())
+	tt.AssertEq("Match77", "/(?P<name>[a-zA-Z0-9_]*)Abc/(?P<age>[a-zA-Z0-9_]*)", matcher.Pattern())
 	url.Path = "/LosuAbc/123"
 	matchMap, match = matcher.Match(url)
 	tt.AssertTrue("Match7", match)
@@ -51,7 +51,7 @@ func TestMatch(t *testing.T) {
 	cp := NewCompiler('|', '|', true, true, "", "")
 	typ, pat := cp.Compile("|proto|://www\\.|site:.*|\\.com/")
 	tt.AssertEq("Compile1", REGEXP, typ)
-	tt.AssertEq("Compile2", "(?P<proto>[a-zA-Z0-9]*)://www\\.(?P<site>[a-zA-Z0-9]*)\\.com/", pat)
+	tt.AssertEq("Compile2", "(?P<proto>[a-zA-Z0-9_]*)://www\\.(?P<site>[a-zA-Z0-9_]*)\\.com/", pat)
 
 	cp = NewCompiler('+', '-', true, false, "", "")
 	typ, pat = cp.Compile("+proto-://+id:\\d{1,2}-")

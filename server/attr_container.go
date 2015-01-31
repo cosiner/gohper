@@ -7,6 +7,7 @@ type (
 	AttrContainer interface {
 		Attr(name string) interface{}
 		SetAttr(name string, value interface{})
+		UpdateAttr(name string, value interface{}) bool
 		RemoveAttr(name string)
 		IsAttrExist(name string) bool
 		AccessAllAttrs(fn func(Values))

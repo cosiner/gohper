@@ -13,12 +13,14 @@ import (
 type (
 	// urlType is type of url, determined by which section url start with
 	urlType uint8
+
 	// PatternType is type of pattern, which is LITERAL or REGEXP_LITERAL or REGEXP(with named group)
 	// or ERROR_FORMAT
 	PatternType uint8
-	// Compiler is a compiler which compile simpile url regexp syntax to standard
+
+	// UrlCompiler is a compiler which compile simpile url regexp syntax to standard
 	// golang regexp syntax
-	Compiler struct {
+	UrlCompiler struct {
 		regLeft         byte
 		regRight        byte
 		needEscape      bool
@@ -68,8 +70,7 @@ const (
 	ERROR_FORMAT                      // ERROR_FORMAT means pattern format is wrong
 
 	// url type
-	_PROTO urlType = iota // _PROTO means pattern is start with url protocal, such as http://
-	_HOST                 // _HOST means pattern is start with url host, such as google.com
+	_HOST  urlType = iota // _HOST means pattern is start with url host, such as google.com
 	_PATH                 // _PATH means pattern is start with url path, such as /user
 	_QUERY                // _QUERY means pattern is start with url query such as ?id=1
 	_FRAG                 // _FRAG means pattern is start with page fragment such as #section1
@@ -88,7 +89,7 @@ const (
 
 	// flag that don't replace match-any character exist in regexp
 	_NOREPLACE_MATCHANY = "N:"
-	_MATCHANY           = "[a-zA-Z0-9]"
+	_MATCHANY           = "[a-zA-Z0-9_]"
 )
 
 var (
@@ -98,7 +99,7 @@ var (
 	// StandardCompiler is the standard regexp compiler
 	// default value: regleft:'{', regright:'}',
 	// needEscape:true, replaceMatchany:true
-	// matchany:"[a-zA-Z0-9]", noreplaceFlag:"N:"
+	// matchany:"[a-zA-Z0-9_]", noreplaceFlag:"N:"
 	StandardCompiler = NewCompiler('{', '}', true, true, "", "")
 )
 
@@ -107,11 +108,11 @@ var (
 // regRight: right character of regexp group
 // needEscape: escape regLeft and regRight exist in group regexp
 // replaceMatchany: replace "." exist in group regexp with given matchany string
-// if matchany is "", use default "[a-zA-Z0-9]"
+// if matchany is "", use default "[a-zA-Z0-9_]"
 // noreplaceFlag appear at the begin of pattern string means don't replace
 // matchany character ".", default use "N:"
 func NewCompiler(regLeft, regRight byte, needEscape, replaceMatchany bool,
-	matchany, noreplaceFlag string) *Compiler {
+	matchany, noreplaceFlag string) *UrlCompiler {
 
 	if matchany == "" {
 		if replaceMatchany {
@@ -123,7 +124,7 @@ func NewCompiler(regLeft, regRight byte, needEscape, replaceMatchany bool,
 	if noreplaceFlag == "" {
 		noreplaceFlag = _NOREPLACE_MATCHANY
 	}
-	return &Compiler{
+	return &UrlCompiler{
 		regLeft:         regLeft,
 		regRight:        regRight,
 		needEscape:      needEscape,
@@ -138,8 +139,8 @@ func NewCompiler(regLeft, regRight byte, needEscape, replaceMatchany bool,
 // if want to match fragment, the pattern should start with "#", example:#{section}
 // if want to match query, the pattern should start with "?", example:?id={id:\d+}
 // if want to match path, the pattern should start with "/", example:/user/{id:\d+}
-// if want to match host, the pattern should not contains "://", example:{site}\.com/user/123
-// if want to match protocal, the pattern should contains "://", example:{proto}://{site}\.com/
+// in other condition, pattern will auto-match host, example:{site}\.com/user/123
+// scheme is not supported
 func NewMatcher(urlPattern string) (Matcher, error) {
 	typ, pat := StandardCompiler.Compile(urlPattern)
 	return NewStandardMatcher(typ, pat)
@@ -187,12 +188,12 @@ func NewStandardMatcher(patternType PatternType, pattern string) (
 // if need capture value, just use "{name:regexp}", if not, use {:regexp},
 // {} or {:} is wrong format
 // {name} is default means capture a section of url seperated by "/", it's default
-// regexp will be [a-zA-Z0-9]*
+// regexp will be [a-zA-Z0-9_]*
 //
-// all "." exist in regexp will be replaced with "[a-zA-Z0-9]" to limit this regexp
+// all "." exist in regexp will be replaced with "[a-zA-Z0-9_]" to limit this regexp
 // only used in one url section, if don't need this replacement, just place an
-// "N:" before your regexp, or use custom own Compiler
-func (c *Compiler) Compile(urlPattern string) (PatternType, string) {
+// "N:" before your regexp, or use custom own UrlCompiler
+func (c *UrlCompiler) Compile(urlPattern string) (PatternType, string) {
 	if urlPattern == "" {
 		return ERROR_FORMAT, ""
 	}
@@ -201,7 +202,7 @@ func (c *Compiler) Compile(urlPattern string) (PatternType, string) {
 		buf                              = bytes.NewBuffer(make([]byte, 0, len(urlPattern)+10))
 		parseState, groupState           = _START, _INGROUP
 		group, regexp                    []byte
-		replace, matchany, noreplaceFlag = c.replaceMatchany, c.matchany, c.noreplaceFlag // replace means replace '.' exist in regexp to "[a-zA-Z0-9]"
+		replace, matchany, noreplaceFlag = c.replaceMatchany, c.matchany, c.noreplaceFlag // replace means replace '.' exist in regexp to "[a-zA-Z0-9_]"
 		needEscape                       = c.needEscape
 		regLeft, regRight                = c.regLeft, c.regRight
 		diff                             = (regLeft != regRight)
@@ -351,18 +352,14 @@ func (m *matcher) setPatternBuilder(pattern string) *matcher {
 		m.urlPatternBuilder = m.buildWithPath
 	case _HOST:
 		m.urlPatternBuilder = m.buildWithHost
-	case _PROTO:
-		m.urlPatternBuilder = m.buildWithProto
 	}
 	return m
 }
 
-// checkUrlType check with section is the url start with: _PROTO or _HOST or _PATH
+// checkUrlType check with section is the url start with
 func checkUrlType(urlPattern string) (typ urlType) {
 	first := urlPattern[0]
 	switch {
-	case strings.Contains(urlPattern, "://"):
-		typ = _PROTO
 	case first == '/':
 		typ = _PATH
 	case first == '?':
@@ -409,24 +406,6 @@ func (*matcher) buildWithPath(url_ *url.URL) string {
 // buildWithHost use url's host+path+querystring+fragment to build pattern string
 func (*matcher) buildWithHost(url_ *url.URL) string {
 	buf := bytes.NewBuffer(make([]byte, 0, 20))
-	buf.WriteString(url_.Host)
-	buf.WriteString(url_.Path)
-	if query := buildUrlQuerystring(url_); query != "" {
-		buf.WriteByte('?')
-		buf.WriteString(query)
-	}
-	if frag := url_.Fragment; frag != "" {
-		buf.WriteByte('#')
-		buf.WriteString(frag)
-	}
-	return buf.String()
-}
-
-// buildWithProto use url's proto+host+path+querystring+fragment to build pattern string
-func (*matcher) buildWithProto(url_ *url.URL) string {
-	buf := bytes.NewBuffer(make([]byte, 0, 20))
-	buf.WriteString(url_.Scheme)
-	buf.WriteString("://")
 	buf.WriteString(url_.Host)
 	buf.WriteString(url_.Path)
 	if query := buildUrlQuerystring(url_); query != "" {

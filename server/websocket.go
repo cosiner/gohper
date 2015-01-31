@@ -17,6 +17,9 @@ type (
 		urlVars map[string]string
 	}
 
+	// WebSocketHandlerFunc is the websocket connection handler
+	WebSocketHandlerFunc func(*WebSocketConn)
+
 	// WebSocketHandler is the handler of websocket connection
 	WebSocketHandler interface {
 		Init(*Server) error
@@ -24,6 +27,11 @@ type (
 		Handle(*WebSocketConn)
 	}
 )
+
+// WebSocketHandlerFunc is a function WebSocketHandler
+func (WebSocketHandlerFunc) Init(*Server) error            { return nil }
+func (fn WebSocketHandlerFunc) Handle(conn *WebSocketConn) { fn(conn) }
+func (WebSocketHandlerFunc) Destroy()                      {}
 
 // newWebSocketConn wrap a exist websocket connection and url variables to a
 // new WebSocketConn

@@ -26,8 +26,8 @@ const (
 	// Content Type
 	CONTNTTYPE_PLAIN = "text/plain"
 	CONTENTTYPE_HTML = "text/html"
-	CONTENTTYPE_XML  = "text/xml"
-	CONTENTTYPE_JSON = "text/json"
+	CONTENTTYPE_XML  = "application/xml"
+	CONTENTTYPE_JSON = "application/json"
 
 	// Session
 	_COOKIE_SESSION            = "session"
@@ -50,5 +50,8 @@ func parseRequestMethod(s string) string {
 
 // parseContentType parse content type
 func parseContentType(str string) string {
+	if str == "" {
+		return CONTENTTYPE_HTML
+	}
 	return types.TrimLower(str)
 }

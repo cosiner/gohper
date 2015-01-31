@@ -18,16 +18,12 @@ import (
 
 // serverStart do only once
 var serverStart = new(sync.Once)
+var serverInit = new(sync.Once)
 
 //==============================================================================
 //                           Server Init
 //==============================================================================
 type (
-	// Destroyer is a common interface for resource need to destroy on server stoped
-	Destroyer interface {
-		Destroy()
-	}
-
 	// ServerConfig is all config of server
 	ServerConfig struct {
 		Router          Router
@@ -56,14 +52,10 @@ func NewServer() *Server {
 	return &Server{
 		AttrContainer: NewLockedAttrContainer(),
 		Router:        NewRouter(),
-		ErrorHandlers: NewErrorHandlers(),
 	}
 }
 
 func (sc *ServerConfig) init() {
-	if sc.Router == nil {
-		sc.Router = NewRouter()
-	}
 	if sc.ErrorHandlers == nil {
 		sc.ErrorHandlers = NewErrorHandlers()
 	}
@@ -79,13 +71,21 @@ func (sc *ServerConfig) init() {
 		if sc.SessionLifetime == 0 {
 			sc.SessionLifetime = DEF_SESSION_LIFETIME
 		}
+	} else {
+		sc.SessionManager = newPanicSessionManager()
 	}
 }
 
-// Init init server with given config
+// Init init server with given config, it do only once, if the config contains
+// router, it must be called before any operation of add Handler/Filter/WebsocketHandler
+// otherwise, ann added Handler/Filter/WebsocketHandler will be added to the old router
 func (s *Server) Init(conf *ServerConfig) {
-	conf.init()
-	strach.setServerConfig(conf)
+	serverInit.Do(func() {
+		if conf.Router != nil {
+			s.Router = conf.Router
+		}
+		strach.setServerConfig(conf)
+	})
 }
 
 // Start start server
@@ -95,19 +95,17 @@ func (s *Server) start() {
 		srvConf = new(ServerConfig)
 		srvConf.init()
 	}
-
-	if srvConf.SessionDisable {
-		s.SessionManager = newPanicSessionManager()
-	} else {
+	s.filterForward = srvConf.FilterForward
+	manager := srvConf.SessionManager
+	if !srvConf.SessionDisable {
 		log.Println("Init Session Store and Manager")
-		store, manager := srvConf.SessionStore, srvConf.SessionManager
+		store := srvConf.SessionStore
 		OnErrPanic(store.Init(srvConf.StoreConfig))
 		OnErrPanic(manager.Init(store, srvConf.SessionLifetime))
-		s.SessionManager = manager
 	}
+	s.SessionManager = manager
 
 	log.Println("Init Handlers and Filters")
-	s.Router = srvConf.Router
 	s.Router.Init(func(handler Handler) bool {
 		OnErrPanic(handler.Init(s))
 		return true
@@ -143,15 +141,15 @@ func (s *Server) start() {
 }
 
 // Start start server as http server
-func (s *Server) Start(listenAddr string) {
+func (s *Server) Start(listenAddr string) error {
 	serverStart.Do(s.start)
-	http.ListenAndServe(listenAddr, s)
+	return http.ListenAndServe(listenAddr, s)
 }
 
 // StartTLS start server as https server
-func (s *Server) StartTLS(listenAddr, certFile, keyFile string) {
+func (s *Server) StartTLS(listenAddr, certFile, keyFile string) error {
 	serverStart.Do(s.start)
-	http.ListenAndServeTLS(listenAddr, certFile, keyFile, s)
+	return http.ListenAndServeTLS(listenAddr, certFile, keyFile, s)
 }
 
 //==============================================================================
@@ -160,12 +158,11 @@ func (s *Server) StartTLS(listenAddr, certFile, keyFile string) {
 // ServHttp serve for http reuest
 // find handler and resolve path, find filters, process
 func (s *Server) ServeHTTP(w http.ResponseWriter, request *http.Request) {
-	url := request.URL
-	switch url.Scheme {
-	case "http", "https":
+	request.URL.Host = request.Host
+	if websocket.IsWebSocketRequest(request) {
+		s.serveWebSocket(w, request)
+	} else {
 		s.serveHttp(w, request)
-	case "ws", "wss":
-		s.serveWebsocket(w, request)
 	}
 }
 
@@ -212,7 +209,7 @@ func (s *Server) processHttpRequest(url *url.URL, req *Request, resp *Response, 
 }
 
 // serveWebSocket serve for websocket protocal
-func (s *Server) serveWebsocket(w http.ResponseWriter, request *http.Request) {
+func (s *Server) serveWebSocket(w http.ResponseWriter, request *http.Request) {
 	conn, err := websocket.Upgrade(w, request, nil)
 	if err != nil {
 		return
@@ -306,12 +303,14 @@ func (s *Server) AddTemplates(names ...string) (err error) {
 // CompileTemplates compile all added templates
 func (s *Server) compileTemplates() (err error) {
 	var tmpl *template.Template
-	tmpl, err = template.New("tmpl").
-		Delims(strach.tmplDelims()).
-		Funcs(globalTmplFuncs).
-		ParseFiles(strach.tmpls()...)
-	if err == nil {
-		s.tmpl = tmpl
+	if tmpls := strach.tmpls(); len(tmpls) != 0 {
+		tmpl, err = template.New("tmpl").
+			Delims(strach.tmplDelims()).
+			Funcs(globalTmplFuncs).
+			ParseFiles(strach.tmpls()...)
+		if err == nil {
+			s.tmpl = tmpl
+		}
 	}
 	return
 }

@@ -21,6 +21,7 @@ type (
 	}
 )
 
+// FilterFunc is a function Filter
 func (FilterFunc) Init(*Server) error { return nil }
 func (FilterFunc) Destroy()           {}
 func (fn FilterFunc) Filter(req *Request, resp *Response, chain *FilterChain) {

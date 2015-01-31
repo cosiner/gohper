@@ -92,7 +92,7 @@ type Config struct {
 type serverHandshaker interface {
 	// ReadHandshake reads handshake request message from client.
 	// Returns http response code and error if any.
-	ReadHandshake(buf *bufio.Reader, req *http.Request) (code int, err error)
+	ReadHandshake(buf *bufio.Reader, req *http.Request, checkedWebsocket bool) (code int, err error)
 
 	// AcceptHandshake accepts the client handshake request and sends
 	// handshake response back to client.

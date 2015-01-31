@@ -468,8 +468,9 @@ type hybiServerHandshaker struct {
 	accept []byte
 }
 
-func (c *hybiServerHandshaker) ReadHandshake(buf *bufio.Reader, req *http.Request) (code int, err error) {
-	c.Version = ProtocolVersionHybi13
+// isWebSocketRequest check whether a request is websocket request
+// if true, return http.StatusOK
+func isWebSocketRequest(req *http.Request) (code int, err error) {
 	if req.Method != "GET" {
 		return http.StatusMethodNotAllowed, ErrBadRequestMethod
 	}
@@ -478,6 +479,17 @@ func (c *hybiServerHandshaker) ReadHandshake(buf *bufio.Reader, req *http.Reques
 	if strings.ToLower(req.Header.Get("Upgrade")) != "websocket" ||
 		!strings.Contains(strings.ToLower(req.Header.Get("Connection")), "upgrade") {
 		return http.StatusBadRequest, ErrNotWebSocket
+	}
+
+	return http.StatusOK, nil
+}
+
+func (c *hybiServerHandshaker) ReadHandshake(buf *bufio.Reader, req *http.Request, checkedWebsocket bool) (code int, err error) {
+	c.Version = ProtocolVersionHybi13
+	if !checkedWebsocket {
+		if code, err = isWebSocketRequest(req); err != nil {
+			return
+		}
 	}
 
 	key := req.Header.Get("Sec-Websocket-Key")

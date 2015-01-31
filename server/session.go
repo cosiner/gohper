@@ -9,6 +9,12 @@ import (
 )
 
 type (
+	// Session represent a server session
+	Session struct {
+		id string
+		AttrContainer
+	}
+
 	// SessionStore is common interface of session store
 	// it's responsible for store session values by id, also need to manage
 	// values' lifetime
@@ -29,11 +35,6 @@ type (
 		Rename(oldId, newId string)
 	}
 
-	// Session represent a server session
-	Session struct {
-		id string
-		AttrContainer
-	}
 	// SessionManager is a manager of session responsible for get session and
 	// create new session, generate new session id, and store session,
 	SessionManager interface {

@@ -20,10 +20,14 @@ type (
 		AddHandler(pattern string, handler Handler) error
 		// MatchHandler match given url to find a handler, also return match url variables
 		MatchHandler(url *url.URL) (handler Handler, urlVars map[string]string)
+		// AddFuncFilter add function filter
+		AddFuncFilter(pattern string, filter FilterFunc) error
 		// AddFilter add a filter
 		AddFilter(pattern string, filter Filter) error
 		// MatchFilters match given url to find all matched filters
 		MatchFilters(url *url.URL) []Filter
+		// AddWebsocketFuncHandler add a websocket functionhandler
+		AddWebsocketFuncHandler(pattern string, handler WebSocketHandlerFunc) error
 		// AddWebsocketHandler add a websocket handler
 		AddWebsocketHandler(pattern string, handler WebSocketHandler) error
 		// MatchWebSocketHandler match given url to find a matched websocket handler
@@ -144,6 +148,11 @@ func (rt *router) MatchHandler(url *url.URL) (handler Handler, urlVars map[strin
 	return
 }
 
+// AddFuncFilter add function filter
+func (rt *router) AddFuncFilter(pattern string, filter FilterFunc) error {
+	return rt.AddFilter(pattern, filter)
+}
+
 // AddFilter add filter to router,
 // filter can be FilterFunc for FilterFunc is also a filter
 // the compiled url matcher will be staged for later added router
@@ -169,6 +178,11 @@ func (rt *router) MatchFilters(url *url.URL) (filters []Filter) {
 		}
 	}
 	return
+}
+
+// AddWebsocketFuncHandler add a websocket function handler
+func (rt *router) AddWebsocketFuncHandler(pattern string, handler WebSocketHandlerFunc) error {
+	return rt.AddWebsocketHandler(pattern, handler)
 }
 
 // AddWebsocketHandler add a websocket handler
@@ -199,8 +213,8 @@ func (rt *router) MatchWebSocketHandler(url *url.URL) (handler WebSocketHandler,
 	return
 }
 
-// buildMatcher build a matcher from pattern, if matcher already exist, use
-// the exist one, else create a new one
+// buildMatcher build a matcher from pattern, if matcher already exist for same
+// pattern in strach, just use the exist one, else create a new one
 func (*router) buildMatcher(pattern string) (matcher Matcher, err error) {
 	if matcher = strach.routeMatcher(pattern); matcher == nil {
 		if matcher, err = NewMatcher(pattern); err == nil {
