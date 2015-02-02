@@ -93,8 +93,8 @@ func (s *Server) start() {
 	srvConf := strach.serverConfig()
 	if srvConf == nil {
 		srvConf = new(ServerConfig)
-		srvConf.init()
 	}
+	srvConf.init()
 	s.filterForward = srvConf.FilterForward
 	manager := srvConf.SessionManager
 	if !srvConf.SessionDisable {
@@ -158,7 +158,6 @@ func (s *Server) StartTLS(listenAddr, certFile, keyFile string) error {
 // ServHttp serve for http reuest
 // find handler and resolve path, find filters, process
 func (s *Server) ServeHTTP(w http.ResponseWriter, request *http.Request) {
-	request.URL.Host = request.Host
 	if websocket.IsWebSocketRequest(request) {
 		s.serveWebSocket(w, request)
 	} else {
@@ -170,8 +169,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, request *http.Request) {
 func (s *Server) serveHttp(w http.ResponseWriter, request *http.Request) {
 	req, resp := s.setupContext(w, request)
 	s.processHttpRequest(request.URL, req, resp, false) // process
-	if sess := req.Session(); sess != nil {             // store session
-		s.StoreSession(sess)
+	if req.hasSession() {                               // store session
+		s.StoreSession(req.Session())
 	}
 	resp.destroy() // destroy request, response
 	req.destroy()
@@ -179,7 +178,7 @@ func (s *Server) serveHttp(w http.ResponseWriter, request *http.Request) {
 
 // setupContext set up context for request and response
 func (s *Server) setupContext(w http.ResponseWriter, request *http.Request) (
-	*Request, *Response) {
+	*request, *response) {
 	ctx := newContext(s, w, request)
 	resp := newResponse(ctx, w)
 	req := newRequest(ctx, request)
@@ -188,44 +187,34 @@ func (s *Server) setupContext(w http.ResponseWriter, request *http.Request) (
 }
 
 // processHttpRequest do process http request
-func (s *Server) processHttpRequest(url *url.URL, req *Request, resp *Response, forward bool) {
+func (s *Server) processHttpRequest(url *url.URL, req *request, resp *response, forward bool) {
 	var handlerFunc HandlerFunc
-	method := parseRequestMethod(req.Method())
-	req.setMethod(method)
-	handler, urlVars := s.MatchHandler(url)
+	handler, indexer, values := s.MatchHandler(url)
 	if handler != nil {
-		req.setUrlVars(urlVars)
-		handlerFunc = IndicateHandler(method, handler)
-		if handlerFunc != nil {
-			s.handleWithFilter(req, resp, handlerFunc, url, forward)
-			return // normal return
-		} else { // find handler but no handle function for this method
+		req.setUrlVars(indexer, values)
+		if handlerFunc = IndicateHandler(req.Method(), handler); handlerFunc == nil {
 			handlerFunc = s.MethodNotAllowedHandler()
 		}
 	} else { // no handler means no resource there
 		handlerFunc = s.NotFoundHandler()
 	}
-	handlerFunc(req, resp) // error handle
+	s.handleWithFilter(req, resp, handlerFunc, url, forward)
 }
 
 // serveWebSocket serve for websocket protocal
 func (s *Server) serveWebSocket(w http.ResponseWriter, request *http.Request) {
-	conn, err := websocket.Upgrade(w, request, nil)
-	if err != nil {
-		return
-	}
-	handler, urlVars := s.MatchWebSocketHandler(request.URL)
+	handler, indexer, values := s.MatchWebSocketHandler(request.URL)
 	if handler == nil {
-		conn.Close()
-		return
+		w.WriteHeader(http.StatusNotFound)
+	} else if conn, err := websocket.UpgradeWebsocket(w, request, nil); err == nil {
+		handler.Handle(newWebSocketConn(conn).setUrlVars(indexer, values))
 	}
-	handler.Handle(newWebSocketConn(conn, urlVars))
 }
 
 // handleWithFilter handle request and response
 // if request is forward and server is configured to filter forward request
 // filters will not be triggered
-func (s *Server) handleWithFilter(req *Request, resp *Response, handlerFunc HandlerFunc,
+func (s *Server) handleWithFilter(req Request, resp Response, handlerFunc HandlerFunc,
 	url *url.URL, forward bool) {
 	var filters []Filter
 	if !forward || s.filterForward {
@@ -354,4 +343,12 @@ func (s *Server) Put(pattern string, handlerFunc HandlerFunc) {
 // Delete register a function handler process DELETE request for given pattern
 func (s *Server) Delete(pattern string, handlerFunc HandlerFunc) {
 	s.AddFuncHandler(pattern, DELETE, handlerFunc)
+}
+
+//==============================================================================
+//                           Server util
+//==============================================================================
+// PanicServer panic server by create a new goroutine then panic
+func PanicServer(str string) {
+	go panic(str)
 }

@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	"net/url"
 	"strings"
 
 	"github.com/cosiner/golib/regexp"
@@ -20,13 +19,27 @@ type (
 
 	// UrlCompiler is a compiler which compile simpile url regexp syntax to standard
 	// golang regexp syntax
+
+	// matchany character ".", default use "N:"
 	UrlCompiler struct {
-		regLeft         byte
-		regRight        byte
-		needEscape      bool
-		replaceMatchany bool
-		matchany        []byte
-		noreplaceFlag   string
+		RegLeft       byte   // RegLeft: left character of regexp group
+		RegRight      byte   // RegRight: right character of regexp group
+		NeedEscape    bool   // NeedEscape: escape RegLeft and RegRight exist in group regexp
+		NoReplace     bool   // NoReplace: replace "." exist in group regexp with given matchany string
+		Matchany      string // if matchany is "", use default "[a-zA-Z0-9_]"
+		NoreplaceFlag string // NoreplaceFlag appear at the begin of pattern string means don't replace
+		init          bool   // init: whether Compiler has been inited
+	}
+	// VarIndexer is a indexer for regexp variables and values
+	VarIndexer interface {
+		// VarIndex return variable index in matcher regexp pattern
+		VarIndex(name string) int
+
+		// ValuesOf return values of variable in given values
+		ValueOf(values []string, name string) string
+		// ScanInto scan given values into variable addresses
+		// if address is nil, skip it
+		ScanInto(values []string, vars ...*string)
 	}
 
 	// Matcher is a url matcher
@@ -40,10 +53,14 @@ type (
 		Pattern() string
 		// IsLiteral check whether this mathcer is just match literal pattern
 		IsLiteral() bool
-		// regexp matcher
-		Match(url *url.URL) (urlVars map[string]string, match bool)
+		// Match regexp matcher
+		Match(path string) (values []string, match bool)
 		// MatchOnly do only match, don't extract url variable vlaues
-		MatchOnly(url *url.URL) bool
+		MatchOnly(path string) bool
+		// PrefixMatchOnly perform prefix match, only used for literal matcher
+		PrefixMatchOnly(path string) bool
+		//
+		VarIndexer
 	}
 
 	// matcher is the actual url matcher
@@ -52,12 +69,9 @@ type (
 		pattern string
 		// regPattern is compiled regexp pattern, only used when pattern is not literal
 		regPattern *regexp.Regexp
-		// urlPatternBuilder build a same pattern format with
-		// the compiled pattern from a url
-		// such as the compiled pattern is google.com/{sub:.*}
-		urlPatternBuilder func(url *url.URL) string
+		regVars    map[string]int
 		// matchFunc
-		matchFunc     func(url string) (map[string]string, bool)
+		matchFunc     func(url string) ([]string, bool)
 		matchOnlyFunc func(url string) bool
 	}
 )
@@ -70,10 +84,8 @@ const (
 	ERROR_FORMAT                      // ERROR_FORMAT means pattern format is wrong
 
 	// url type
-	_HOST  urlType = iota // _HOST means pattern is start with url host, such as google.com
-	_PATH                 // _PATH means pattern is start with url path, such as /user
-	_QUERY                // _QUERY means pattern is start with url query such as ?id=1
-	_FRAG                 // _FRAG means pattern is start with page fragment such as #section1
+	_HOST urlType = iota // _HOST means pattern is start with url host, such as google.com
+	_PATH                // _PATH means pattern is start with url path, such as /user
 
 	// parse state
 	_START      // _START means ready to match '{''
@@ -82,57 +94,12 @@ const (
 	// regexp group state
 	_INGROUP // _INGROUP means match group name
 	_INREGEX // _INREGEX means match regexp string
-
-	// regexp seperator
-	_REGLEFT  = '{' // _REGLEFT is the default regexp left letter
-	_REGRIGHT = '}' // _REGRIGHT is the default regexp right letter
-
-	// flag that don't replace match-any character exist in regexp
-	_NOREPLACE_MATCHANY = "N:"
-	_MATCHANY           = "[a-zA-Z0-9_]"
 )
 
 var (
-	_ORIGIN_MATCHANY = []byte(".")
-	// _MATCHANY is defalut match-any letter that replace '.'
-	// _ORIGIN_MATCHANY is original match-any letter
-	// StandardCompiler is the standard regexp compiler
-	// default value: regleft:'{', regright:'}',
-	// needEscape:true, replaceMatchany:true
-	// matchany:"[a-zA-Z0-9_]", noreplaceFlag:"N:"
-	StandardCompiler = NewCompiler('{', '}', true, true, "", "")
+	standardCompiler = &UrlCompiler{}
+	nonLiteralError  = Err("Not a literal pattern")
 )
-
-// NewCompiler create a new compiler
-// regLeft: left character of regexp group
-// regRight: right character of regexp group
-// needEscape: escape regLeft and regRight exist in group regexp
-// replaceMatchany: replace "." exist in group regexp with given matchany string
-// if matchany is "", use default "[a-zA-Z0-9_]"
-// noreplaceFlag appear at the begin of pattern string means don't replace
-// matchany character ".", default use "N:"
-func NewCompiler(regLeft, regRight byte, needEscape, replaceMatchany bool,
-	matchany, noreplaceFlag string) *UrlCompiler {
-
-	if matchany == "" {
-		if replaceMatchany {
-			matchany = _MATCHANY
-		} else {
-			matchany = "."
-		}
-	}
-	if noreplaceFlag == "" {
-		noreplaceFlag = _NOREPLACE_MATCHANY
-	}
-	return &UrlCompiler{
-		regLeft:         regLeft,
-		regRight:        regRight,
-		needEscape:      needEscape,
-		replaceMatchany: replaceMatchany,
-		matchany:        []byte(matchany),
-		noreplaceFlag:   noreplaceFlag,
-	}
-}
 
 // NewMatcher create a new matcher use simple url syntax, for more detail
 // see package doc
@@ -142,7 +109,26 @@ func NewCompiler(regLeft, regRight byte, needEscape, replaceMatchany bool,
 // in other condition, pattern will auto-match host, example:{site}\.com/user/123
 // scheme is not supported
 func NewMatcher(urlPattern string) (Matcher, error) {
-	typ, pat := StandardCompiler.Compile(urlPattern)
+	return NewMatcherWith(urlPattern, standardCompiler)
+}
+
+// NewLiteralMatcher create a literal matcher
+func NewLiteralMatcher(urlPattern string) (Matcher, error) {
+	return NewLiteralMatcherWith(urlPattern, standardCompiler)
+}
+
+// NewLiteralMatcherWith create a literal matcher
+func NewLiteralMatcherWith(urlPattern string, compiler *UrlCompiler) (Matcher, error) {
+	typ, pat := compiler.Compile(urlPattern)
+	if typ != LITERAL {
+		return nil, nonLiteralError
+	}
+	return NewStandardMatcher(typ, pat)
+}
+
+// NewMatcherWith use customed compiler to create matcher
+func NewMatcherWith(urlPattern string, compiler *UrlCompiler) (Matcher, error) {
+	typ, pat := compiler.Compile(urlPattern)
 	return NewStandardMatcher(typ, pat)
 }
 
@@ -161,20 +147,128 @@ func NewStandardMatcher(patternType PatternType, pattern string) (
 		return nil, Errorf("Wrong format:", pattern)
 	}
 	var err error
-	m := new(matcher).setPatternBuilder(pattern)
-	m.pattern = pattern
+	m := &matcher{
+		pattern: pattern,
+	}
 	if patternType == LITERAL { // literal pattern
 		m.matchFunc = m.literalMatch
 		m.matchOnlyFunc = m.literalMatchOnly
 	} else if m.regPattern, err = regexp.Compile(pattern); err == nil {
 		if patternType == REGEXP { // regexp pattern with group
 			m.matchFunc = m.regexpMatch
+			m.regVars = m.regPattern.SubexpNamesMap()
 		} else {
 			m.matchFunc = m.regexpNoGroupMatch // regexp pattern without group
 		}
 		m.matchOnlyFunc = m.regexpMatchOnly
 	}
 	return m, err
+}
+
+// Pattern return url pattern after parse
+func (m *matcher) Pattern() string {
+	return m.pattern
+}
+
+// IsLiteral check whether it's a literal matcher
+func (m *matcher) IsLiteral() bool {
+	return m.regPattern == nil
+}
+
+// VarIndex return variable index in matcher regexp pattern
+func (m *matcher) VarIndex(name string) (index int) {
+	index = -1
+	if vars := m.regVars; vars != nil {
+		if i, has := vars[name]; has {
+			index = i
+		}
+	}
+	return
+}
+
+// ValuesOf return values of variable in given values
+func (m *matcher) ValueOf(values []string, name string) string {
+	if index := m.VarIndex(name); index != -1 {
+		return values[index]
+	}
+	return ""
+}
+
+// ScanInto scan given values into variable addresses
+// if address is nil, skip it
+func (*matcher) ScanInto(values []string, vars ...*string) {
+	l1, l2 := len(values), len(vars)
+	for i := 0; i < l1 && i < l2; i++ {
+		if vars[i] != nil {
+			*vars[i] = values[i]
+		}
+	}
+}
+
+// Match match given url path, reutrn matched values and if it is match or not
+// if matcher is a literal matcher, no matched value will be returned
+func (m *matcher) Match(path string) ([]string, bool) {
+	return m.matchFunc(path)
+}
+
+// MatchOnly only return whether url is match, don't extract url variable values
+func (m *matcher) MatchOnly(path string) bool {
+	return m.matchOnlyFunc(path)
+}
+
+// literalMatch match literal pattern
+func (m *matcher) literalMatch(path string) ([]string, bool) {
+	return nil, m.literalMatchOnly(path)
+}
+
+// literalMatchOnly match literal patterh
+func (m *matcher) literalMatchOnly(path string) bool {
+	return m.pattern == path
+}
+
+// PrefixMatchOnly perform prefix match, only for literal matcher
+func (m *matcher) PrefixMatchOnly(path string) bool {
+	matcherPattern := m.pattern
+	l1, l2 := len(matcherPattern), len(m.pattern)
+	return l1 == l2 || (l1 < l2 && path[l1] == '/')
+}
+
+// regexpNoGroupMatch match no named group regexp
+func (m *matcher) regexpNoGroupMatch(path string) ([]string, bool) {
+	return nil, m.regexpMatchOnly(path)
+}
+
+// regexpMatch match regexp with named group
+func (m *matcher) regexpMatch(path string) ([]string, bool) {
+	return m.regPattern.SingleSubmatch(path)
+}
+
+// regexpMatchOnly only match regexp, don't capture values
+func (m *matcher) regexpMatchOnly(path string) bool {
+	return m.regPattern.MatchString(path)
+}
+
+// init init compiler
+func (c *UrlCompiler) Init() {
+	if c.init {
+		return
+	}
+	if c.RegLeft == 0 {
+		c.RegLeft = '{'
+	}
+	if c.RegRight == 0 {
+		c.RegRight = '}'
+	}
+	if c.Matchany == "" {
+		if c.NoReplace {
+			c.Matchany = "."
+		} else {
+			c.Matchany = "[a-zA-Z0-9_]"
+		}
+	}
+	if c.NoreplaceFlag == "" {
+		c.NoreplaceFlag = "N:"
+	}
 }
 
 // Compile convert a simple url regexp syntax to standard golang regexp syntax
@@ -193,25 +287,28 @@ func NewStandardMatcher(patternType PatternType, pattern string) (
 // all "." exist in regexp will be replaced with "[a-zA-Z0-9_]" to limit this regexp
 // only used in one url section, if don't need this replacement, just place an
 // "N:" before your regexp, or use custom own UrlCompiler
+// because of Compile prepend a "^" and append a "$" to regexp result
+// so it only can do full match
 func (c *UrlCompiler) Compile(urlPattern string) (PatternType, string) {
+	c.Init()
 	if urlPattern == "" {
 		return ERROR_FORMAT, ""
 	}
 	var (
-		patternType                      = LITERAL
-		buf                              = bytes.NewBuffer(make([]byte, 0, len(urlPattern)+10))
-		parseState, groupState           = _START, _INGROUP
-		group, regexp                    []byte
-		replace, matchany, noreplaceFlag = c.replaceMatchany, c.matchany, c.noreplaceFlag // replace means replace '.' exist in regexp to "[a-zA-Z0-9_]"
-		needEscape                       = c.needEscape
-		regLeft, regRight                = c.regLeft, c.regRight
-		diff                             = (regLeft != regRight)
+		patternType            = LITERAL
+		buf                    = bytes.NewBuffer(make([]byte, 0, len(urlPattern)+10))
+		parseState, groupState = _START, _INGROUP
+		group, regexp          []byte
+		replace, matchany      = !c.NoReplace, []byte(c.Matchany)
+		needEscape             = c.NeedEscape
+		regLeft, regRight      = c.RegLeft, c.RegRight
+		diff                   = (regLeft != regRight)
 	)
-
-	if strings.HasPrefix(urlPattern, noreplaceFlag) {
-		urlPattern = urlPattern[len(noreplaceFlag):]
+	if flag := c.NoreplaceFlag; strings.HasPrefix(urlPattern, flag) {
+		urlPattern = urlPattern[len(flag):]
 		replace = false
 	}
+	buf.WriteByte('^')
 	for i, l := 0, len(urlPattern); i < l; i++ {
 		c := byte(urlPattern[i])
 		if parseState == _START {
@@ -254,6 +351,7 @@ func (c *UrlCompiler) Compile(urlPattern string) (PatternType, string) {
 		}
 	}
 	if patternType != LITERAL {
+		buf.WriteByte('$')
 		urlPattern = buf.String()
 	}
 	goto END
@@ -271,7 +369,7 @@ func writeRegexp(buf *bytes.Buffer, replace bool,
 	groupLen, regexpLen := len(group), len(regexp)
 	if success = (groupLen != 0 || regexpLen != 0); success {
 		if replace {
-			regexp = bytes.Replace(regexp, _ORIGIN_MATCHANY, replaceMatchany, -1)
+			regexp = bytes.Replace(regexp, []byte("."), replaceMatchany, -1)
 		}
 		if groupLen == 0 {
 			buf.Write(regexp)
@@ -290,140 +388,4 @@ func writeRegexp(buf *bytes.Buffer, replace bool,
 		}
 	}
 	return
-}
-
-// Pattern return url pattern after parse
-func (m *matcher) Pattern() string {
-	return m.pattern
-}
-
-// IsLiteral check whether it's a literal matcher
-func (m *matcher) IsLiteral() bool {
-	return m.regPattern == nil
-}
-
-// Match match given url, reutrn matched values and if it is match or not
-// if matcher is a literal matcher, no matched value will be returned
-func (m *matcher) Match(url *url.URL) (map[string]string, bool) {
-	return m.matchFunc(m.urlPatternBuilder(url))
-}
-
-// MatchOnly only return whether url is match, don't extract url stories
-func (m *matcher) MatchOnly(url *url.URL) bool {
-	return m.matchOnlyFunc(m.urlPatternBuilder(url))
-}
-
-// literalMatch match literal pattern
-func (m *matcher) literalMatch(pattern string) (vals map[string]string, match bool) {
-	return regexp.NIL_MAP, m.literalMatchOnly(pattern)
-}
-
-// literalMatchOnly only match literal pattern, don't extract pattern variables
-func (m *matcher) literalMatchOnly(pattern string) bool {
-	matcherPattern := m.pattern
-	return strings.HasPrefix(pattern, matcherPattern) &&
-		(len(matcherPattern) == len(pattern) ||
-			pattern[len(matcherPattern)] == '/')
-}
-
-// regexpNoGroupMatch match no named group regexp
-func (m *matcher) regexpNoGroupMatch(pattern string) (map[string]string, bool) {
-	return regexp.NIL_MAP, m.regexpMatchOnly(pattern)
-}
-
-// regexpMatch match regexp with named group
-func (m *matcher) regexpMatch(pattern string) (map[string]string, bool) {
-	return m.regPattern.SingleSubmatchMap(pattern)
-}
-
-// regexpMatchOnly only match regexp, don't capture values
-func (m *matcher) regexpMatchOnly(pattern string) bool {
-	return m.regPattern.MatchString(pattern)
-}
-
-// setPatternBuilder set up pattern string builder by the start section type of pattern
-func (m *matcher) setPatternBuilder(pattern string) *matcher {
-	switch checkUrlType(pattern) {
-	case _FRAG:
-		m.urlPatternBuilder = m.buildWithFrag
-	case _QUERY:
-		m.urlPatternBuilder = m.buildWithQuery
-	case _PATH:
-		m.urlPatternBuilder = m.buildWithPath
-	case _HOST:
-		m.urlPatternBuilder = m.buildWithHost
-	}
-	return m
-}
-
-// checkUrlType check with section is the url start with
-func checkUrlType(urlPattern string) (typ urlType) {
-	first := urlPattern[0]
-	switch {
-	case first == '/':
-		typ = _PATH
-	case first == '?':
-		typ = _QUERY
-	case first == '#':
-		typ = _FRAG
-	default:
-		typ = _HOST
-	}
-	return
-}
-
-// buildWithFrag use url's fragment to build pattern string
-func (*matcher) buildWithFrag(url *url.URL) string {
-	return url.Fragment
-}
-
-// buildWithQuery use url's querystring + fragment to build pattern string
-func (*matcher) buildWithQuery(url_ *url.URL) string {
-	buf := bytes.NewBuffer(make([]byte, 0, 20))
-	buf.WriteString(buildUrlQuerystring(url_))
-	if frag := url_.Fragment; frag != "" {
-		buf.WriteByte('#')
-		buf.WriteString(frag)
-	}
-	return buf.String()
-}
-
-// buildWithPath use url's path + querystring + fragment to build pattern string
-func (*matcher) buildWithPath(url_ *url.URL) string {
-	buf := bytes.NewBuffer(make([]byte, 0, 20))
-	buf.WriteString(url_.Path)
-	if query := buildUrlQuerystring(url_); query != "" {
-		buf.WriteByte('?')
-		buf.WriteString(query)
-	}
-	if frag := url_.Fragment; frag != "" {
-		buf.WriteByte('#')
-		buf.WriteString(frag)
-	}
-	return buf.String()
-}
-
-// buildWithHost use url's host+path+querystring+fragment to build pattern string
-func (*matcher) buildWithHost(url_ *url.URL) string {
-	buf := bytes.NewBuffer(make([]byte, 0, 20))
-	buf.WriteString(url_.Host)
-	buf.WriteString(url_.Path)
-	if query := buildUrlQuerystring(url_); query != "" {
-		buf.WriteByte('?')
-		buf.WriteString(query)
-	}
-	if frag := url_.Fragment; frag != "" {
-		buf.WriteByte('#')
-		buf.WriteString(frag)
-	}
-	return buf.String()
-}
-
-// buildUrlQuerystring extract query string from url
-func buildUrlQuerystring(url_ *url.URL) string {
-	query, err := url.QueryUnescape(url_.RawQuery)
-	if err != nil {
-		query = ""
-	}
-	return query
 }

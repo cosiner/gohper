@@ -2,7 +2,7 @@ package server
 
 type (
 	// FilterFunc represent common filter function type,
-	FilterFunc func(*Request, *Response, *FilterChain)
+	FilterFunc func(Request, Response, FilterChain)
 
 	// Filter is an filter that run before or after handler,
 	// to modify or check request and response
@@ -10,11 +10,16 @@ type (
 	Filter interface {
 		Init(*Server) error
 		Destroy()
-		Filter(*Request, *Response, *FilterChain)
+		Filter(Request, Response, FilterChain)
 	}
 
 	// FilterChain represent a chain of filter, the last is final handler
-	FilterChain struct {
+	// to continue the chain, must call chain.Filter
+	FilterChain interface {
+		Filter(Request, Response)
+	}
+
+	filterChain struct {
 		index   int
 		filters []Filter
 		handler HandlerFunc
@@ -24,25 +29,27 @@ type (
 // FilterFunc is a function Filter
 func (FilterFunc) Init(*Server) error { return nil }
 func (FilterFunc) Destroy()           {}
-func (fn FilterFunc) Filter(req *Request, resp *Response, chain *FilterChain) {
+func (fn FilterFunc) Filter(req Request, resp Response, chain FilterChain) {
 	fn(req, resp, chain)
 }
 
 // newFilterChain create a chain of filter
-func newFilterChain(filters []Filter, handler HandlerFunc) *FilterChain {
-	return &FilterChain{
-		index:   0,
+func newFilterChain(filters []Filter, handler HandlerFunc) FilterChain {
+	return &filterChain{
+		index:   -1,
 		filters: filters,
 		handler: handler,
 	}
 }
 
 // Filter call next filter, if there is no next filter,then call final handler
-func (chain *FilterChain) Filter(req *Request, resp *Response) {
-	index, filters := chain.index, chain.filters
+func (chain *filterChain) Filter(req Request, resp Response) {
 	chain.index++
+	index, filters := chain.index, chain.filters
 	if index == len(filters) {
-		chain.handler(req, resp)
+		if handler := chain.handler; handler != nil {
+			handler(req, resp)
+		}
 	} else {
 		filters[index].Filter(req, resp, chain)
 	}

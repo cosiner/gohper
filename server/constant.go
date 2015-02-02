@@ -21,6 +21,7 @@ const (
 	POST           = "POST"
 	DELETE         = "DELETE"
 	PUT            = "PUT"
+	PATCH          = "PATCH"
 	UNKNOWN_METHOD = "UNKNOWN"
 
 	// Content Type

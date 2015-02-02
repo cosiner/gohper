@@ -8,6 +8,10 @@ import (
 	. "github.com/cosiner/golib/errors"
 )
 
+const (
+	_SESSION_DISABLE = "Session has been disabled!"
+)
+
 type (
 	// Session represent a server session
 	Session struct {
@@ -93,11 +97,12 @@ func (sess *Session) Id() string {
 }
 
 // panic session manager
+
 func newPanicSessionManager() SessionManager               { return panicSessionManager{} }
 func (panicSessionManager) Init(SessionStore, int64) error { return nil }
-func (panicSessionManager) Session(string) *Session        { panic("Session has been disabled") }
-func (panicSessionManager) NewSession() *Session           { panic("Session has been disabled") }
-func (panicSessionManager) StoreSession(*Session)          { panic("Session has been disabled") }
+func (panicSessionManager) Session(string) *Session        { PanicServer(_SESSION_DISABLE); return nil }
+func (panicSessionManager) NewSession() *Session           { PanicServer(_SESSION_DISABLE); return nil }
+func (panicSessionManager) StoreSession(*Session)          { PanicServer(_SESSION_DISABLE) }
 func (panicSessionManager) Destroy()                       {}
 
 // NewSessionManager create a new session manager

@@ -14,7 +14,8 @@ type (
 	// it's handler's responsibility to close connection
 	WebSocketConn struct {
 		*websocket.Conn
-		urlVars map[string]string
+		urlVars []string
+		indexer VarIndexer
 	}
 
 	// WebSocketHandlerFunc is the websocket connection handler
@@ -35,21 +36,32 @@ func (WebSocketHandlerFunc) Destroy()                      {}
 
 // newWebSocketConn wrap a exist websocket connection and url variables to a
 // new WebSocketConn
-func newWebSocketConn(conn *websocket.Conn, urlVars map[string]string) *WebSocketConn {
+func newWebSocketConn(conn *websocket.Conn) *WebSocketConn {
 	return &WebSocketConn{
-		Conn:    conn,
-		urlVars: urlVars,
+		Conn: conn,
 	}
 }
 
 // UrlVar return variable value in url
-func (wsc *WebSocketConn) UrlVar(name string) string {
-	return wsc.urlVars[name]
+func (wsc *WebSocketConn) UrlVar(name string) (value string) {
+	if values := wsc.urlVars; values != nil {
+		value = wsc.indexer.ValueOf(values, name)
+	}
+	return
+}
+
+// ScanUrlVars scan url variable values into given address
+func (wsc *WebSocketConn) ScanUrlVars(vars ...*string) {
+	if values := wsc.urlVars; values != nil {
+		wsc.indexer.ScanInto(values, vars...)
+	}
 }
 
 // setUrlVars set up url variable vlaues
-func (wsc *WebSocketConn) setUrlVars(vars map[string]string) {
+func (wsc *WebSocketConn) setUrlVars(indexer VarIndexer, vars []string) *WebSocketConn {
+	wsc.indexer = indexer
 	wsc.urlVars = vars
+	return wsc
 }
 
 // URL return client side url

@@ -8,8 +8,8 @@ type context struct {
 	sess    *Session
 	request *http.Request
 	w       http.ResponseWriter
-	req     *Request
-	resp    *Response
+	req     *request
+	resp    *response
 	AttrContainer
 }
 
@@ -24,7 +24,7 @@ func newContext(s *Server, w http.ResponseWriter, request *http.Request) *contex
 }
 
 // init set up response and request that bind to this context
-func (ctx *context) init(req *Request, resp *Response) {
+func (ctx *context) init(req *request, resp *response) {
 	ctx.req = req
 	ctx.resp = resp
 }

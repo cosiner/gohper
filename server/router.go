@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/url"
 )
 
@@ -19,7 +20,7 @@ type (
 		// AddHandler add a handler
 		AddHandler(pattern string, handler Handler) error
 		// MatchHandler match given url to find a handler, also return match url variables
-		MatchHandler(url *url.URL) (handler Handler, urlVars map[string]string)
+		MatchHandler(url *url.URL) (handler Handler, indexer VarIndexer, values []string)
 		// AddFuncFilter add function filter
 		AddFuncFilter(pattern string, filter FilterFunc) error
 		// AddFilter add a filter
@@ -31,7 +32,7 @@ type (
 		// AddWebsocketHandler add a websocket handler
 		AddWebsocketHandler(pattern string, handler WebSocketHandler) error
 		// MatchWebSocketHandler match given url to find a matched websocket handler
-		MatchWebSocketHandler(url *url.URL) (handler WebSocketHandler, urlVars map[string]string)
+		MatchWebSocketHandler(url *url.URL) (handler WebSocketHandler, indexer VarIndexer, values []string)
 	}
 
 	// handlerRoute is route of handler
@@ -55,6 +56,8 @@ type (
 	// router is a url router, the later added handler is first matched,
 	// and match only one, filters is matched as the order of added,
 	// and more than one can be matched
+	// filter's pattern can only be literal
+	// currently router only support url path match
 	router struct {
 		handlerRoutes   []*handlerRoute
 		filterRoutes    []*filterRoute
@@ -116,6 +119,7 @@ func (rt *router) AddFuncHandler(pattern, method string, handleFunc HandlerFunc)
 	} else {
 		err = fHandler.setMethod(method, handleFunc)
 	}
+	fmt.Println(len(rt.handlerRoutes), "--")
 	return
 }
 
@@ -123,7 +127,7 @@ func (rt *router) AddFuncHandler(pattern, method string, handleFunc HandlerFunc)
 // the compiled url matcher will be staged for later added filter
 // that with same pattern
 func (rt *router) AddHandler(pattern string, handler Handler) (err error) {
-	matcher, err := rt.buildMatcher(pattern)
+	matcher, err := rt.buildMatcher(pattern, false)
 	if err == nil {
 		rt.handlerRoutes = append(rt.handlerRoutes,
 			&handlerRoute{
@@ -134,14 +138,15 @@ func (rt *router) AddHandler(pattern string, handler Handler) (err error) {
 	return
 }
 
-// handler return matched handler and url variables of givel url path
+// Matchhandler return matched handler and url variables of givel url path
 // handler is matched in the reverse order of they are added to router
-func (rt *router) MatchHandler(url *url.URL) (handler Handler, urlVars map[string]string) {
-	routes := rt.handlerRoutes
+// it's perform full matched
+func (rt *router) MatchHandler(url *url.URL) (handler Handler, indexer VarIndexer, values []string) {
+	path, routes := url.Path, rt.handlerRoutes
 	for i := len(routes) - 1; i >= 0; i-- {
 		r := routes[i]
-		if vals, match := r.Match(url); match {
-			handler, urlVars = r.Handler, vals
+		if vals, match := r.Match(path); match {
+			handler, indexer, values = r.Handler, r.Matcher, vals
 			break
 		}
 	}
@@ -158,7 +163,7 @@ func (rt *router) AddFuncFilter(pattern string, filter FilterFunc) error {
 // the compiled url matcher will be staged for later added router
 // that with same pattern
 func (rt *router) AddFilter(pattern string, filter Filter) (err error) {
-	matcher, err := rt.buildMatcher(pattern)
+	matcher, err := rt.buildMatcher(pattern, true)
 	if err == nil {
 		rt.filterRoutes = append(rt.filterRoutes,
 			&filterRoute{
@@ -171,13 +176,18 @@ func (rt *router) AddFilter(pattern string, filter Filter) (err error) {
 
 // MatchFilters return matched filters of url path
 // the order of filters is same as they are added to router
-func (rt *router) MatchFilters(url *url.URL) (filters []Filter) {
-	for _, r := range rt.filterRoutes {
-		if r.MatchOnly(url) {
-			filters = append(filters, r.Filter)
+// MatchFilters is perform prefix match
+func (rt *router) MatchFilters(url *url.URL) []Filter {
+	path, routes := url.Path, rt.filterRoutes
+	index, l := 0, len(routes)
+	filters := make([]Filter, l)
+	for _, r := range routes {
+		if r.PrefixMatchOnly(path) {
+			filters[index] = r.Filter
+			index++
 		}
 	}
-	return
+	return filters[:index]
 }
 
 // AddWebsocketFuncHandler add a websocket function handler
@@ -187,7 +197,7 @@ func (rt *router) AddWebsocketFuncHandler(pattern string, handler WebSocketHandl
 
 // AddWebsocketHandler add a websocket handler
 func (rt *router) AddWebsocketHandler(pattern string, handler WebSocketHandler) error {
-	matcher, err := rt.buildMatcher(pattern)
+	matcher, err := rt.buildMatcher(pattern, false)
 	if err == nil {
 		rt.websocketRoutes = append(rt.websocketRoutes,
 			&websocketRoute{
@@ -200,13 +210,14 @@ func (rt *router) AddWebsocketHandler(pattern string, handler WebSocketHandler) 
 
 // MatchWebSocketHandler match given url to find a matched websocket handler
 // the match order is reverse of handlers are added to router
+// it's perform full matched
 func (rt *router) MatchWebSocketHandler(url *url.URL) (handler WebSocketHandler,
-	urlVars map[string]string) {
-	routes := rt.websocketRoutes
+	indexer VarIndexer, values []string) {
+	path, routes := url.Path, rt.websocketRoutes
 	for i := len(routes) - 1; i >= 0; i-- {
 		r := routes[i]
-		if vals, match := r.Match(url); match {
-			handler, urlVars = r.WebSocketHandler, vals
+		if vals, match := r.Match(path); match {
+			handler, indexer, values = r.WebSocketHandler, r.Matcher, vals
 			break
 		}
 	}
@@ -215,11 +226,17 @@ func (rt *router) MatchWebSocketHandler(url *url.URL) (handler WebSocketHandler,
 
 // buildMatcher build a matcher from pattern, if matcher already exist for same
 // pattern in strach, just use the exist one, else create a new one
-func (*router) buildMatcher(pattern string) (matcher Matcher, err error) {
+func (*router) buildMatcher(pattern string, forceLiteral bool) (matcher Matcher, err error) {
 	if matcher = strach.routeMatcher(pattern); matcher == nil {
-		if matcher, err = NewMatcher(pattern); err == nil {
+		newMatcherFunc := NewMatcher
+		if forceLiteral {
+			newMatcherFunc = NewLiteralMatcher
+		}
+		if matcher, err = newMatcherFunc(pattern); err == nil {
 			strach.setRouteMatcher(pattern, matcher)
 		}
+	} else if forceLiteral && !matcher.IsLiteral() {
+		matcher, err = nil, nonLiteralError
 	}
 	return
 }

@@ -8,7 +8,7 @@ import (
 
 type (
 	// HandlerFunc is the common request handler function type
-	HandlerFunc func(*Request, *Response)
+	HandlerFunc func(Request, Response)
 
 	// Handler is an common interface of request handler
 	// it will be inited on server started, destroyed on server stopped
@@ -18,10 +18,11 @@ type (
 	Handler interface {
 		Init(*Server) error
 		Destroy()
-		Get(*Request, *Response)
-		Post(*Request, *Response)
-		Delete(*Request, *Response)
-		Put(*Request, *Response)
+		Get(Request, Response)    // query
+		Post(Request, Response)   // add
+		Delete(Request, Response) // delete
+		Put(Request, Response)    // create or replace
+		Patch(Request, Response)  // update
 	}
 
 	// MethodIndicator is an interface for user handler to
@@ -57,6 +58,7 @@ type (
 		post   HandlerFunc
 		delete HandlerFunc
 		put    HandlerFunc
+		patch  HandlerFunc
 	}
 
 	// errorHandlers is a collection of http error handler
@@ -85,17 +87,11 @@ func standardIndicate(method string, handler Handler) (handlerFunc HandlerFunc) 
 		handlerFunc = handler.Delete
 	case PUT:
 		handlerFunc = handler.Put
+	case PATCH:
+		handlerFunc = handler.Patch
 	}
 	return
 }
-
-// EmptyHandler methods
-func (EmptyHandler) Init(*Server) error         { return nil }
-func (EmptyHandler) Destroy()                   {}
-func (EmptyHandler) Get(*Request, *Response)    {}
-func (EmptyHandler) Post(*Request, *Response)   {}
-func (EmptyHandler) Delete(*Request, *Response) {}
-func (EmptyHandler) Put(*Request, *Response)    {}
 
 // funcHandler implements MethodIndicator interface for custom method handler
 func (fh *funcHandler) Handler(method string) (handlerFunc HandlerFunc) {
@@ -108,6 +104,8 @@ func (fh *funcHandler) Handler(method string) (handlerFunc HandlerFunc) {
 		handlerFunc = fh.delete
 	case PUT:
 		handlerFunc = fh.put
+	case PATCH:
+		handlerFunc = fh.patch
 	}
 	return
 }
@@ -123,15 +121,26 @@ func (fh *funcHandler) setMethod(method string, handlerFunc HandlerFunc) error {
 		fh.put = handlerFunc
 	case DELETE:
 		fh.delete = handlerFunc
+	case PATCH:
+		fh.patch = handlerFunc
 	default:
 		return Err("Not supported request method")
 	}
 	return nil
 }
 
+// EmptyHandler methods
+func (EmptyHandler) Init(*Server) error       { return nil }
+func (EmptyHandler) Destroy()                 {}
+func (EmptyHandler) Get(Request, Response)    {}
+func (EmptyHandler) Post(Request, Response)   {}
+func (EmptyHandler) Delete(Request, Response) {}
+func (EmptyHandler) Put(Request, Response)    {}
+func (EmptyHandler) Patch(Request, Response)  {}
+
 // ErrorHandlerBuilder build an error handler with given status code
 func ErrorHandlerBuilder(statusCode int) HandlerFunc {
-	return func(req *Request, resp *Response) {
+	return func(req Request, resp Response) {
 		resp.ReportError(statusCode)
 	}
 }
