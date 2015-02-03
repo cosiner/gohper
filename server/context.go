@@ -1,25 +1,30 @@
 package server
 
-import "net/http"
+import (
+	"fmt"
+
+	"net/http"
+)
 
 // context is the request specified enviroment of request and response
 type context struct {
-	srv     *Server
-	sess    *Session
-	request *http.Request
-	w       http.ResponseWriter
-	req     *request
-	resp    *response
-	AttrContainer
+	srv       *Server
+	sess      *Session
+	request   *http.Request
+	w         http.ResponseWriter
+	req       *request
+	resp      *response
+	xsrfToken string
+	Values
 }
 
 // newContext create a new context
 func newContext(s *Server, w http.ResponseWriter, request *http.Request) *context {
 	return &context{
-		srv:           s,
-		w:             w,
-		request:       request,
-		AttrContainer: NewAttrContainer(),
+		srv:     s,
+		w:       w,
+		request: request,
+		Values:  NewValues(),
 	}
 }
 
@@ -29,9 +34,17 @@ func (ctx *context) init(req *request, resp *response) {
 	ctx.resp = resp
 }
 
-// SetValues replace all attributes of context
+func (ctx *context) setXsrfToken(tok string) {
+	ctx.xsrfToken = tok
+}
+
+func (ctx *context) XsrfFormHtml() string {
+	return fmt.Sprintf(`<input type="hidden" name=%s value=%s/>`, XSRF_NAME, ctx.xsrfToken)
+}
+
+// SetAttrs replace all attributes of context
 func (ctx *context) SetAttrs(attrs Values) {
-	ctx.AttrContainer = attrs
+	ctx.Values = attrs
 }
 
 // destroy destroy all reference the context keep
@@ -42,7 +55,7 @@ func (ctx *context) destroy() {
 	ctx.w = nil
 	ctx.req = nil
 	ctx.resp = nil
-	ctx.AttrContainer = nil
+	ctx.Values = nil
 }
 
 // Server return the only running server
@@ -66,4 +79,9 @@ func (ctx *context) Session() (sess *Session) {
 		ctx.sess = sess
 	}
 	return sess
+}
+
+// Attrs return all attrubites exist in request context
+func (ctx *context) Attrs() Values {
+	return ctx.Values
 }

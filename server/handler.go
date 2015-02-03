@@ -41,6 +41,8 @@ type (
 		SetNotFoundHandler(HandlerFunc)
 		MethodNotAllowedHandler() HandlerFunc
 		SetMethodNotAllowedHandler(HandlerFunc)
+		XsrfErrorHandler() HandlerFunc
+		SetXsrfErrorHandler(HandlerFunc)
 	}
 
 	// EmptyHandler is an empty handler for user to embed
@@ -141,16 +143,18 @@ func (EmptyHandler) Patch(Request, Response)  {}
 // ErrorHandlerBuilder build an error handler with given status code
 func ErrorHandlerBuilder(statusCode int) HandlerFunc {
 	return func(req Request, resp Response) {
-		resp.ReportError(statusCode)
+		resp.ReportStatus(statusCode)
 	}
 }
 
 // NewErrorHandlers create new errorHandlers
 func NewErrorHandlers() ErrorHandlers {
+	forbidden := ErrorHandlerBuilder(http.StatusForbidden)
 	return errorHandlers{
-		http.StatusForbidden:        ErrorHandlerBuilder(http.StatusForbidden),
+		http.StatusForbidden:        forbidden,
 		http.StatusNotFound:         ErrorHandlerBuilder(http.StatusNotFound),
 		http.StatusMethodNotAllowed: ErrorHandlerBuilder(http.StatusMethodNotAllowed),
+		XSRF_ERRORCODE:              forbidden,
 	}
 }
 
@@ -182,4 +186,12 @@ func (eh errorHandlers) MethodNotAllowedHandler() HandlerFunc {
 // SetMethodNotAllowedHandler set methodnotallowed error handler
 func (eh errorHandlers) SetMethodNotAllowedHandler(handlerFunc HandlerFunc) {
 	eh[http.StatusMethodNotAllowed] = handlerFunc
+}
+
+func (eh errorHandlers) XsrfErrorHandler() HandlerFunc {
+	return eh[XSRF_ERRORCODE]
+}
+
+func (eh errorHandlers) SetXsrfErrorHandler(handlerFunc HandlerFunc) {
+	eh[XSRF_ERRORCODE] = handlerFunc
 }

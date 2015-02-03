@@ -33,8 +33,11 @@ func (fn FilterFunc) Filter(req Request, resp Response, chain FilterChain) {
 	fn(req, resp, chain)
 }
 
-// newFilterChain create a chain of filter
-func newFilterChain(filters []Filter, handler HandlerFunc) FilterChain {
+// NewFilterChain create a chain of filter
+// this method is setup to public for which condition there only one route
+// need filter, if add to global router, it will make router match slower
+// this method can help for these condition
+func NewFilterChain(filters []Filter, handler HandlerFunc) FilterChain {
 	return &filterChain{
 		index:   -1,
 		filters: filters,

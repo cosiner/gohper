@@ -12,11 +12,15 @@ import (
 type (
 	Request interface {
 		RemoteAddr() string
+		Refer() string
+		UserAgent() string
 		URL() *url.URL
 		Method() string
 		ContentType() string
+		ContentEncoding() string
 		Header(name string) string
 		Cookie(name string) string
+		SecureCookie(name string) string
 		Session() *Session
 		Server() *Server
 		Param(name string) (value string)
@@ -87,9 +91,35 @@ func (req *request) Cookie(name string) string {
 	return ""
 }
 
+// SecureCookie return secure cookie, currently it's just call Cookie without
+// 'Secure', if need this feture, just put an filter before handler
+// and override this method
+func (req *request) SecureCookie(name string) string {
+	return req.Cookie(name)
+}
+
 // RemoteAddr return remote address
 func (req *request) RemoteAddr() string {
 	return req.request.RemoteAddr
+}
+
+// Refer return where user from
+func (req *request) Refer() string {
+	return req.Header(HEADER_REFER)
+}
+
+// UserAgent return user's agent identify
+func (req *request) UserAgent() string {
+	return req.Header(HEADER_USERAGENT)
+}
+
+// ContentType extract content type form request header
+func (req *request) ContentType() string {
+	return req.Header(HEADER_CONTENTTYPE)
+}
+
+func (req *request) ContentEncoding() string {
+	return req.Header(HEADER_CONTENTENCODING)
 }
 
 // URL return request url
@@ -97,9 +127,10 @@ func (req *request) URL() *url.URL {
 	return req.request.URL
 }
 
-// cookieSessionId extract session id from cookie
+// cookieSessionId extract session id from cookie, if enable secure cookie, it will
+// use it
 func (req *request) cookieSessionId() string {
-	return req.Cookie(_COOKIE_SESSION)
+	return req.SecureCookie(_COOKIE_SESSION)
 }
 
 // Header return header value with name
@@ -152,11 +183,6 @@ func (req *request) ScanUrlVars(vars ...*string) {
 	if values := req.urlVars; values != nil {
 		req.indexer.ScanInto(values, vars...)
 	}
-}
-
-// ContentType extract content type form request header
-func (req *request) ContentType() string {
-	return parseContentType(req.Header(HEADER_CONTENTTYPE))
 }
 
 // Forward forward to given address use exist request and response

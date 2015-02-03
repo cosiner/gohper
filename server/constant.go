@@ -12,9 +12,22 @@ const (
 	_FILTER_AFTER         // _AFTER means execute filter after handler
 
 	// Http Header
-	HEADER_CONTENTTYPE   = "Content-Type"
-	HEADER_CONTENTLENGTH = "Content-Length"
-	HEADER_SETCOOKIE     = "Set-Cookie"
+	HEADER_CONTENTTYPE     = "Content-Type"
+	HEADER_CONTENTLENGTH   = "Content-Length"
+	HEADER_SETCOOKIE       = "Set-Cookie"
+	HEADER_REFER           = "Referer"
+	HEADER_CONTENTENCODING = "Content-Encoding"
+	HEADER_USERAGENT       = "User-Agent"
+	HEADER_XSRFTOKEN       = "X-XSRFToken"
+	HEADER_CSRFTOKEN       = "X-CSRFToken"
+	XSRF_NAME              = "_xsrf"
+	XSRF_ONERROR_TOKEN     = "dsajhdoqwARUH20174P2UAsdJDASDKJ"
+	XSRF_DEFFLUSH          = 60
+	XSRF_DEFLIFETIME       = 300
+	XSRF_ERRORCODE         = 101
+
+	// ContentEncoding
+	ENCODING_GZIP = "gzip"
 
 	// Request Method
 	GET            = "GET"

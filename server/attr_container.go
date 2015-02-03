@@ -10,6 +10,7 @@ type (
 		UpdateAttr(name string, value interface{}) bool
 		RemoveAttr(name string)
 		IsAttrExist(name string) bool
+		Attrs() Values
 		AccessAllAttrs(fn func(Values))
 	}
 
@@ -71,6 +72,10 @@ func (v Values) UpdateAttr(key string, val interface{}) (s bool) {
 	return
 }
 
+func (v Values) Attrs() Values {
+	return v
+}
+
 func (v Values) AccessAllAttrs(fn func(Values)) {
 	fn(v)
 }
@@ -106,6 +111,10 @@ func (lc *lockedValues) UpdateAttr(key string, val interface{}) (s bool) {
 	s = lc.Values.UpdateAttr(key, val)
 	lc.Unlock()
 	return
+}
+
+func (lc *lockedValues) Attrs() Values {
+	return lc.Values
 }
 
 func (lc *lockedValues) AccessAllAttrs(fn func(Values)) {

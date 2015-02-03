@@ -17,8 +17,10 @@ import (
 )
 
 // serverStart do only once
-var serverStart = new(sync.Once)
-var serverInit = new(sync.Once)
+var (
+	serverStart = new(sync.Once)
+	serverInit  = new(sync.Once)
+)
 
 //==============================================================================
 //                           Server Init
@@ -26,14 +28,18 @@ var serverInit = new(sync.Once)
 type (
 	// ServerConfig is all config of server
 	ServerConfig struct {
-		Router          Router
-		ErrorHandlers   ErrorHandlers
-		SessionDisable  bool
-		SessionManager  SessionManager
-		SessionStore    SessionStore
-		StoreConfig     string
-		SessionLifetime int64
-		FilterForward   bool
+		Router            Router             // router
+		ErrorHandlers     ErrorHandlers      // error handlers
+		SessionDisable    bool               // session disble
+		SessionManager    SessionManager     // session manager
+		SessionStore      SessionStore       // session store
+		StoreConfig       string             // session store config
+		SessionLifetime   int64              // session lifetime
+		FilterForward     bool               // fliter forward request
+		XsrfEnable        bool               // Enable xsrf cookie
+		XsrfFlushInterval int                // xsrf cookie value flush interval
+		XsrfLifetime      int                // xsrf cookie expire
+		XsrfGenerator     XsrfTokenGenerator // xsrf token generator
 	}
 
 	// Server represent a web server
@@ -44,6 +50,7 @@ type (
 		ErrorHandlers
 		tmpl          *template.Template
 		filterForward bool
+		xsrf          Xsrf
 	}
 )
 
@@ -55,6 +62,7 @@ func NewServer() *Server {
 	}
 }
 
+// init
 func (sc *ServerConfig) init() {
 	if sc.ErrorHandlers == nil {
 		sc.ErrorHandlers = NewErrorHandlers()
@@ -95,6 +103,22 @@ func (s *Server) start() {
 		srvConf = new(ServerConfig)
 	}
 	srvConf.init()
+	if srvConf.XsrfEnable {
+		log.Println("Init xsrf")
+		xsrfFlush := srvConf.XsrfFlushInterval
+		if xsrfFlush <= 0 {
+			xsrfFlush = XSRF_DEFFLUSH
+		}
+		xsrfLifetime := srvConf.XsrfLifetime
+		if xsrfLifetime <= 0 {
+			xsrfLifetime = XSRF_DEFLIFETIME
+		}
+		xsrfGen := srvConf.XsrfGenerator
+		s.xsrf = NewXsrf(xsrfGen, xsrfLifetime)
+	} else {
+		s.xsrf = emptyXsrf{}
+	}
+
 	s.filterForward = srvConf.FilterForward
 	manager := srvConf.SessionManager
 	if !srvConf.SessionDisable {
@@ -165,6 +189,16 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, request *http.Request) {
 	}
 }
 
+// serveWebSocket serve for websocket protocal
+func (s *Server) serveWebSocket(w http.ResponseWriter, request *http.Request) {
+	handler, indexer, values := s.MatchWebSocketHandler(request.URL)
+	if handler == nil {
+		w.WriteHeader(http.StatusNotFound)
+	} else if conn, err := websocket.UpgradeWebsocket(w, request, nil); err == nil {
+		handler.Handle(newWebSocketConn(conn).setUrlVars(indexer, values))
+	}
+}
+
 // serveHttp serve for http protocal
 func (s *Server) serveHttp(w http.ResponseWriter, request *http.Request) {
 	req, resp := s.setupContext(w, request)
@@ -188,27 +222,33 @@ func (s *Server) setupContext(w http.ResponseWriter, request *http.Request) (
 
 // processHttpRequest do process http request
 func (s *Server) processHttpRequest(url *url.URL, req *request, resp *response, forward bool) {
-	var handlerFunc HandlerFunc
+	var (
+		xsrfError   bool
+		handlerFunc HandlerFunc
+	)
+	if !forward { // check xsrf error
+		if req.Method() == GET {
+			req.setXsrfToken(s.xsrf.Set(resp))
+		} else {
+			xsrfError = !s.xsrf.IsValid(req)
+		}
+	}
 	handler, indexer, values := s.MatchHandler(url)
 	if handler != nil {
 		req.setUrlVars(indexer, values)
 		if handlerFunc = IndicateHandler(req.Method(), handler); handlerFunc == nil {
 			handlerFunc = s.MethodNotAllowedHandler()
+		} else if xsrfError {
+			if handler, is := handler.(XsrfErrorHandler); is {
+				handlerFunc = handler.HandleXsrfError
+			} else {
+				handlerFunc = s.XsrfErrorHandler()
+			}
 		}
 	} else { // no handler means no resource there
 		handlerFunc = s.NotFoundHandler()
 	}
 	s.handleWithFilter(req, resp, handlerFunc, url, forward)
-}
-
-// serveWebSocket serve for websocket protocal
-func (s *Server) serveWebSocket(w http.ResponseWriter, request *http.Request) {
-	handler, indexer, values := s.MatchWebSocketHandler(request.URL)
-	if handler == nil {
-		w.WriteHeader(http.StatusNotFound)
-	} else if conn, err := websocket.UpgradeWebsocket(w, request, nil); err == nil {
-		handler.Handle(newWebSocketConn(conn).setUrlVars(indexer, values))
-	}
 }
 
 // handleWithFilter handle request and response
@@ -220,7 +260,7 @@ func (s *Server) handleWithFilter(req Request, resp Response, handlerFunc Handle
 	if !forward || s.filterForward {
 		filters = s.MatchFilters(url)
 	}
-	newFilterChain(filters, handlerFunc).Filter(req, resp)
+	NewFilterChain(filters, handlerFunc).Filter(req, resp)
 }
 
 //==============================================================================

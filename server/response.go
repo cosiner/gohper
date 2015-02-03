@@ -11,13 +11,18 @@ type (
 		SetHeader(name, value string)
 		AddHeader(name, value string)
 		SetContentType(typ string)
+		SetContentEncoding(enc string)
 		SetCookie(name, value string)
+		SetSecureCookie(name, value string)
 		SetCookieWithExpire(name, value string, lifetime int)
+		SetSecureCookieWithExpire(name, value string, lifetime int)
 		DeleteClientCookie(name string)
 		Redirect(url string)
 		PermanentRedirect(url string)
-		ReportError(statusCode int)
+		ReportStatus(statusCode int)
 		Render(tmpl string) error
+		RenderWith(tmpl string, value interface{}) error
+		Write(data []byte) (int, error)
 		WriteString(data string) (int, error)
 		WriteJSON(val interface{}) error
 		WriteXML(val interface{}) error
@@ -67,6 +72,11 @@ func (resp *response) SetContentType(typ string) {
 	resp.SetHeader(HEADER_CONTENTTYPE, typ)
 }
 
+// SetContentEncoding set content encoding of response
+func (resp *response) SetContentEncoding(enc string) {
+	resp.SetHeader(HEADER_CONTENTENCODING, enc)
+}
+
 // contentType return current content type of response
 func (resp *response) contentType() string {
 	return resp.header.Get(HEADER_CONTENTTYPE)
@@ -87,9 +97,21 @@ func (resp *response) SetCookie(name, value string) {
 	resp.SetCookieWithExpire(name, value, 0)
 }
 
+// SetSecureCookie setup response cookie with secure feture, currently it only
+// call "SetCookie", if need this feture, just put an filter before handler
+// and override this method, the same as SetSecureCookieWithExpire
+func (resp *response) SetSecureCookie(name, value string) {
+	resp.SetCookie(name, value)
+}
+
 // SetCookieWithExpire setup response cookie with lifetime
 func (resp *response) SetCookieWithExpire(name, value string, lifetime int) {
 	resp.SetHeader(HEADER_SETCOOKIE, resp.newCookie(name, value, lifetime))
+}
+
+// SetSecureCookieWithExpire setup response cookie with lifetime and secureity
+func (resp *response) SetSecureCookieWithExpire(name, value string, lifetime int) {
+	resp.SetCookieWithExpire(name, value, lifetime)
 }
 
 // DeleteClientCookie delete user briwser's cookie by name
@@ -97,9 +119,9 @@ func (resp *response) DeleteClientCookie(name string) {
 	resp.SetCookieWithExpire(name, "", -1)
 }
 
-// setSessionCookie setup session cookie
+// setSessionCookie setup session cookie, if enabled secure cookie, it will use it
 func (resp *response) setSessionCookie(id string) {
-	resp.SetCookie(_COOKIE_SESSION, id)
+	resp.SetSecureCookie(_COOKIE_SESSION, id)
 }
 
 // Redirect redirect to new url
@@ -112,14 +134,19 @@ func (resp *response) PermanentRedirect(url string) {
 	http.Redirect(resp.w, resp.request, url, http.StatusMovedPermanently)
 }
 
-// Report Error report an http error with given status code
-func (resp *response) ReportError(statusCode int) {
+// ReportStatus report an http status with given status code
+func (resp *response) ReportStatus(statusCode int) {
 	resp.w.WriteHeader(statusCode)
 }
 
 // Render render template with context
 func (resp *response) Render(tmpl string) error {
-	return resp.Server().renderTemplate(resp, tmpl, resp.context)
+	return resp.RenderWith(tmpl, resp.context)
+}
+
+// RenderWith render template with given value
+func (resp *response) RenderWith(tmpl string, value interface{}) error {
+	return resp.Server().renderTemplate(resp, tmpl, value)
 }
 
 func (resp *response) Write(data []byte) (int, error) {

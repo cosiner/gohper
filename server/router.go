@@ -1,9 +1,6 @@
 package server
 
-import (
-	"fmt"
-	"net/url"
-)
+import "net/url"
 
 type (
 	// Router is responsible for route manage and match
@@ -119,7 +116,6 @@ func (rt *router) AddFuncHandler(pattern, method string, handleFunc HandlerFunc)
 	} else {
 		err = fHandler.setMethod(method, handleFunc)
 	}
-	fmt.Println(len(rt.handlerRoutes), "--")
 	return
 }
 
