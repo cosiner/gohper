@@ -5,16 +5,20 @@ import (
 	"fmt"
 )
 
-type fieldCache map[uint]string
-type modelCache map[string]fieldCache
-type newSQLFunc func(Model, []Field, []Field) string
+type (
+	fieldsSQLCache map[uint]string
+	modelSQLCache  map[string]fieldsSQLCache
+	newSQLFunc     func(Model, []Field, []Field) string
+)
 
-var insertCache modelCache = make(modelCache)
-var updateCache modelCache = make(modelCache)
-var deleteCache modelCache = make(modelCache)
-var selectCache modelCache = make(modelCache)
+var (
+	insertSQLCache modelSQLCache = make(modelSQLCache)
+	updateSQLCache modelSQLCache = make(modelSQLCache)
+	deleteSQLCache modelSQLCache = make(modelSQLCache)
+	selectSQLCache modelSQLCache = make(modelSQLCache)
 
-var printSQL = func(bool, string) {}
+	printSQL = func(bool, string) {}
+)
 
 // EnableSqlPrint enable print sql
 func EnableSqlPrint() {
@@ -29,10 +33,10 @@ func fieldsSig(fields []Field) uint {
 }
 
 // cacheGet get sql from cache, if not exist in cache, use newSQL to create a new one
-func cacheGet(modelCache modelCache, model Model, fields, whereFields []Field,
+func cacheGet(modelCache modelSQLCache, model Model, fields, whereFields []Field,
 	newSQL newSQLFunc) (sql string) {
 	table := model.Table()
-	cache := modelCache[table]
+	fieldsCache := modelCache[table]
 	sig := fieldsSig(fields) << model.FieldCount()
 	if len(whereFields) != 0 {
 		sig |= fieldsSig(whereFields)
@@ -41,15 +45,15 @@ func cacheGet(modelCache modelCache, model Model, fields, whereFields []Field,
 		return ""
 	}
 	var has bool
-	if has = (cache != nil); has {
-		sql, has = cache[sig]
+	if has = (fieldsCache != nil); has {
+		sql, has = fieldsCache[sig]
 	} else {
-		cache = make(fieldCache)
-		insertCache[table] = cache
+		fieldsCache = make(fieldsSQLCache)
+		modelCache[table] = fieldsCache
 	}
 	if !has {
 		sql = newSQL(model, fields, whereFields)
-		cache[sig] = sql
+		fieldsCache[sig] = sql
 	}
 	return sql
 }
@@ -62,7 +66,7 @@ func sqlForInsert(model Model, fields, _ []Field) string {
 
 // Insert insert model's field to database
 func Insert(db *sql.DB, model Model, fields []Field, needId bool) (int64, error) {
-	sql := cacheGet(insertCache, model, fields, nil, sqlForInsert)
+	sql := cacheGet(insertSQLCache, model, fields, nil, sqlForInsert)
 	args := model.FieldVals(fields)
 	return Exec(db, sql, args, needId)
 }
@@ -74,7 +78,7 @@ func sqlforUpdate(model Model, fields, whereFields []Field) string {
 
 // Update update model
 func Update(db *sql.DB, model Model, fields, whereFields []Field) (int64, error) {
-	sql := cacheGet(updateCache, model, fields, whereFields, sqlforUpdate)
+	sql := cacheGet(updateSQLCache, model, fields, whereFields, sqlforUpdate)
 	args := model.FieldVals(append(fields, whereFields...))
 	return Exec(db, sql, args, false)
 }
@@ -85,7 +89,7 @@ func sqlForDelete(model Model, _, whereFields []Field) string {
 
 // Delete delete model
 func Delete(db *sql.DB, model Model, whereFields []Field) (int64, error) {
-	sql := cacheGet(deleteCache, model, nil, whereFields, sqlForDelete)
+	sql := cacheGet(deleteSQLCache, model, nil, whereFields, sqlForDelete)
 	args := model.FieldVals(whereFields)
 	return Exec(db, sql, args, false)
 }
@@ -97,7 +101,7 @@ func sqlForSelect(model Model, fields, whereFields []Field) string {
 
 // SelectOne select model from database
 func SelectOne(db *sql.DB, model Model, fields, whereFields []Field) error {
-	sql := cacheGet(selectCache, model, fields, whereFields, sqlForSelect)
+	sql := cacheGet(selectSQLCache, model, fields, whereFields, sqlForSelect)
 	args := model.FieldVals(whereFields)
 	row := db.QueryRow(sql, args...)
 	return row.Scan(model.FieldPtrs(fields)...)
