@@ -1,8 +1,9 @@
 package goutil
 
 import (
-	"github.com/cosiner/golib/types"
 	"go/ast"
+
+	"github.com/cosiner/golib/types"
 )
 
 // IsExported return whether or not field is exported
@@ -12,12 +13,13 @@ func IsExported(name string) bool {
 }
 
 // SameExportedCase return the same exported case with example string of a string
-func SameExportedCase(example, str string) string {
+func SameExportedCase(example, str string) (res string) {
 	if IsExported(example) {
-		return ExportedCase(str)
+		res = ExportedCase(str)
 	} else {
-		return UnexportedCase(str)
+		res = UnexportedCase(str)
 	}
+	return
 }
 
 // ExportedCase return the exported case of a string
@@ -28,7 +30,7 @@ func ExportedCase(str string) string {
 	return string(types.UpperCase(str[0])) + str[1:]
 }
 
-// ExportedCase return the unexported case of a string
+// UnexportedCase return the unexported case of a string
 func UnexportedCase(str string) string {
 	if str == "" {
 		return ""

@@ -1,4 +1,4 @@
-// Package rgx implements some utilitily function for access regexp group values
+// Package regexp implements some utilitily function for access regexp group values
 // via index or name
 package regexp
 
@@ -8,8 +8,8 @@ import (
 	"github.com/cosiner/golib/types"
 )
 
-// NIL_MAP is an empty map, it SHOULD NOT BE MODIFYED for common shared
-var NIL_MAP = make(map[string]string)
+// NilMap is an empty map, it SHOULD NOT BE MODIFYED for common shared
+var NilMap = make(map[string]string)
 
 // Regexp is a package type of regexp.Regexp that provide some useful function
 // to access grouped value via index or group name in regexp's Find* result
@@ -43,6 +43,16 @@ func CompilePOSIX(pattern string) (r *Regexp, err error) {
 // MustCompile is a package function of regexp.MustCompile
 func MustCompile(pattern string) *Regexp {
 	return &Regexp{regexp.MustCompile(pattern)}
+}
+
+// SubexpNamesMap return regexp variable names and index map
+func (r *Regexp) SubexpNamesMap() map[string]int {
+	names := r.SubexpNames()[1:]
+	mp := make(map[string]int, len(names))
+	for i, name := range names {
+		mp[name] = i
+	}
+	return mp
 }
 
 // SingleSubmatch return first matched groups, remove first whole matched string
@@ -91,7 +101,7 @@ func (r *Regexp) AllSubmatchAtIndex(s string, index int) (res []string, match bo
 
 // SingleSubmatchMap return first group string in map
 func (r *Regexp) SingleSubmatchMap(s string) (matchMap map[string]string, match bool) {
-	matchMap = NIL_MAP
+	matchMap = NilMap
 	if m := r.FindStringSubmatch(s); m != nil {
 		matchNames := r.SubexpNames()
 		matchMap = make(map[string]string, len(matchNames))
@@ -130,7 +140,7 @@ func (r *Regexp) AllSubmatchMap(s string) (matchMaps []map[string]string, match 
 	return
 }
 
-// AllSubmatchMap return all matched group with group name
+// AllSubmatchWithName return all matched group with group name
 // if name is "", return the whole matched string
 // else return single matched group string with the name
 func (r *Regexp) AllSubmatchWithName(s, name string) (matchs []string, match bool) {

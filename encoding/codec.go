@@ -20,14 +20,13 @@ type (
 )
 
 // GOBEncode encode parameter value to bytes use gob encoder
-func GOBEncode(v interface{}) ([]byte, error) {
+func GOBEncode(v interface{}) (res []byte, err error) {
 	buffer := bytes.NewBuffer(make([]byte, 100))
 	encoder := gob.NewEncoder(buffer)
-	if err := encoder.Encode(v); err == nil {
-		return buffer.Bytes(), nil
-	} else {
-		return nil, err
+	if err = encoder.Encode(v); err == nil {
+		res = buffer.Bytes()
 	}
+	return
 }
 
 // GOBDecode decode bytes to given parameter use gob decoder

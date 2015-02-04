@@ -1,6 +1,10 @@
 package regexp
 
-import "testing"
+import (
+	"regexp"
+
+	"testing"
+)
 
 var pattern = MustCompile("(?m)^func\\ (?:\\(.*\\)\\ )?(?P<funcname>\\S+)\\(")
 var code = `
@@ -29,4 +33,32 @@ func TestMatch(t *testing.T) {
 func TestNoMatch(t *testing.T) {
 	r := MustCompile("1234.*")
 	t.Log(r.SingleSubmatchMap("001234a"))
+}
+
+func BenchmarkMatchOnly(b *testing.B) {
+	pattern := MustCompile("^/[a-zA-Z]*/[0-9]*$")
+	for i := 0; i < b.N; i++ {
+		_ = pattern.MatchString("/user/123")
+	}
+}
+
+func BenchmarkMatchNoMap(b *testing.B) {
+	pattern := MustCompile("^/[a-zA-Z]*/[0-9]*$")
+	for i := 0; i < b.N; i++ {
+		_, _ = pattern.SingleSubmatch("/user/123")
+	}
+}
+
+func BenchmarkRgxMap(b *testing.B) {
+	pattern := MustCompile("^/[a-zA-Z]*/[0-9]*$")
+	for i := 0; i < b.N; i++ {
+		_, _ = pattern.SingleSubmatchMap("/user/123")
+	}
+}
+
+func BenchmarkRgxSlice(b *testing.B) {
+	pattern := regexp.MustCompile("^/[a-zA-Z]*/[0-9]*$")
+	for i := 0; i < b.N; i++ {
+		_ = pattern.FindStringSubmatch("/user/123")
+	}
 }

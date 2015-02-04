@@ -11,7 +11,7 @@ type Pair struct {
 	Value string
 }
 
-// ParisePair seperate string use first seperator string
+// ParsePair seperate string use first seperator string
 func ParsePair(str, sep string) *Pair {
 	return parsePair(str, strings.Index(str, sep))
 }
@@ -131,7 +131,7 @@ func (p *Pair) MustBoolValue() bool {
 	return MustStr2Bool(p.Value)
 }
 
-// MustBoolValue convert pair's value to bool, on error use default value
+// BoolValueDef convert pair's value to bool, on error use default value
 func (p *Pair) BoolValueDef(def bool) bool {
 	return Str2BoolDef(p.Value, def)
 }

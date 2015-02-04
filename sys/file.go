@@ -8,21 +8,21 @@ import (
 )
 
 const (
-	// FILE_BBUFSIZe is the buffer size of slice to store file content
-	FILE_BUFSIZE     = 4096
-	FILE_PERM        = 0644
-	DIR_PERM         = 0755
-	CR           int = os.O_CREATE
-	AP           int = os.O_APPEND
-	TC           int = os.O_TRUNC
-	EX           int = os.O_EXCL
-	WR           int = os.O_WRONLY
-	RD           int = os.O_RDONLY
-	RW           int = os.O_RDWR
-	TW           int = TC | WR
-	CW           int = CR | WR
-	CTW          int = CR | WR | TC
-	CEW          int = CR | EX | WR
+	// FileBufferSIze is the buffer size of slice to store file content
+	FileBufferSIze     = 4096
+	FilePerm           = 0644
+	DirPerm            = 0755
+	CR             int = os.O_CREATE
+	AP             int = os.O_APPEND
+	TC             int = os.O_TRUNC
+	EX             int = os.O_EXCL
+	WR             int = os.O_WRONLY
+	RD             int = os.O_RDONLY
+	RW             int = os.O_RDWR
+	TW             int = TC | WR
+	CW             int = CR | WR
+	CTW            int = CR | WR | TC
+	CEW            int = CR | EX | WR
 )
 
 // IsExist check whether or not file/dir exist
@@ -73,7 +73,7 @@ type FileOpFunc func(*os.File) error
 
 // OpenOrCreate open or create file
 func OpenOrCreate(fname string) (*os.File, error) {
-	return os.OpenFile(ExpandHome(fname), CW, FILE_PERM)
+	return os.OpenFile(ExpandHome(fname), CW, FilePerm)
 }
 
 // OpenAndTruncFor open file, clear all content
@@ -106,7 +106,7 @@ func OpenForRead(fname string, fn FileOpFunc) error {
 	return OpenFileFor(fname, RD, fn)
 }
 
-// OpenFileForRW open file for write and read
+// OpenForRW open file for write and read
 func OpenForRW(fname string, fn FileOpFunc) error {
 	return OpenFileFor(fname, RW, fn)
 }
@@ -118,7 +118,7 @@ func CreateFor(fname string, fn FileOpFunc) error {
 
 // OpenFileFor openfile use given flag
 func OpenFileFor(fname string, flags int, fn FileOpFunc) error {
-	fd, err := os.OpenFile(ExpandHome(fname), flags, FILE_PERM)
+	fd, err := os.OpenFile(ExpandHome(fname), flags, FilePerm)
 	if err == nil {
 		if fn != nil {
 			err = fn(fd)
@@ -139,7 +139,7 @@ func TruncateAndSeek(fd *os.File) {
 // CopyFile copy src file to dest file
 func CopyFile(dst, src string) error {
 	if IsDir(dst) || IsDir(src) {
-		return Errorf("dest path %s or src path is directory", dst, src)
+		return Errorf("dest path %s or src path %s is directory", dst, src)
 	}
 	return OpenOrCreateTruncFor(dst, func(dstFd *os.File) error {
 		return OpenForRead(src, func(srcFd *os.File) error {

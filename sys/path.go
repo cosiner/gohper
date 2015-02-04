@@ -65,7 +65,7 @@ func IsRelativePath(path string) bool {
 		IsWindowsRootpath(path))
 }
 
-// IsWindowsRootPath check whether a path is windows absolute path with disk letter
+// IsWindowsRootpath check whether a path is windows absolute path with disk letter
 func IsWindowsRootpath(path string) bool {
 	if path == "" {
 		return false

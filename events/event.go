@@ -1,21 +1,21 @@
 // Package events implements a events register
 package events
 
-type on struct {
+type On struct {
 	val interface{}
 }
 
-func On(o interface{}) on {
-	return on{val: o}
+func When(o interface{}) On {
+	return On{val: o}
 }
 
-func (o on) Do(fn func()) {
+func (o On) Do(fn func()) {
 	if test(o.val) && fn != nil {
 		fn()
 	}
 }
 
-func (o on) WithDo(fn func(o interface{})) {
+func (o On) WithDo(fn func(o interface{})) {
 	if test(o) && fn != nil {
 		fn(interface{}(o))
 	}

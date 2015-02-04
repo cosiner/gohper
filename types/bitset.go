@@ -63,7 +63,7 @@ func (bs *BitSet) Shrink() *BitSet {
 	return bs.ChangeLength(bs.length)
 }
 
-// changeUnitCount change the bitset's count
+// ChangeLength change the bitset's length
 func (bs *BitSet) ChangeLength(length uint) *BitSet {
 	newCount := unitCount(length)
 	oldCount := bs.UnitCount()
@@ -86,7 +86,7 @@ func (bs *BitSet) Set(index uint) *BitSet {
 	return bs
 }
 
-// Set set index bit to 1
+// SetAll set all bits to 1
 func (bs *BitSet) SetAll() *BitSet {
 	return bs.unitOp(func(index uint) {
 		bs.set[index] = unitMax
@@ -95,14 +95,14 @@ func (bs *BitSet) SetAll() *BitSet {
 
 // Unset set index bit to 0
 // if index is larger than bitset length, bitset must be extended
-func (bs *BitSet) UnSet(index uint) *BitSet {
+func (bs *BitSet) Unset(index uint) *BitSet {
 	bs.extend(index)
 	bs.set[unitPos(index)] &= ^(1 << unitIndex(index))
 	return bs
 }
 
-// UnSetAll set all bits to 0
-func (bs *BitSet) UnSetAll() *BitSet {
+// UnsetAll set all bits to 0
+func (bs *BitSet) UnsetAll() *BitSet {
 	return bs.unitOp(func(index uint) {
 		bs.set[index] = 0
 	})
@@ -128,7 +128,7 @@ func (bs *BitSet) FlipAll() *BitSet {
 func (bs *BitSet) Except(index ...uint) *BitSet {
 	bs.SetAll()
 	for _, i := range index {
-		bs.UnSet(i)
+		bs.Unset(i)
 	}
 	return bs
 }
@@ -143,26 +143,38 @@ func (bs *BitSet) SetTo(index uint, value bool) *BitSet {
 	if value {
 		return bs.Set(index)
 	}
-	return bs.UnSet(index)
+	return bs.Unset(index)
 }
 
 // Bits return all index of bits set to 1
 func (bs *BitSet) Bits() (res []uint) {
 	res = make([]uint, 0, bs.BitCount())
+	index := 0
 	for i, l := Uint0, bs.Len(); i < l && bs.IsSet(i); i++ {
-		res = append(res, i)
+		res[index] = i
+		index++
 	}
 	return
 }
 
 // BitCount count 1 bits
 func (bs *BitSet) BitCount() uint {
-	var n uint = 0
+	var n uint
 	bs.clearTop()
 	bs.unitOp(func(index uint) {
 		n += bitCount(bs.set[index])
 	})
 	return n
+}
+
+// Uint return first uint unit
+func (bs *BitSet) Uint() uint {
+	return uint(bs.set[0])
+}
+
+// Uint64 return first uint64 unit
+func (bs *BitSet) Uint64() uint64 {
+	return bs.set[0]
 }
 
 // Union union another bitset to current bitset

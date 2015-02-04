@@ -8,6 +8,7 @@ import (
 )
 
 // RunCmdN run commond with N io parameter specified stdin, stdout, stderr
+
 func RunCmd0(cmd string, arg ...string) error {
 	return RunCmd3(os.Stdin, os.Stdout, os.Stderr, cmd, arg...)
 }

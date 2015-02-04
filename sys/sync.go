@@ -46,7 +46,7 @@ func (o *Once) DoCheckError(f func() error) (err error) {
 
 // Undo restore Once's state to initial,
 // then you can call Do or DoCheckError again
-func (o *Once) UnDo() {
+func (o *Once) Undo() {
 	o.m.Lock()
 	atomic.StoreUint32(&o.done, 0)
 	o.m.Unlock()

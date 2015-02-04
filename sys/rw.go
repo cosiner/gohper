@@ -47,6 +47,8 @@ func NewBufVWriter(wr io.Writer) BufVWriter {
 
 // Filter write slice string
 //go:generate gotmpl -p "github.com/cosiner/golib/types" -o ./$GOFILE -f FilterV -t "T:string"
+
+// WriteVString write slice of string
 func (w BufVWriter) WriteVString(strs []string) (int, error) {
 	return filterVString(func(index int, str string) (int, error) {
 		return w.WriteString(str)
@@ -111,7 +113,7 @@ func ReadFirstLine(fname string) (line string, err error) {
 	return
 }
 
-// ReadOneLine read first line from reader, if no content return errNoContent
+// ReadOneLineFrom read first line from reader, if no content return errNoContent
 func ReadOneLineFrom(r io.Reader) (line string, err error) {
 	err = FilterContent(r, nil, false, func(_ int, l []byte) ([]byte, error) {
 		line = string(l)
@@ -193,7 +195,7 @@ func FilterContent(rd io.Reader, wr io.Writer,
 			}
 			bw = w
 		} else { // if not parallel, need buffer to save content for later write
-			w := bytes.NewBuffer(make([]byte, 0, FILE_BUFSIZE))
+			w := bytes.NewBuffer(make([]byte, 0, FileBufferSIze))
 			flushBuffer = func() error {
 				TruncateAndSeekWriter(wr)
 				_, err := wr.Write(w.Bytes())

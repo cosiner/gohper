@@ -9,6 +9,7 @@ import (
 //==============================================================================
 //                           Assert
 //==============================================================================
+
 // Assert val is true, else panic error
 func Assert(val bool, err error) {
 	if !val {
@@ -19,13 +20,16 @@ func Assert(val bool, err error) {
 //==============================================================================
 //                         Error Format
 //==============================================================================
+
 // ERR is a nil error for those condition only need an error
 var ERR = Err("")
 
+// errStr is a error implementation
 type errStr struct {
 	s string
 }
 
+// Error implements builtin error
 func (es *errStr) Error() string {
 	return es.s
 }
@@ -53,6 +57,7 @@ func Errorf(format string, v ...interface{}) error {
 //==============================================================================
 //                         Error Event
 //==============================================================================
+
 // OnErrExit exit process and print message on error
 func OnErrExit(err error) {
 	if err != nil {
@@ -81,7 +86,7 @@ func OnErrPanicStr(err error, errStr string) {
 	}
 }
 
-// OnErr call param function when err is not null
+// OnErrDo call param function when err is not null
 func OnErrDo(err error, fn func(err error)) {
 	if err != nil {
 		fn(err)
@@ -106,52 +111,53 @@ func OnErrDoChain(err error, fns ...func(err error) error) error {
 //==============================================================================
 //                         Error Print
 //==============================================================================
-// ErrPrint output error message to stderr
+
+// PrintErr output error message to stderr
 func PrintErr(err error) {
 	fmt.Fprint(os.Stderr, err)
 }
 
-// ErrPrintln output error message to stderr
+// PrintErrln output error message to stderr
 func PrintErrln(err error) {
 	fmt.Fprintln(os.Stderr, err)
 }
 
-// ErrFprint output error message to stderr
+// FprintErr output error message to given writer
 func FprintErr(w io.Writer, err error) {
 	fmt.Fprint(w, err)
 }
 
-// ErrFprintln output error message to stderr
+// FprintErrln output error message to given writer
 func FprintErrln(w io.Writer, err error) {
 	fmt.Fprintln(w, err)
 }
 
-// ErrorPrint output error message to stderr
+// PrintError output error message to stderr
 func PrintError(v ...interface{}) {
 	fmt.Fprint(os.Stderr, v...)
 }
 
-// ErrorPrintln output error message to stderr
+// PrintErrorln output error message to stderr
 func PrintErrorln(v ...interface{}) {
 	fmt.Fprintln(os.Stderr, v...)
 }
 
-// ErrorPrintf format and output error message to stderr
+// PrintErrorf format and output error message to stderr
 func PrintErrorf(format string, v ...interface{}) {
 	fmt.Fprintf(os.Stderr, format, v...)
 }
 
-// ErrorFprint output error message to stderr
+// FprintError output error message to given writer
 func FprintError(w io.Writer, v ...interface{}) {
 	fmt.Fprint(w, v...)
 }
 
-// ErrorFprintln output error message to stderr
+// FprintErrorln output error message to given writer
 func FprintErrorln(w io.Writer, v ...interface{}) {
 	fmt.Fprintln(w, v...)
 }
 
-// ErrorFprintf output error message to stderr
+// FprintErrorf output error message to given writer
 func FprintErrorf(w io.Writer, format string, v ...interface{}) {
 	fmt.Fprintf(w, format, v...)
 }
@@ -161,28 +167,28 @@ func FprintErrorf(w io.Writer, format string, v ...interface{}) {
 //==============================================================================
 
 const (
-	// ERREXIT_CODE is the default exit code on error
-	ERREXIT_CODE = 1
-	// NOREXIT_CODE is the default exit code on normal
-	NOREXIT_CODE = 0
+	// ErrorExitCode is the default exit code on error
+	ErrorExitCode = 1
+	// NormalExitCode is the default exit code on normal
+	NormalExitCode = 0
 )
 
 // ExitWith print message, then normal exit
 func ExitWith(str string) {
 	fmt.Println(str)
-	os.Exit(NOREXIT_CODE)
+	os.Exit(NormalExitCode)
 }
 
 // FexitWith print message, then normal exit
 func FexitWith(w io.Writer, str string) {
 	fmt.Fprintln(w, str)
-	os.Exit(NOREXIT_CODE)
+	os.Exit(NormalExitCode)
 }
 
 // ExitOnErrPrint exit process, if error, print it
 func ExitOnErrPrint(err error) {
 	OnErrDo(err, PrintErr)
-	os.Exit(ERREXIT_CODE)
+	os.Exit(ErrorExitCode)
 }
 
 // ExitErr print error message then exit process
@@ -223,17 +229,17 @@ func ExitErrorf(format string, v ...interface{}) {
 // FexitError print error message to writer then exit process
 func FexitError(w io.Writer, v ...interface{}) {
 	FprintError(w, v...)
-	os.Exit(ERREXIT_CODE)
+	os.Exit(ErrorExitCode)
 }
 
 // FexitErrorln print error message to writer then exit process
 func FexitErrorln(w io.Writer, v ...interface{}) {
 	FprintErrorln(w, v...)
-	os.Exit(ERREXIT_CODE)
+	os.Exit(ErrorExitCode)
 }
 
 // FexitErrorf  format and output error message to writer, then exit process
 func FexitErrorf(w io.Writer, format string, v ...interface{}) {
 	FprintErrorf(w, format, v...)
-	os.Exit(ERREXIT_CODE)
+	os.Exit(ErrorExitCode)
 }

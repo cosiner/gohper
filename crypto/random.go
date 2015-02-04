@@ -9,10 +9,10 @@ import (
 
 // Charset of characters to use for generating random strings
 const (
-	Alphabet     = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	Numerals     = "1234567890"
-	Alphanumeric = Alphabet + Numerals
-	Ascii        = Alphanumeric + "~!@#$%^&*()-_+={}[]\\|<,>.?/\"';:`"
+	ALPHABET     = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	NUMERALS     = "1234567890"
+	ALPHANUMERIC = ALPHABET + NUMERALS
+	ASCII        = ALPHANUMERIC + "~!@#$%^&*()-_+={}[]\\|<,>.?/\"';:`"
 )
 
 var (
@@ -51,44 +51,44 @@ func RandInCharset(n int, charset string) (string, error) {
 	return "", err
 }
 
-// RandBytesAscii generate random ascii bytes
-func RandBytesAscii(n int) ([]byte, error) {
-	return RandBytesInCharset(n, Ascii)
+// RandBytesASCII generate random ASCII bytes
+func RandBytesASCII(n int) ([]byte, error) {
+	return RandBytesInCharset(n, ASCII)
 }
 
-// RandBytesNumberal generate random ascii bytes
+// RandBytesNumberal generate random ASCII bytes
 func RandBytesNumberal(n int) ([]byte, error) {
-	return RandBytesInCharset(n, Numerals)
+	return RandBytesInCharset(n, NUMERALS)
 }
 
-// RandBytesAlphabet generate random alphabet bytes
+// RandBytesAlphabet generate random ALPHABET bytes
 func RandBytesAlphabet(n int) ([]byte, error) {
-	return RandBytesInCharset(n, Alphabet)
+	return RandBytesInCharset(n, ALPHABET)
 }
 
-// RandBytesAlphanumeric generate random alphabet and numberic bytes
+// RandBytesAlphanumeric generate random ALPHABET and numberic bytes
 func RandBytesAlphanumeric(n int) ([]byte, error) {
-	return RandBytesInCharset(n, Alphanumeric)
+	return RandBytesInCharset(n, ALPHANUMERIC)
 }
 
-// RandAscii generate random ascii string
-func RandAscii(n int) (string, error) {
-	return RandInCharset(n, Ascii)
+// RandASCII generate random ASCII string
+func RandASCII(n int) (string, error) {
+	return RandInCharset(n, ASCII)
 }
 
 // RandNumberal generate random numberal string
 func RandNumberal(n int) (string, error) {
-	return RandInCharset(n, Numerals)
+	return RandInCharset(n, NUMERALS)
 }
 
-// RandAlphabet generate random alphabet string
+// RandAlphabet generate random ALPHABET string
 func RandAlphabet(n int) (string, error) {
-	return RandInCharset(n, Alphabet)
+	return RandInCharset(n, ALPHABET)
 }
 
-// RandAlphanumeric generate random alphabet and numberic string
+// RandAlphanumeric generate random ALPHABET and numberic string
 func RandAlphanumeric(n int) (string, error) {
-	return RandInCharset(n, Alphanumeric)
+	return RandInCharset(n, ALPHANUMERIC)
 }
 
 // RandInt generate random integer
