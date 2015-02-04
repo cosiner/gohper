@@ -146,7 +146,7 @@ func (resp *response) Render(tmpl string) error {
 
 // RenderWith render template with given value
 func (resp *response) RenderWith(tmpl string, value interface{}) error {
-	return resp.Server().renderTemplate(resp, tmpl, value)
+	return resp.Server().RenderTemplate(resp, tmpl, value)
 }
 
 func (resp *response) Write(data []byte) (int, error) {

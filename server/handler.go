@@ -35,6 +35,7 @@ type (
 
 	// ErrorHandlers is a collection of http error status handler
 	ErrorHandlers interface {
+		Init(s *Server)
 		ForbiddenHandler() HandlerFunc
 		SetForbiddenHandler(HandlerFunc)
 		NotFoundHandler() HandlerFunc
@@ -157,6 +158,8 @@ func NewErrorHandlers() ErrorHandlers {
 		XSRF_ERRORCODE:              forbidden,
 	}
 }
+
+func (eh errorHandlers) Init(*Server) {}
 
 // ForbiddenHandler return forbidden error handler
 func (eh errorHandlers) ForbiddenHandler() HandlerFunc {

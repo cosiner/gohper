@@ -1,14 +1,9 @@
 package server
 
 import (
-	"html/template"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/cosiner/gomodule/websocket"
@@ -35,6 +30,7 @@ type (
 		SessionStore      SessionStore       // session store
 		StoreConfig       string             // session store config
 		SessionLifetime   int64              // session lifetime
+		TemplateEngine    TemplateEngine     // template engine
 		FilterForward     bool               // fliter forward request
 		XsrfEnable        bool               // Enable xsrf cookie
 		XsrfFlushInterval int                // xsrf cookie value flush interval
@@ -48,9 +44,9 @@ type (
 		Router
 		SessionManager
 		ErrorHandlers
-		tmpl          *template.Template
-		filterForward bool
+		TemplateEngine
 		xsrf          Xsrf
+		filterForward bool
 	}
 )
 
@@ -82,11 +78,16 @@ func (sc *ServerConfig) init() {
 	} else {
 		sc.SessionManager = newPanicSessionManager()
 	}
+	if sc.TemplateEngine == nil {
+		sc.TemplateEngine = NewTemplateEngine()
+	}
 }
 
 // Init init server with given config, it do only once, if the config contains
 // router, it must be called before any operation of add Handler/Filter/WebsocketHandler
 // otherwise, ann added Handler/Filter/WebsocketHandler will be added to the old router
+// templates and locales are inited last, so Handler/Filter/WebSockethandler's Init
+// can use server to add templates and other resources
 func (s *Server) Init(conf *ServerConfig) {
 	serverInit.Do(func() {
 		if conf.Router != nil {
@@ -143,9 +144,11 @@ func (s *Server) start() {
 
 	log.Println("Init Error Handlers")
 	s.ErrorHandlers = srvConf.ErrorHandlers
+	s.ErrorHandlers.Init(s)
 
 	log.Println("Compile Templates")
-	OnErrPanic(s.compileTemplates())
+	s.TemplateEngine = srvConf.TemplateEngine
+	OnErrPanic(s.CompileTemplates())
 
 	log.Println("Initial I18N Locales")
 	localeFiles := strach.localeFiles()
@@ -274,92 +277,6 @@ func (*Server) AddLocale(path string) {
 // SetDefaultLocale set default locale for i18n
 func (*Server) SetDefaultLocale(locale string) {
 	strach.setDefaultLocale(locale)
-}
-
-//==============================================================================
-//                           Server Templates
-//==============================================================================
-var (
-	// globalTmplFuncs is the default template functions
-	globalTmplFuncs = map[string]interface{}{
-		"I18N": I18N,
-	}
-	// tmplSuffixes is all template file's suffix
-	tmplSuffixes = map[string]bool{"tmpl": true, "html": true}
-)
-
-// isTemplate check whether a file name is recognized template file
-func (*Server) isTemplate(name string) (is bool) {
-	index := strings.LastIndex(name, ".")
-	if is = (index >= 0); is {
-		is = tmplSuffixes[name[index+1:]]
-	}
-	return
-}
-
-// AddTemplateSuffix add an suffix for template
-func (*Server) AddTemplateSuffix(suffix string) {
-	if suffix != "" {
-		if suffix[0] == '.' {
-			suffix = suffix[1:]
-		}
-		tmplSuffixes[suffix] = true
-	}
-}
-
-// SetTemplateDelims set default template delimeters
-func (*Server) SetTemplateDelims(left, right string) {
-	strach.setTmplDelims(left, right)
-}
-
-// AddTemplates add templates to server, all templates will be
-// parsed on server start
-func (s *Server) AddTemplates(names ...string) (err error) {
-	addTmpl := func(path string, info os.FileInfo, err error) error {
-		if err == nil && !info.IsDir() && s.isTemplate(path) {
-			strach.addTmpl(path)
-		}
-		return err
-	}
-	for _, name := range names {
-		if err = filepath.Walk(name, addTmpl); err != nil {
-			break
-		}
-	}
-	return
-}
-
-// CompileTemplates compile all added templates
-func (s *Server) compileTemplates() (err error) {
-	var tmpl *template.Template
-	if tmpls := strach.tmpls(); len(tmpls) != 0 {
-		tmpl, err = template.New("tmpl").
-			Delims(strach.tmplDelims()).
-			Funcs(globalTmplFuncs).
-			ParseFiles(strach.tmpls()...)
-		if err == nil {
-			s.tmpl = tmpl
-		}
-	}
-	return
-}
-
-// RegisterTemplateFunc register a function used in templates
-func (*Server) RegisterTemplateFunc(name string, fn interface{}) {
-	globalTmplFuncs[name] = fn
-}
-
-// RegisterTemplateFuncs register some functions used in templates
-func (*Server) RegisterTemplateFuncs(funcs map[string]interface{}) {
-	for name, fn := range funcs {
-		globalTmplFuncs[name] = fn
-	}
-}
-
-// RenderTemplate render a template with given name use given
-// value to given writer
-func (s *Server) renderTemplate(wr io.Writer, name string, val interface{}) error {
-	return s.tmpl.ExecuteTemplate(wr, name, val)
 }
 
 //==============================================================================
