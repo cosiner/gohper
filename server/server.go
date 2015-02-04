@@ -23,19 +23,19 @@ var (
 type (
 	// ServerConfig is all config of server
 	ServerConfig struct {
-		Router            Router             // router
-		ErrorHandlers     ErrorHandlers      // error handlers
-		SessionDisable    bool               // session disble
-		SessionManager    SessionManager     // session manager
-		SessionStore      SessionStore       // session store
-		StoreConfig       string             // session store config
-		SessionLifetime   int64              // session lifetime
-		TemplateEngine    TemplateEngine     // template engine
-		FilterForward     bool               // fliter forward request
-		XsrfEnable        bool               // Enable xsrf cookie
-		XsrfFlushInterval int                // xsrf cookie value flush interval
-		XsrfLifetime      int                // xsrf cookie expire
-		XsrfGenerator     XsrfTokenGenerator // xsrf token generator
+		Router             Router             // router
+		ErrorHandlers      ErrorHandlers      // error handlers
+		SessionDisable     bool               // session disble
+		SessionManager     SessionManager     // session manager
+		SessionStore       SessionStore       // session store
+		StoreConfig        string             // session store config
+		SessionLifetime    int64              // session lifetime
+		TemplateEngine     TemplateEngine     // template engine
+		FilterForward      bool               // fliter forward request
+		XsrfEnable         bool               // Enable xsrf cookie
+		XsrfFlushInterval  int                // xsrf cookie value flush interval
+		XsrfLifetime       int                // xsrf cookie expire
+		XsrfTokenGenerator XsrfTokenGenerator // xsrf token generator
 	}
 
 	// Server represent a web server
@@ -114,7 +114,7 @@ func (s *Server) start() {
 		if xsrfLifetime <= 0 {
 			xsrfLifetime = XSRF_DEFLIFETIME
 		}
-		xsrfGen := srvConf.XsrfGenerator
+		xsrfGen := srvConf.XsrfTokenGenerator
 		s.xsrf = NewXsrf(xsrfGen, xsrfLifetime)
 	} else {
 		s.xsrf = emptyXsrf{}
@@ -231,7 +231,7 @@ func (s *Server) processHttpRequest(url *url.URL, req *request, resp *response, 
 	)
 	if !forward { // check xsrf error
 		if req.Method() == GET {
-			req.setXsrfToken(s.xsrf.Set(resp))
+			resp.setXsrfToken(s.xsrf.Set(req, resp))
 		} else {
 			xsrfError = !s.xsrf.IsValid(req)
 		}

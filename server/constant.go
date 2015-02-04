@@ -18,13 +18,17 @@ const (
 	HEADER_REFER           = "Referer"
 	HEADER_CONTENTENCODING = "Content-Encoding"
 	HEADER_USERAGENT       = "User-Agent"
-	HEADER_XSRFTOKEN       = "X-XSRFToken"
-	HEADER_CSRFTOKEN       = "X-CSRFToken"
-	XSRF_NAME              = "_xsrf"
-	XSRF_ONERROR_TOKEN     = "dsajhdoqwARUH20174P2UAsdJDASDKJ"
-	XSRF_DEFFLUSH          = 60
-	XSRF_DEFLIFETIME       = 300
-	XSRF_ERRORCODE         = 101
+
+	// Xsrf
+	HEADER_XSRFTOKEN  = "X-XSRFToken"
+	HEADER_CSRFTOKEN  = "X-CSRFToken"
+	XSRF_NAME         = "_xsrf"
+	XSRF_ONERRORTOKEN = "dsajhdoqwARUH20174P2UAsdJDASDKJ"
+	XSRF_DEFFLUSH     = 60
+	XSRF_DEFLIFETIME  = 300
+	XSRF_ERRORCODE    = 101
+	XSRF_FORMHEAD     = `<input type="hidden" name="` + XSRF_NAME + `" value="`
+	XSRF_FORMEND      = `"/>`
 
 	// ContentEncoding
 	ENCODING_GZIP = "gzip"
@@ -68,4 +72,9 @@ func parseContentType(str string) string {
 		return CONTENTTYPE_HTML
 	}
 	return types.TrimLower(str)
+}
+
+// xsrfFormHTML return xsrf form html string with given token
+func xsrfFormHTML(tok string) string {
+	return XSRF_FORMHEAD + tok + XSRF_FORMEND
 }

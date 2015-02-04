@@ -8,21 +8,36 @@ import (
 )
 
 type (
+	// XsrfErrorHandler is handler of xsrf token not matched
 	XsrfErrorHandler interface {
 		HandleXsrfError(req Request, resp Response)
 	}
 
+	// Xsrf is a xsrf processor, all work about xsrf token check and set
+	// is all done by it, it's not necessery do such work in other place
 	Xsrf interface {
+		// start process, every interval, change current xsrf token value
 		Start(interval int) // interval is by seconds
+		// Stop stop xsrf processor
 		Stop()
-		Set(Response) string
+		// Set setup xsrf token for later check and return it for user to
+		// setup in post form
+		// where to save xsrf token depend on implementations
+		Set(Request, Response) string
+		// IsValid check xsrf token from request
 		IsValid(Request) bool
 	}
 
+	// emptyXsrf is a empty xsrf processor
 	emptyXsrf struct{}
 
+	// XsrfTokenGenerator generate xsrf token
 	XsrfTokenGenerator func() string
 
+	// xsrf implements interface Xsrf, it save xsrf token in client cookie
+	// and use timing changed global xsrf token
+	// default generate token through a random number generator,
+	// which is a bit slow, if possible, change it when call NewXsrf
 	xsrf struct {
 		value         string
 		valueGen      XsrfTokenGenerator
@@ -33,11 +48,12 @@ type (
 	}
 )
 
-func (emptyXsrf) Set(Response) string  { return "" }
-func (emptyXsrf) IsValid(Request) bool { return true }
-func (emptyXsrf) Start(int)            {}
-func (emptyXsrf) Stop()                {}
+func (emptyXsrf) Set(Request, Response) string { return "" }
+func (emptyXsrf) IsValid(Request) bool         { return true }
+func (emptyXsrf) Start(int)                    {}
+func (emptyXsrf) Stop()                        {}
 
+// NewXsrf create a new xsrf processor
 func NewXsrf(valueGen XsrfTokenGenerator, lifetime int) Xsrf {
 	if valueGen == nil {
 		valueGen = GenXsrfToken
@@ -51,6 +67,7 @@ func NewXsrf(valueGen XsrfTokenGenerator, lifetime int) Xsrf {
 	}
 }
 
+// stop stop xsrf processor
 func (x *xsrf) Stop() {
 	if x.running {
 		x.running = false
@@ -58,6 +75,7 @@ func (x *xsrf) Stop() {
 	}
 }
 
+// Start start xsrf processor
 func (x *xsrf) Start(interval int) {
 	go func() {
 		c := time.NewTicker(time.Duration(interval) * time.Second)
@@ -74,7 +92,8 @@ func (x *xsrf) Start(interval int) {
 	}()
 }
 
-func (x *xsrf) Set(resp Response) (value string) {
+// Set setup store token into response as cookie
+func (x *xsrf) Set(_ Request, resp Response) (value string) {
 	if x.running {
 		x.RLock()
 		value = x.value
@@ -84,6 +103,7 @@ func (x *xsrf) Set(resp Response) (value string) {
 	return
 }
 
+// IsValid check whether request xsrf token is valid
 func (x *xsrf) IsValid(req Request) (value bool) {
 	value = true
 	if x.running {
@@ -99,10 +119,11 @@ func (x *xsrf) IsValid(req Request) (value bool) {
 	return
 }
 
+// GenXsrfToken generate xsrf token use random number generator
 func GenXsrfToken() string {
 	s, err := crypto.RandAlphanumeric(32)
 	if err != nil {
-		s = XSRF_ONERROR_TOKEN
+		s = XSRF_ONERRORTOKEN
 	}
 	return s
 }

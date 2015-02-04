@@ -27,6 +27,7 @@ type (
 		WriteJSON(val interface{}) error
 		WriteXML(val interface{}) error
 		Flush()
+		AttrContainer
 	}
 	// response represent a response of request to user
 	response struct {

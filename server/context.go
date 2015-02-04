@@ -1,10 +1,6 @@
 package server
 
-import (
-	"fmt"
-
-	"net/http"
-)
+import "net/http"
 
 // context is the request specified enviroment of request and response
 type context struct {
@@ -34,12 +30,14 @@ func (ctx *context) init(req *request, resp *response) {
 	ctx.resp = resp
 }
 
+// setXsrfToken setup xsrf token for current request, and add xsrf cookie to response
 func (ctx *context) setXsrfToken(tok string) {
 	ctx.xsrfToken = tok
 }
 
-func (ctx *context) XsrfFormHtml() string {
-	return fmt.Sprintf(`<input type="hidden" name=%s value=%s/>`, XSRF_NAME, ctx.xsrfToken)
+// XsrfFormHTML return a hidden input field of html form with xsrf token
+func (ctx *context) XsrfFormHTML() string {
+	return xsrfFormHTML(ctx.xsrfToken)
 }
 
 // SetAttrs replace all attributes of context
