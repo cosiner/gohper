@@ -5,43 +5,101 @@ import (
 	"fmt"
 )
 
-var printSql = func(string) {}
+type fieldCache map[uint]string
+type modelCache map[string]fieldCache
+type newSQLFunc func(Model, []Field, []Field) string
+
+var insertCache modelCache = make(modelCache)
+var updateCache modelCache = make(modelCache)
+var deleteCache modelCache = make(modelCache)
+var selectCache modelCache = make(modelCache)
+
+var printSQL = func(bool, string) {}
 
 // EnableSqlPrint enable print sql
 func EnableSqlPrint() {
-	printSql = func(sql string) { fmt.Println(sql) }
+	printSQL = func(fromCache bool, sql string) {
+		fmt.Printf("fromcache:%s, sql:%s\n", fromCache, sql)
+	}
+}
+
+// fieldsSig return fields signature as fieldset
+func fieldsSig(fields []Field) uint {
+	return NewFieldSet(fields...).Uint()
+}
+
+// cacheGet get sql from cache, if not exist in cache, use newSQL to create a new one
+func cacheGet(modelCache modelCache, model Model, fields, whereFields []Field,
+	newSQL newSQLFunc) (sql string) {
+	table := model.Table()
+	cache := modelCache[table]
+	sig := fieldsSig(fields) << model.FieldCount()
+	if len(whereFields) != 0 {
+		sig |= fieldsSig(whereFields)
+	}
+	if sig == 0 {
+		return ""
+	}
+	var has bool
+	if has = (cache != nil); has {
+		sql, has = cache[sig]
+	} else {
+		cache = make(fieldCache)
+		insertCache[table] = cache
+	}
+	if !has {
+		sql = newSQL(model, fields, whereFields)
+		cache[sig] = sql
+	}
+	return sql
+}
+
+// insert
+func sqlForInsert(model Model, fields, _ []Field) string {
+	cols, ph := model.ColsSepPH(fields)
+	return fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", model.Table(), cols, ph)
 }
 
 // Insert insert model's field to database
 func Insert(db *sql.DB, model Model, fields []Field, needId bool) (int64, error) {
-	cols, ph := model.ColsSepPH(fields)
-	sql := fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", model.Table(), cols, ph)
+	sql := cacheGet(insertCache, model, fields, nil, sqlForInsert)
 	args := model.FieldVals(fields)
 	return Exec(db, sql, args, needId)
 }
 
-// Update update model
-func Update(db *sql.DB, model Model, fields []Field, whereFields []Field) (int64, error) {
-	sql := fmt.Sprintf("UPDATE %s SET %s WHERE %s", model.Table(),
+func sqlforUpdate(model Model, fields, whereFields []Field) string {
+	return fmt.Sprintf("UPDATE %s SET %s WHERE %s", model.Table(),
 		model.ColsPH(fields), model.ColsPH(whereFields))
+}
+
+// Update update model
+func Update(db *sql.DB, model Model, fields, whereFields []Field) (int64, error) {
+	sql := cacheGet(updateCache, model, fields, whereFields, sqlforUpdate)
 	args := model.FieldVals(append(fields, whereFields...))
 	return Exec(db, sql, args, false)
 }
 
+func sqlForDelete(model Model, _, whereFields []Field) string {
+	return fmt.Sprintf("DELETE FROM %s WHERE %s", model.Table(), model.ColsPH(whereFields))
+}
+
 // Delete delete model
 func Delete(db *sql.DB, model Model, whereFields []Field) (int64, error) {
-	sql := fmt.Sprintf("DELETE FROM %s WHERE %s", model.Table(), model.ColsPH(whereFields))
+	sql := cacheGet(deleteCache, model, nil, whereFields, sqlForDelete)
 	args := model.FieldVals(whereFields)
 	return Exec(db, sql, args, false)
 }
 
+func sqlForSelect(model Model, fields, whereFields []Field) string {
+	return fmt.Sprintf("SELECT %s FROM %s WHERE %s", model.Cols(fields), model.Table(),
+		model.ColsPH(whereFields))
+}
+
 // SelectOne select model from database
-func SelectOne(db *sql.DB, model Model, fields []Field, whereField []Field) error {
-	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s", model.Cols(fields), model.Table(),
-		model.ColsPH(whereField))
-	args := model.FieldVals(whereField)
+func SelectOne(db *sql.DB, model Model, fields, whereFields []Field) error {
+	sql := cacheGet(selectCache, model, fields, whereFields, sqlForSelect)
+	args := model.FieldVals(whereFields)
 	row := db.QueryRow(sql, args...)
-	printSql(sql)
 	return row.Scan(model.FieldPtrs(fields)...)
 }
 
@@ -59,7 +117,6 @@ func ExecUpdate(db *sql.DB, s string, args []interface{}) (int64, error) {
 
 // Exec execute a sql
 func Exec(db *sql.DB, s string, args []interface{}, needId bool) (ret int64, err error) {
-	printSql(s)
 	res, err := db.Exec(s, args...)
 	if err == nil {
 		ret, err = ResolveResult(res, needId)
@@ -71,7 +128,6 @@ func Exec(db *sql.DB, s string, args []interface{}, needId bool) (ret int64, err
 func BatchExec(db *sql.DB, s string, fn func(error) []interface{}, needId, needTx bool) (ret []int64, err error) {
 	var res sql.Result
 	stmt, err, deferFn := TxOrNot(db, needTx, s)
-	printSql(s)
 	if deferFn != nil {
 		defer deferFn()
 	}
@@ -118,34 +174,3 @@ func ResolveResult(res sql.Result, needId bool) (int64, error) {
 		return res.RowsAffected()
 	}
 }
-
-// Insert insert model's field to database
-// func BatchInsert(db *sql.DB, model []Model, fields []Field, needId bool) ([]int64, error) {
-// 	firstModel := model[0]
-// 	cols, ph := firstModel.ColsSepPH(fields)
-// 	sql := fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", firstModel.Table(), cols, ph)
-// 	index, indexEnd := 0, len(model)
-// 	fn := func(err error) (args []interface{}) {
-// 		if err == nil && index < indexEnd {
-// 			args = model[index].FieldVals(fields)
-// 		}
-// 		index++
-// 		return
-// 	}
-// 	return BatchExec(db, sql, fn, true)
-// }
-
-// func BatchUpdate(db *sql.DB, model []Model, fields []Field, whereFields []Field) ([]int64, error) {
-// 	firstModel := model[0]
-// 	sql := fmt.Sprintf("UPDATE %s SET %s WHERE %s", firstModel.Table(),
-// 		firstModel.ColsPH(fields), firstModel.ColsPH(whereFields))
-// 	index, indexEnd := 0, len(model)
-// 	fn := func(err error) (args []interface{}) {
-// 		if err == nil && index < indexEnd {
-// 			args = model[index].FieldVals(append(fields, whereFields...))
-// 		}
-// 		index++
-// 		return
-// 	}
-// 	return BatchExec(db, sql, fn, false)
-// }

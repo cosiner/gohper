@@ -144,7 +144,7 @@ func NewStandardMatcher(patternType PatternType, pattern string) (
 	if pattern == "" {
 		return nil, Err("No content")
 	} else if patternType == ERROR_FORMAT {
-		return nil, Errorf("Wrong format:", pattern)
+		return nil, Errorf("Wrong format:%s", pattern)
 	}
 	var err error
 	m := &matcher{

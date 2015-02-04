@@ -1,12 +1,10 @@
 package model
 
-import "github.com/cosiner/golib/types"
+import . "github.com/cosiner/golib/types"
 
 type (
 	// FieldSet represend a model's field set
-	FieldSet struct {
-		bs *types.BitSet
-	}
+	FieldSet LightBitSet
 	// Field represend a field of model
 	Field uint
 )
@@ -14,63 +12,41 @@ type (
 // NewFieldSet create a new field set use given fieldcount as length,
 // initial with given fields, every field will be valid by the given valid
 // function
-func NewFieldSet(fieldCount uint, valid func(field Field), fields ...Field) FieldSet {
-	bs := types.NewBitSet(fieldCount)
-	if valid == nil {
-		valid = func(Field) {}
-	}
+func NewFieldSet(fields ...Field) *FieldSet {
+	bs := NewLightBitSet()
 	for _, f := range fields {
-		valid(f)
 		bs.Set(f.UNum())
 	}
-	return FieldSet{bs}
+	return (*FieldSet)(bs)
 }
 
 // HasField check whether or not fieldset has given field
-func (fs FieldSet) HasField(field Field) bool {
-	return fs.bs.IsSet(field.UNum())
+func (fs *FieldSet) HasField(field Field) bool {
+	return (*LightBitSet)(fs).IsSet(field.UNum())
 }
 
 // AddField add an field to fieldset
-func (fs FieldSet) AddField(field Field) {
-	fs.bs.Set(field.UNum())
+func (fs *FieldSet) AddField(field Field) {
+	(*LightBitSet)(fs).Set(field.UNum())
 }
 
 // RemoveField remove field from fieldset
-func (fs FieldSet) RemoveField(field Field) {
-	fs.bs.UnSet(field.UNum())
+func (fs *FieldSet) RemoveField(field Field) {
+	(*LightBitSet)(fs).Unset(field.UNum())
+}
+
+// Uint return unit disblay of fieldset
+func (fs *FieldSet) Uint() uint {
+	return (*LightBitSet)(fs).Uint()
 }
 
 // ChangeField add field if has is true, alse remove field
-func (fs FieldSet) ChangeField(field Field, has bool) {
-	fs.bs.SetTo(field.UNum(), has)
+func (fs *FieldSet) ChangeField(field Field, has bool) {
+	(*LightBitSet)(fs).SetTo(field.UNum(), has)
 }
 
-func (fs FieldSet) FlipAll() {
-	fs.bs.FlipAll()
-}
-
-// Fields return all fields in this field set
-func (fs FieldSet) Fields() (res []Field) {
-	bs := fs.bs
-	res = make([]Field, 0, bs.BitCount())
-	for i := types.Uint0; i < fs.Len(); i++ {
-		if bs.IsSet(i) {
-			res = append(res, NewField(uint(i)))
-		}
-	}
-	return
-}
-
-// FieldCount return all fields' count exist in fieldset
-// it differente to 'Len' method
-func (fs FieldSet) FieldCount() uint {
-	return fs.bs.BitCount()
-}
-
-// Len return fieldset's length
-func (fs FieldSet) Len() uint {
-	return fs.bs.Len()
+func (fs *FieldSet) FlipAll() {
+	(*LightBitSet)(fs).FlipAll()
 }
 
 // NewField create a new field from a number

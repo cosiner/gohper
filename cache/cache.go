@@ -10,10 +10,10 @@ import (
 	"github.com/cosiner/golib/types"
 )
 
-// CacheType is implemented cache algorithm
-type CacheType int8
+// CacherType is implemented cache algorithm
+type CacherType int8
 
-func (ct CacheType) String() (str string) {
+func (ct CacherType) String() (str string) {
 	switch ct {
 	case RANDOM:
 		str = "Random-eliminate"
@@ -59,7 +59,7 @@ type Cache interface {
 // NewCache return a actual cache container
 // for cacher with elimination:Random and LRU, maxsize is the max capcity of cache
 // for ordinary cache, no config need, no error returned
-func NewCache(typ CacheType, config string) (cache Cache, err error) {
+func NewCache(typ CacherType, config string) (cache Cache, err error) {
 	switch typ {
 	case RANDOM:
 		cache = new(randCache)

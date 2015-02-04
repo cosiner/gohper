@@ -38,7 +38,7 @@ func (cp *colParser) FieldValsExcp(excepts []Field) []interface{} {
 // FieldsExcp return columns bitset exclude the Excp
 func (cp *colParser) FieldsExcp(excepts []Field) []Field {
 	var exists []Field
-	var fs FieldSet = NewFieldSet(cp.FieldCount(), nil)
+	var fs *FieldSet = NewFieldSet()
 	for _, e := range excepts {
 		cp.MustValid(e)
 		fs.AddField(e)
@@ -131,74 +131,3 @@ func (cp *colParser) colsJoin(suffix, sep string, fields []Field) (col string) {
 func (cp *colParser) PanicUnknownField(field Field) {
 	panic(fmt.Sprintf("Unexpected field %d for %s\n", field.UNum(), cp.Table()))
 }
-
-// // ColsPHVals return columns with placeholder, values
-// func (cp *colParser) ColsPHVals(fields []Field) (col string,
-// 	vals []interface{}) {
-// 	return cp.colAndVals("=?", ",", fields)
-// }
-
-// // ColsSepPHVals return columns, placeholders, values
-// func (cp *colParser) ColsSepPHVals(fields []Field) (
-// 	col string, ph string, vals []interface{}) {
-// 	col, vals = cp.colsAndVals("", ",", fields)
-// 	ph = types.RepeatJoin("?", ",", len(fields))
-// 	return
-// }
-
-// // ColsPHValsExcp return columns with placeholder, values
-// func (cp *colParser) ColsPHValsExcp(excepts []Field) (col string,
-// 	vals []interface{}) {
-// 	return cp.colsAndValsExcp("=?", ",", excepts)
-// }
-
-// // ColsSepPHValsExcp return columns, placeholders, values
-// func (cp *colParser) ColsSepPHValsExcp(excepts []Field) (col string,
-// 	ph string, vals []interface{}) {
-// 	col, vals = cp.colsAndValsExcp("", ",", excepts)
-// 	ph = types.RepeatJoin("?", ",", cp.FieldCount-len(excepts))
-// 	return
-// }
-
-// func (cp *colParser) colsAndVals(suffix, sep string, fields []Field) (
-// 	col string, vals []interface{}) {
-// 	buf := bytes.NewBuffer(make([]byte, 0, COLUMN_BUFSIZE))
-// 	vals := make([]interface{}, len(fields))
-// 	suffix = suffix + sep
-// 	for index, f := range fields {
-// 		cp.MustValid(f)
-// 		buf.WriteString(cp.ColName(f))
-// 		buf.WriteString(suffix)
-// 		vals[index] = cp.FieldVal(f)
-// 	}
-// 	if buf.Len() > 0 {
-// 		colStr := buf.String()
-// 		col = colStr[:len(colStr)-len(sep)]
-// 	}
-// 	return
-// }
-
-// func (cp *colParser) colsAndValsExcp(suffix, sep string, excepts []Field) (
-// 	col string, vals []interface{}) {
-// 	var fs FieldSet = NewFieldSet(cp.FieldCount())
-// 	for _, e := range excepts {
-// 		cp.MustValid(e)
-// 		fs.AddField(e)
-// 	}
-// 	buf := bytes.NewBuffer(make([]byte, 0, COLUMN_BUFSIZE))
-// 	vals := make([]interface{}, len(fields))
-// 	suffix = suffix + sep
-// 	for _, f := range cp.Fields() {
-// 		if !fs.HasField(f) {
-// 			cp.MustValid(f)
-// 			buf.WriteString(cp.ColName(f))
-// 			buf.WriteString(suffix)
-// 			vals[index] = cp.FieldVal(f)
-// 		}
-// 	}
-// 	if buf.Len() > 0 {
-// 		colStr := buf.String()
-// 		col = colStr[:len(colStr)-len(sep)]
-// 	}
-// 	return
-// }
