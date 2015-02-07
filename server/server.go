@@ -131,15 +131,12 @@ func (s *Server) start() {
 	s.SessionManager = manager
 
 	log.Println("Init Handlers and Filters")
-	s.Router.Init(func(handler Handler) bool {
+	s.Router.Init(func(handler Handler) {
 		OnErrPanic(handler.Init(s))
-		return true
-	}, func(filter Filter) bool {
+	}, func(filter Filter) {
 		OnErrPanic(filter.Init(s))
-		return true
-	}, func(websocketHandler WebSocketHandler) bool {
+	}, func(websocketHandler WebSocketHandler) {
 		OnErrPanic(websocketHandler.Init(s))
-		return true
 	})
 
 	log.Println("Init Error Handlers")
@@ -194,11 +191,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, request *http.Request) {
 
 // serveWebSocket serve for websocket protocal
 func (s *Server) serveWebSocket(w http.ResponseWriter, request *http.Request) {
-	handler, indexer, values := s.MatchWebSocketHandler(request.URL)
+	handler, indexer := s.MatchWebSocketHandler(request.URL)
 	if handler == nil {
 		w.WriteHeader(http.StatusNotFound)
 	} else if conn, err := websocket.UpgradeWebsocket(w, request, nil); err == nil {
-		handler.Handle(newWebSocketConn(conn).setUrlVars(indexer, values))
+		handler.Handle(newWebSocketConn(conn).setUrlVarIndexer(indexer))
 	}
 }
 
@@ -228,18 +225,32 @@ func (s *Server) processHttpRequest(url *url.URL, req *request, resp *response, 
 	var (
 		xsrfError   bool
 		handlerFunc HandlerFunc
+		method      = req.Method()
+		matchFunc   = s.MatchHandlerFilters
 	)
 	if !forward { // check xsrf error
-		if req.Method() == GET {
+		if method == GET {
 			resp.setXsrfToken(s.xsrf.Set(req, resp))
 		} else {
 			xsrfError = !s.xsrf.IsValid(req)
 		}
+	} else if !s.filterForward {
+		matchFunc = s.MatchHandler
 	}
-	handler, indexer, values := s.MatchHandler(url)
+	handler, indexer, filters := matchFunc(url)
+	handlerFunc = s.indicateHandlerFunc(method, xsrfError, handler)
+	if filters == nil {
+		handlerFunc(req.setVarIndexer(indexer), resp)
+	} else {
+		NewFilterChain(filters, handlerFunc).Filter(req.setVarIndexer(indexer), resp)
+	}
+}
+
+// indicateHandlerFunc indicate handler function from method, has xsrf error and handler
+func (s *Server) indicateHandlerFunc(method string, xsrfError bool, handler Handler) (
+	handlerFunc HandlerFunc) {
 	if handler != nil {
-		req.setUrlVars(indexer, values)
-		if handlerFunc = IndicateHandler(req.Method(), handler); handlerFunc == nil {
+		if handlerFunc = IndicateHandler(method, handler); handlerFunc == nil {
 			handlerFunc = s.MethodNotAllowedHandler()
 		} else if xsrfError {
 			if handler, is := handler.(XsrfErrorHandler); is {
@@ -251,19 +262,7 @@ func (s *Server) processHttpRequest(url *url.URL, req *request, resp *response, 
 	} else { // no handler means no resource there
 		handlerFunc = s.NotFoundHandler()
 	}
-	s.handleWithFilter(req, resp, handlerFunc, url, forward)
-}
-
-// handleWithFilter handle request and response
-// if request is forward and server is configured to filter forward request
-// filters will not be triggered
-func (s *Server) handleWithFilter(req Request, resp Response, handlerFunc HandlerFunc,
-	url *url.URL, forward bool) {
-	var filters []Filter
-	if !forward || s.filterForward {
-		filters = s.MatchFilters(url)
-	}
-	NewFilterChain(filters, handlerFunc).Filter(req, resp)
+	return
 }
 
 //==============================================================================

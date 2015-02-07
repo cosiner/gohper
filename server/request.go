@@ -25,8 +25,7 @@ type (
 		Server() *Server
 		Param(name string) (value string)
 		Params(name string) []string
-		UrlVar(name string) (value string)
-		ScanUrlVars(vars ...*string)
+		UrlVarIndexer
 		Forward(addr string) error
 		ReadString() (s string)
 		Read(data []byte) (int, error)
@@ -41,9 +40,7 @@ type (
 		*context
 		request *http.Request
 		method  string
-		indexer VarIndexer
-		// urlVars is the values extract from url path for REST url
-		urlVars []string
+		UrlVarIndexer
 		// params represent user request's parameters,
 		// for GET it's exist in url, for other method, parse from form
 		params url.Values
@@ -73,7 +70,6 @@ func newRequest(ctx *context, requ *http.Request) *request {
 func (req *request) destroy() {
 	req.context.destroy()
 	req.request = nil
-	req.urlVars = nil
 	req.params = nil
 	req.header = nil
 }
@@ -163,26 +159,10 @@ func (req *request) Params(name string) []string {
 	return params[name]
 }
 
-// setUrlVars setup request url variables
-func (req *request) setUrlVars(indexer VarIndexer, urlVars []string) *request {
-	req.indexer = indexer
-	req.urlVars = urlVars
+// setVarIndexer setup request url variables
+func (req *request) setVarIndexer(indexer UrlVarIndexer) *request {
+	req.UrlVarIndexer = indexer
 	return req
-}
-
-// UrlVar return url variable value with name
-func (req *request) UrlVar(name string) (value string) {
-	if values := req.urlVars; values != nil {
-		value = req.indexer.ValueOf(values, name)
-	}
-	return
-}
-
-// ScanUrlVars scan url variable values into given address
-func (req *request) ScanUrlVars(vars ...*string) {
-	if values := req.urlVars; values != nil {
-		req.indexer.ScanInto(values, vars...)
-	}
 }
 
 // Forward forward to given address use exist request and response
