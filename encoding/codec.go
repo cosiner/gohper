@@ -13,11 +13,161 @@ import (
 )
 
 type (
+	// PowerReadWriter is a power reader and writer which can read and write
+	// bytes/string/gob/json/xml data all in one
+	PowerReadWriter interface {
+		PowerReader
+		PowerWriter
+	}
+
+	// CleanPowerReadWriter is a clean reader and writer without Read/Write method
+	CleanPowerReadWriter interface {
+		CleanPowerReader
+		CleanPowerWriter
+	}
+
+	// PowerReader is a power reader which can read bytes/string/gob/jsob/xml data
+	PowerReader interface {
+		io.Reader
+		CleanPowerReader
+	}
+
+	// CleanPowerReader is a clean reader and writer without Read method
+	CleanPowerReader interface {
+		ReadString() (string, error)
+		ReadJSON(interface{}) error
+		ReadXML(interface{}) error
+		ReadGOB(interface{}) error
+	}
+
+	// PowerReader is a power writer which can write bytes/string/gob/jsob/xml data
+	PowerWriter interface {
+		io.Writer
+		CleanPowerWriter
+	}
+
+	// CleanPowerWriter is a clean reader and writer without Write method
+	CleanPowerWriter interface {
+		WriteString(string) (int, error)
+		WriteJSON(interface{}) error
+		WriteXML(interface{}) error
+		WriteGOB(interface{}) error
+	}
+
 	// EncodeFunc encode a interface{} to bytes
 	EncodeFunc func(interface{}) ([]byte, error)
 	// DecodeFunc decode bytes to a interface{}, interface{} must be pointer
 	DecodeFunc func([]byte, interface{}) error
+
+	// powerReadWriter is a power reader and writer for read source and write
+	// destination is different, also you can still use for same read source
+	// and write destination, but not recommended, replace with powerRW
+	powerReadWriter struct {
+		powerReader
+		powerWriter
+	}
+
+	// powerRW is a power reader and writer designed for same read source and
+	// write destination
+	powerRW struct {
+		io.ReadWriter
+	}
+
+	// powerReader is a power reader
+	powerReader struct {
+		io.Reader
+	}
+
+	// powerWriter is a power writer
+	powerWriter struct {
+		io.Writer
+	}
 )
+
+// NewPowerReader create a power reader from exist reader
+func NewPowerReader(r io.Reader) PowerReader {
+	return powerReader{r}
+}
+
+// NewPowerWriter create a new power writer from exist writer
+func NewPowerWriter(w io.Writer) PowerWriter {
+	return powerWriter{w}
+}
+
+// NewPowerReaderWriter create a power reader writer,
+// it performed as read from reader, write to writer
+func NewPowerReadWriter(r io.Reader, w io.Writer) PowerReadWriter {
+	return powerReadWriter{powerReader{r}, powerWriter{w}}
+}
+
+// NewPowerReadWriterInOne create a power reader writer from ReadWriter,
+func NewPowerReadWriterInOne(rw io.ReadWriter) PowerReadWriter {
+	return powerRW{rw}
+}
+
+func (pw powerWriter) WriteString(s string) (int, error) {
+	return WriteString(pw, s)
+}
+
+func (pw powerWriter) WriteJSON(v interface{}) error {
+	return WriteJSON(pw, v)
+}
+
+func (pw powerWriter) WriteXML(v interface{}) error {
+	return WriteXML(pw, v)
+}
+
+func (pw powerWriter) WriteGOB(v interface{}) error {
+	return WriteGOB(pw, v)
+}
+
+func (pr powerReader) ReadString() (string, error) {
+	return ReadString(pr)
+}
+
+func (pr powerReader) ReadJSON(v interface{}) error {
+	return ReadJSON(pr, v)
+}
+
+func (pr powerReader) ReadXML(v interface{}) error {
+	return ReadXML(pr, v)
+}
+
+func (pr powerReader) ReadGOB(v interface{}) error {
+	return ReadGOB(pr, v)
+}
+
+func (prw powerRW) WriteString(s string) (int, error) {
+	return WriteString(prw, s)
+}
+
+func (prw powerRW) WriteJSON(v interface{}) error {
+	return WriteJSON(prw, v)
+}
+
+func (prw powerRW) WriteXML(v interface{}) error {
+	return WriteXML(prw, v)
+}
+
+func (prw powerRW) WriteGOB(v interface{}) error {
+	return WriteGOB(prw, v)
+}
+
+func (prw powerRW) ReadString() (string, error) {
+	return ReadString(prw)
+}
+
+func (prw powerRW) ReadJSON(v interface{}) error {
+	return ReadJSON(prw, v)
+}
+
+func (prw powerRW) ReadXML(v interface{}) error {
+	return ReadXML(prw, v)
+}
+
+func (prw powerRW) ReadGOB(v interface{}) error {
+	return ReadGOB(prw, v)
+}
 
 // GOBEncode encode parameter value to bytes use gob encoder
 func GOBEncode(v interface{}) (res []byte, err error) {

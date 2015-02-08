@@ -3,15 +3,6 @@ package types
 import "sync"
 
 type (
-	// AttrContainer is a common container store attribute
-	AttrContainer interface {
-		Attr(name string) interface{}
-		SetAttr(name string, value interface{})
-		RemoveAttr(name string)
-		IsAttrExist(name string) bool
-		AccessAllAttrs(fn func(Values))
-	}
-
 	Values map[string]interface{}
 
 	LockedValues struct {
@@ -81,30 +72,6 @@ func (v Values) AccessAll(fn func(Values)) {
 	fn(v)
 }
 
-func (v Values) IsAttrExist(key string) bool {
-	return v.IsExist(key)
-}
-
-func (v Values) Attr(key string) interface{} {
-	return v.Get(key)
-}
-
-func (v Values) RemoveAttr(key string) {
-	v.Remove(key)
-}
-
-func (v Values) SetAttr(key string, val interface{}) {
-	v.Set(key, val)
-}
-
-func (v Values) UpdateAttr(key string, val interface{}) bool {
-	return v.Update(key, val)
-}
-
-func (v Values) AccessAllAttrs(fn func(Values)) {
-	fn(v)
-}
-
 func (lc *LockedValues) Size() int {
 	lc.RLock()
 	size := lc.Values.Size()
@@ -155,28 +122,4 @@ func (lc *LockedValues) AccessAll(fn func(Values)) {
 	lc.RLock()
 	lc.Values.AccessAll(fn)
 	lc.RUnlock()
-}
-
-func (lc *LockedValues) IsAttrExist(key string) bool {
-	return lc.IsExist(key)
-}
-
-func (lc *LockedValues) Attr(key string) interface{} {
-	return lc.Get(key)
-}
-
-func (lc *LockedValues) RemoveAttr(key string) {
-	lc.Remove(key)
-}
-
-func (lc *LockedValues) SetAttr(key string, val interface{}) {
-	lc.Set(key, val)
-}
-
-func (lc *LockedValues) UpdateAttr(key string, val interface{}) bool {
-	return lc.Update(key, val)
-}
-
-func (lc *LockedValues) AccessAllAttrs(fn func(Values)) {
-	lc.AccessAll(fn)
 }

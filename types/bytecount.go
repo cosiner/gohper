@@ -9,8 +9,8 @@ import (
 
 const (
 	// *BYTE_BASE defines the base size of *B, include K,M,G,T,P
-	BYTE_BASE  = 1024
-	KBYTE_BASE = BYTE_BASE * 1
+	BYTE_BASE  = 1 << 10
+	KBYTE_BASE = BYTE_BASE
 	MBYTE_BASE = BYTE_BASE * KBYTE_BASE
 	GBYTE_BASE = BYTE_BASE * MBYTE_BASE
 	TBYTE_BASE = BYTE_BASE * GBYTE_BASE
