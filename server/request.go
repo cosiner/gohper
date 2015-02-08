@@ -1,7 +1,6 @@
 package server
 
 import (
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -25,22 +24,19 @@ type (
 		Server() *Server
 		Param(name string) (value string)
 		Params(name string) []string
-		UrlVarIndexer
 		Forward(addr string) error
-		ReadString() (s string)
-		Read(data []byte) (int, error)
-		ReadAll() (bs []byte)
-		ReadJSON(v interface{}) error
-		ReadXML(v interface{}) (err error)
+		encoding.PowerReader
+		UrlVarIndexer
 		AttrContainer
 	}
 
 	// request represent an income request
 	request struct {
 		*context
+		UrlVarIndexer
+		encoding.PowerReader
 		request *http.Request
 		method  string
-		UrlVarIndexer
 		// params represent user request's parameters,
 		// for GET it's exist in url, for other method, parse from form
 		params url.Values
@@ -54,9 +50,10 @@ type (
 // newRequest create a new request
 func newRequest(ctx *context, requ *http.Request) *request {
 	req := &request{
-		context: ctx,
-		request: requ,
-		header:  requ.Header,
+		context:     ctx,
+		PowerReader: encoding.NewPowerReader(requ.Body),
+		request:     requ,
+		header:      requ.Header,
 	}
 	method := requ.Method
 	if m := requ.Header.Get("X-HTTP-Method-Override"); method == POST && m != "" {
@@ -172,34 +169,6 @@ func (req *request) Forward(addr string) error {
 		req.Server().processHttpRequest(u, req, req.resp, true)
 	}
 	return err
-}
-
-// ReadString read request body as string
-func (req *request) ReadString() (s string) {
-	s, _ = encoding.ReadString(req.request.Body)
-	return
-}
-
-func (req *request) Read(data []byte) (int, error) {
-	return req.request.Body.Read(data)
-}
-
-// ReadAll read request body as bytes
-func (req *request) ReadAll() (bs []byte) {
-	bs, _ = ioutil.ReadAll(req.request.Body)
-	return
-}
-
-// ReadJSON read json data into given parameter,
-// parameter MUST BE POINTER, request's content type MUST BE JSON
-func (req *request) ReadJSON(v interface{}) error {
-	return encoding.ReadJSON(req, v)
-}
-
-// ReadXML read xml data into given parameter
-// parameter MUST BE POINTER, request's content type MUST BE XML
-func (req *request) ReadXML(v interface{}) (err error) {
-	return encoding.ReadXML(req, v)
 }
 
 // hasSession return whether a request has own session

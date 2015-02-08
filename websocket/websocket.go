@@ -223,6 +223,15 @@ func (ws *Conn) Close() error {
 func (ws *Conn) isClientConn() bool { return ws.request == nil }
 func (ws *Conn) isServerConn() bool { return ws.request != nil }
 
+// LocalAddr returns the WebSocket Origin for the connection for client, or
+// the WebSocket location for server.
+func (ws *Conn) LocalAddr() net.Addr {
+	if ws.isClientConn() {
+		return &Addr{ws.config.Origin}
+	}
+	return &Addr{ws.config.Location}
+}
+
 // RemoteAddr returns the WebSocket location for the connection for client, or
 // the Websocket Origin for server.
 func (ws *Conn) RemoteAddr() net.Addr {

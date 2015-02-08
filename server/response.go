@@ -22,17 +22,15 @@ type (
 		ReportStatus(statusCode int)
 		Render(tmpl string) error
 		RenderWith(tmpl string, value interface{}) error
-		Write(data []byte) (int, error)
-		WriteString(data string) (int, error)
-		WriteJSON(val interface{}) error
-		WriteXML(val interface{}) error
 		Flush()
+		encoding.PowerWriter
 		AttrContainer
 	}
 	// response represent a response of request to user
 	response struct {
 		*context
-		w      http.ResponseWriter
+		w http.ResponseWriter
+		encoding.PowerWriter
 		header http.Header
 	}
 
@@ -43,9 +41,10 @@ type (
 // newResponse create a new response, and set default content type to HTML
 func newResponse(ctx *context, w http.ResponseWriter) *response {
 	resp := &response{
-		context: ctx,
-		w:       w,
-		header:  w.Header(),
+		context:     ctx,
+		w:           w,
+		PowerWriter: encoding.NewPowerWriter(w),
+		header:      w.Header(),
 	}
 	resp.SetContentType(CONTENTTYPE_HTML)
 	return resp
@@ -148,25 +147,6 @@ func (resp *response) Render(tmpl string) error {
 // RenderWith render template with given value
 func (resp *response) RenderWith(tmpl string, value interface{}) error {
 	return resp.Server().RenderTemplate(resp, tmpl, value)
-}
-
-func (resp *response) Write(data []byte) (int, error) {
-	return resp.w.Write(data)
-}
-
-// WriteString write sting to client
-func (resp *response) WriteString(data string) (int, error) {
-	return encoding.WriteString(resp, data)
-}
-
-// WriteJSON write json data to client, and setup content type to json
-func (resp *response) WriteJSON(val interface{}) error {
-	return encoding.WriteJSON(resp, val)
-}
-
-// WriteXML write xml data to client, and setup content type to xml
-func (resp *response) WriteXML(val interface{}) error {
-	return encoding.WriteXML(resp, val)
 }
 
 // Flush flush response's output

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"sync"
 
 	. "github.com/cosiner/golib/errors"
 )
@@ -12,7 +13,7 @@ type (
 	// Router is responsible for route manage and match
 	Router interface {
 		// Init init handlers and filters, websocket handlers
-		Init(func(Handler), func(Filter), func(WebSocketHandler))
+		Init(func(Handler) bool, func(Filter) bool, func(WebSocketHandler) bool)
 		// Destroy destroy router, also responsible for destroy all handlers and filters
 		Destroy()
 
@@ -44,6 +45,14 @@ type (
 		// ScanUrlVars scan given values into variable addresses
 		// if address is nil, skip it
 		ScanUrlVars(vars ...*string)
+		// UrlVars return all values of variable
+		UrlVars() []string
+	}
+
+	// ValuesPool is a pool for url variable values
+	VaulesPool interface {
+		Acquire() []string
+		Recover([]string)
 	}
 
 	// handlerProcessor keep handler and url variables of this route
@@ -77,13 +86,51 @@ type (
 		vars   map[string]int // url variables and indexs of sections splited by '/'
 		values []string       // all url variable values
 	}
+
+	pathValuesPool struct {
+		pool [][]string
+		*sync.RWMutex
+	}
 )
+
+func newValuesPool(size int) VaulesPool {
+	p := new(pathValuesPool)
+	p.pool = make([][]string, 0, size)
+	p.RWMutex = new(sync.RWMutex)
+	return p
+}
+
+func (p *pathValuesPool) Acquire() (v []string) {
+	p.Lock()
+	pool := p.pool
+	len := len(pool)
+	if len == 0 {
+		v = make([]string, 0, PathVarCount)
+	} else {
+		v = pool[len-1]
+		p.pool = pool[:len-1]
+	}
+	p.Unlock()
+	return
+}
+
+func (p *pathValuesPool) Recover(v []string) {
+	if cap(v) != 0 {
+		v = v[:0]
+		p.Lock()
+		pool := p.pool
+		if cap(pool) != len(pool) { // if pool is full, do nothing
+			p.pool = append(pool, v)
+		}
+		p.Unlock()
+	}
+}
 
 var (
 	// nilVars is empty variable map
 	nilVars = make(map[string]int)
 	// nilVarIndexer is a empty UrlVarIndexer
-	nilVarIndexer = newVarIndexer(nilVars, nil)
+	nilVarIndexer = &pathVars{vars: nilVars, values: nil}
 	// reserveChildsCount is route childs slice increment and init size for addPath
 	reserveChildsCount = 1
 	// PathVarCount is common url path variable count
@@ -91,6 +138,8 @@ var (
 	// all path variable values
 	// to get best performance, it should commonly set to the average, default, it's 2
 	PathVarCount = 2
+
+	valuesPool = newValuesPool(1024)
 )
 
 const (
@@ -186,7 +235,10 @@ func newVarIndexer(vars map[string]int, values []string) UrlVarIndexer {
 	if len(vars) == 0 {
 		return nilVarIndexer
 	}
-	return &pathVars{vars: vars, values: values}
+	v := new(pathVars)
+	v.vars = vars
+	v.values = values
+	return v
 }
 
 // UrlVar return values of variable
@@ -195,6 +247,11 @@ func (v *pathVars) UrlVar(name string) string {
 		return v.values[index]
 	}
 	return ""
+}
+
+// UrlVars return all values of variable
+func (v *pathVars) UrlVars() []string {
+	return v.values
 }
 
 // ScanUrlVars scan values into variable addresses
@@ -210,18 +267,23 @@ func (v *pathVars) ScanUrlVars(vars ...*string) {
 }
 
 // init init handler and filters hold by routeProcessor
-func (rp *routeProcessor) init(initHandler func(Handler),
-	initFilter func(Filter),
-	initWebSocketHandler func(WebSocketHandler)) {
+func (rp *routeProcessor) init(initHandler func(Handler) bool,
+	initFilter func(Filter) bool,
+	initWebSocketHandler func(WebSocketHandler) bool) bool {
+	continu := true
 	if rp.handlerProcessor != nil {
-		initHandler(rp.handlerProcessor.handler)
+		continu = initHandler(rp.handlerProcessor.handler)
 	}
 	for _, f := range rp.filters {
-		initFilter(f)
+		if !continu {
+			break
+		}
+		continu = initFilter(f)
 	}
-	if rp.wsHandlerProcessor != nil {
-		initWebSocketHandler(rp.wsHandlerProcessor.wsHandler)
+	if continu && rp.wsHandlerProcessor != nil {
+		continu = initWebSocketHandler(rp.wsHandlerProcessor.wsHandler)
 	}
+	return continu
 }
 
 // destroy destroy handler and filters hold by routeProcessor
@@ -243,15 +305,27 @@ func NewRouter() Router {
 }
 
 // Init init all handlers, filters, websocket handlers in route tree
-func (rt *router) Init(initHandler func(Handler),
-	initFilter func(Filter),
-	initWebSocketHandler func(WebSocketHandler)) {
+func (rt *router) Init(initHandler func(Handler) bool,
+	initFilter func(Filter) bool,
+	initWebSocketHandler func(WebSocketHandler) bool) {
+	rt.init(initHandler, initFilter, initWebSocketHandler)
+}
+
+// Init init all handlers, filters, websocket handlers in route tree
+func (rt *router) init(initHandler func(Handler) bool,
+	initFilter func(Filter) bool,
+	initWebSocketHandler func(WebSocketHandler) bool) bool {
+	continu := true
 	if rt.processor != nil {
-		rt.processor.init(initHandler, initFilter, initWebSocketHandler)
+		continu = rt.processor.init(initHandler, initFilter, initWebSocketHandler)
 	}
 	for _, c := range rt.childs {
-		c.Init(initHandler, initFilter, initWebSocketHandler)
+		if !continu {
+			break
+		}
+		continu = c.init(initHandler, initFilter, initWebSocketHandler)
 	}
+	return continu
 }
 
 // Destroy destroy router and all handlers, filters, websocket handlers
@@ -341,7 +415,7 @@ func (rt *router) addPattern(pattern string, fn func(*routeProcessor, map[string
 }
 
 // MatchWebSockethandler match url to find final websocket handler
-func (rt *router) MatchWebSocketHandler(url *url.URL) (handlerWebSocketHandler, UrlVarIndexer) {
+func (rt *router) MatchWebSocketHandler(url *url.URL) (WebSocketHandler, UrlVarIndexer) {
 	path := url.Path
 	rt, values := rt.matchOne(path)
 	if rt != nil {
@@ -515,8 +589,9 @@ func (rt *router) matchMulti(path string, pathIndex int, vars []string) (int,
 	if pathIndex != pathLen { // path not parse end, to find a child node to continue
 		var node *router
 		p := path[pathIndex]
-		for i, c := range rt.chars {
-			if c == p {
+		chars := rt.chars
+		for i := range chars {
+			if chars[i] == p {
 				node = rt.childs[i] // child
 				break
 			}
@@ -573,8 +648,9 @@ func (rt *router) matchOne(path string) (*router, []string) {
 		node = nil
 		if pathIndex != pathLen { // path not parse end, must find a child node to continue
 			p := path[pathIndex]
-			for i, c := range rt.chars {
-				if c == p {
+			chars := rt.chars
+			for i := range chars {
+				if chars[i] == p {
 					node = rt.childs[i] // child
 					break
 				}

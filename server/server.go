@@ -131,12 +131,15 @@ func (s *Server) start() {
 	s.SessionManager = manager
 
 	log.Println("Init Handlers and Filters")
-	s.Router.Init(func(handler Handler) {
+	s.Router.Init(func(handler Handler) bool {
 		OnErrPanic(handler.Init(s))
-	}, func(filter Filter) {
+		return true
+	}, func(filter Filter) bool {
 		OnErrPanic(filter.Init(s))
-	}, func(websocketHandler WebSocketHandler) {
+		return true
+	}, func(websocketHandler WebSocketHandler) bool {
 		OnErrPanic(websocketHandler.Init(s))
+		return true
 	})
 
 	log.Println("Init Error Handlers")
