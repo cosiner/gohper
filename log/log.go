@@ -199,7 +199,7 @@ func (logger *Logger) LogLevel() (l Level) {
 // SetLevel change logger's level, it will apply to all log writers
 func (logger *Logger) SetLevel(level Level) (err error) {
 	errors.Assert(level >= _LEVEL_MIN && level <= _LEVEL_MAX,
-		UnknownLevelErr(level.String()))
+		UnknownLevelErr(level.String()).Error())
 	logger.Lock()
 	logger.level = level
 	for _, writer := range logger.writers {
