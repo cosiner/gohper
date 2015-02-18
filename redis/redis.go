@@ -37,7 +37,7 @@ func NewRedisStore(conf string) (*RedisStore, error) {
 func (rc *RedisStore) Init(conf string) error {
 	c := config.NewConfig(config.LINE)
 	c.ParseString(conf)
-	maxidle := c.IntValDef("maxidle", 3)
+	maxidle := c.IntValDef("maxidle", 5)
 	idleTimeout := c.IntValDef("idletimeout", 180)
 	if maxidle < 0 || idleTimeout < 0 {
 		return Err("Wrong format for redis cache")

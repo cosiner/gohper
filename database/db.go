@@ -52,8 +52,8 @@ const (
 
 var printSQL = func(_ bool, _ string) {}
 
-// NewDBManager create a database manager
-func NewDBManager(driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
+// Open create a database manager
+func Open(driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
 	db, err := sql.Open(driver, dsn)
 	var dbm *DB
 	if err == nil {
@@ -97,6 +97,8 @@ func (db *DB) registerType(v Model, table string) *TypeInfo {
 }
 
 // parse parse model to get type info, model must be struct
+// it will first use field tag as column name, if no tag specified,
+// use field name's camel_case
 func parse(v Model) *TypeInfo {
 	typ := types.IndirectType(v)
 	fieldNum := typ.NumField()
@@ -125,7 +127,7 @@ func EnableSQLPrint() {
 }
 
 // Fields create fieldset from given fields
-func Fields(fields []uint) *types.LightBitSet {
+func Fields(fields ...uint) *types.LightBitSet {
 	l := types.NewLightBitSet()
 	for _, f := range fields {
 		l.Set(f)
@@ -134,7 +136,7 @@ func Fields(fields []uint) *types.LightBitSet {
 }
 
 // FieldsExcp create fieldset except given fields
-func FieldsExcp(numField uint, fields []uint) *types.LightBitSet {
+func FieldsExcp(numField uint, fields ...uint) *types.LightBitSet {
 	set := types.NewLightBitSet()
 	set.SetAllBefore(numField)
 	for _, f := range fields {
