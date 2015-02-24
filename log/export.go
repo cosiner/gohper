@@ -2,32 +2,12 @@ package log
 
 //==================format======================================================
 var (
-	logger       *Logger
-	nilFunc      = func() {}
-	Start        = nilFunc
-	Stop         = nilFunc
-	Flush        = nilFunc
-	Exit         = nilFunc
-	LogLevel     = func() Level { return unknownLevel }
-	SetLevel     = func(Level) error { return nil }
-	AddLogWriter = func(LogWriter) error { return nil }
+	l logger = emptyLogger{}
 )
 
-// Init init global logger
+// Init init global l
 func Init(flushInterval int, level Level) {
-	logger = NewLogger(flushInterval, level)
-	Start = logger.Start
-	Stop = logger.Stop
-	Flush = logger.Flush
-	Exit = logger.Exit
-	LogLevel = logger.LogLevel
-	SetLevel = logger.SetLevel
-	AddLogWriter = logger.AddLogWriter
-}
-
-// GlobalLogger return current global logger
-func GlobalLogger() *Logger {
-	return logger
+	l = NewLogger(flushInterval, level)
 }
 
 // AddConsoleWriter add an console log writer
@@ -36,92 +16,92 @@ func AddConsoleWriter(conf string) error {
 	if err := clw.Config(conf); err != nil {
 		return err
 	}
-	return logger.AddLogWriter(clw)
+	return l.AddLogWriter(clw)
 }
 
-// AddFileWriter add file log writer to logger
+// AddFileWriter add file log writer to l
 func AddFileWriter(conf string) error {
 	flw := new(FileLogWriter)
 	if err := flw.Config(conf); err != nil {
 		return err
 	}
-	return logger.AddLogWriter(flw)
+	return l.AddLogWriter(flw)
 }
 
 // Debugf log for debug message
 func Debugf(format string, v ...interface{}) {
-	logger.logf(LEVEL_DEBUG, format, v...)
+	l.logf(LEVEL_DEBUG, format, v...)
 }
 
 // Infof log for info message
 func Infof(format string, v ...interface{}) {
-	logger.logf(LEVEL_INFO, format, v...)
+	l.logf(LEVEL_INFO, format, v...)
 }
 
 // Warnf log for warning message
 func Warnf(format string, v ...interface{}) {
-	logger.logf(LEVEL_WARN, format, v...)
+	l.logf(LEVEL_WARN, format, v...)
 }
 
 // Errorf log for error message
 func Errorf(format string, v ...interface{}) {
-	logger.logf(LEVEL_ERROR, format, v...)
+	l.logf(LEVEL_ERROR, format, v...)
 }
 
 // Fatalf log for fatal message
 func Fatalf(format string, v ...interface{}) {
-	logger.logf(LEVEL_FATAL, format, v...)
-	logger.Exit()
+	l.logf(LEVEL_FATAL, format, v...)
+	l.Exit()
 }
 
 // Debugln log for debug message
 func Debugln(v ...interface{}) {
-	logger.logln(LEVEL_DEBUG, v...)
+	l.logln(LEVEL_DEBUG, v...)
 }
 
 // Infoln log for info message
 func Infoln(v ...interface{}) {
-	logger.logln(LEVEL_INFO, v...)
+	l.logln(LEVEL_INFO, v...)
 }
 
 // Warnln log for warning message
 func Warnln(v ...interface{}) {
-	logger.logln(LEVEL_WARN, v...)
+	l.logln(LEVEL_WARN, v...)
 }
 
 // Errorln log for error message
 func Errorln(v ...interface{}) {
-	logger.logln(LEVEL_ERROR, v...)
+	l.logln(LEVEL_ERROR, v...)
 }
 
 // Fatalln log for fatal message
 func Fatalln(v ...interface{}) {
-	logger.logln(LEVEL_FATAL, v...)
-	logger.Exit()
+	l.logln(LEVEL_FATAL, v...)
+	l.Exit()
 }
 
 // Debug log for debug message
 func Debug(v ...interface{}) {
-	logger.log(LEVEL_DEBUG, v...)
+	l.log(LEVEL_DEBUG, v...)
 }
 
 // Info log for info message
 func Info(v ...interface{}) {
-	logger.log(LEVEL_INFO, v...)
+	l.log(LEVEL_INFO, v...)
 }
 
 // Warn log for warning message
 func Warn(v ...interface{}) {
-	logger.log(LEVEL_WARN, v...)
+	l.log(LEVEL_WARN, v...)
 }
 
 // Error log for error message
 func Error(v ...interface{}) {
-	logger.log(LEVEL_ERROR, v...)
+	l.log(LEVEL_ERROR, v...)
 }
 
 // Fatalflog for fatal message
 func Fatal(v ...interface{}) {
-	logger.log(LEVEL_FATAL, v...)
-	logger.Exit()
+	l.log(LEVEL_FATAL, v...)
+	l.Exit()
 }

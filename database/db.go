@@ -213,7 +213,7 @@ func SQLForInsert(ti *TypeInfo, fields, _ *types.LightBitSet) string {
 
 // Insert execure insert operation for model
 func (db *DB) Insert(v Model, fields *types.LightBitSet, needId bool) (int64, error) {
-	sql := db.CacheGet(db.InsertSQLCache, v, fields, nil, SQLForInsert)
+	sql := db.CacheGet(db.InsertSQLCache, v, fields, EmptyFields, SQLForInsert)
 	return db.ExecUpdate(sql, v.FieldValues(fields), needId)
 }
 
@@ -245,7 +245,7 @@ func SQLForDelete(ti *TypeInfo, _, whereFields *types.LightBitSet) string {
 // Insert execure delete operation for model
 func (db *DB) Delete(v Model, whereFields *types.LightBitSet) (int64, error) {
 	values := v.FieldValues(whereFields)
-	sql := db.CacheGet(db.DeleteSQLCache, v, nil, whereFields, SQLForDelete)
+	sql := db.CacheGet(db.DeleteSQLCache, v, EmptyFields, whereFields, SQLForDelete)
 	return db.ExecUpdate(sql, values, false)
 }
 
@@ -290,7 +290,7 @@ func SQLForCount(ti *TypeInfo, _, whereFields *types.LightBitSet) string {
 
 // Count return count of rows for model
 func (db *DB) Count(v Model, whereFields *types.LightBitSet) (count uint, err error) {
-	sql := db.CacheGet(db.SelectSQLCache, v, nil, whereFields, SQLForCount)
+	sql := db.CacheGet(db.SelectSQLCache, v, EmptyFields, whereFields, SQLForCount)
 	err = db.ExecQueryRow(sql, []interface{}{v.FieldValues(whereFields)},
 		[]interface{}{&count})
 	return
@@ -299,7 +299,7 @@ func (db *DB) Count(v Model, whereFields *types.LightBitSet) (count uint, err er
 // CountUse return count of rows for model use given arguments
 func (db *DB) CountUse(v Model, whereFields *types.LightBitSet,
 	args []interface{}) (count uint, err error) {
-	sql := db.CacheGet(db.SelectSQLCache, v, nil, whereFields, SQLForCount)
+	sql := db.CacheGet(db.SelectSQLCache, v, EmptyFields, whereFields, SQLForCount)
 	err = db.ExecQueryRow(sql, args, []interface{}{&count})
 	return
 }

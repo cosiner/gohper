@@ -10,6 +10,62 @@ import (
 	t "github.com/cosiner/golib/time"
 )
 
+type (
+	// Log represend a log with level and log message
+	Log struct {
+		Level   Level
+		Message string
+		Time    string
+	}
+
+	// LogWriter is actual log writer
+	LogWriter interface {
+		// Config config writer
+		Config(conf string) error
+		// Writer output log
+		Write(log *Log) error
+		// Resetlevel reset log writer's level
+		ResetLevel(level Level) error
+		// Flush flush output
+		Flush()
+		// Close close log writer
+		Close()
+	}
+
+	logger interface {
+		AddLogWriter(writer LogWriter) (err error)
+		LogLevel() (l Level)
+		SetLevel(level Level) (err error)
+		Start()
+		Flush()
+		Exit()
+		Stop()
+		logf(level Level, format string, v ...interface{})
+		logln(level Level, v ...interface{})
+		log(level Level, v ...interface{})
+	}
+
+	emptyLogger struct{}
+	signalType  uint8
+
+	// Logger
+	Logger struct {
+		*sync.RWMutex
+		level         Level
+		writers       []LogWriter
+		flushInterval time.Duration
+		logs          chan *Log
+		signal        chan signalType
+		running       bool
+	}
+)
+
+const (
+	_SIGNAL_FLUSH signalType = iota // flush all writer
+	_SIGNAL_STOP                    // stop logger
+	_SIGNAL_EXIT                    // exit process
+)
+
 var (
 	timenow  = time.Now
 	datetime = t.DateTime
@@ -18,13 +74,6 @@ var (
 //==============================================================================
 //                         Log
 //==============================================================================
-
-// Log represend a log with level and log message
-type Log struct {
-	Level   Level
-	Message string
-	Time    string
-}
 
 // String return a log as string with format "[level] time message"
 func (l *Log) String() string {
@@ -56,46 +105,16 @@ func NewLogln(level Level, v ...interface{}) *Log {
 	}
 }
 
-//==============================================================================
-//                              LogWriter
-//==============================================================================
-
-// LogWriter is actual log writer
-type LogWriter interface {
-	// Config config writer
-	Config(conf string) error
-	// Writer output log
-	Write(log *Log) error
-	// Resetlevel reset log writer's level
-	ResetLevel(level Level) error
-	// Flush flush output
-	Flush()
-	// Close close log writer
-	Close()
-}
-
-//==============================================================================
-//                Logger
-//==============================================================================
-
-type signalType uint8
-
-const (
-	_SIGNAL_FLUSH signalType = iota // flush all writer
-	_SIGNAL_STOP                    // stop logger
-	_SIGNAL_EXIT                    // exit process
-)
-
-// Logger
-type Logger struct {
-	*sync.RWMutex
-	level         Level
-	writers       []LogWriter
-	flushInterval time.Duration
-	logs          chan *Log
-	signal        chan signalType
-	running       bool
-}
+func (emptyLogger) AddLogWriter(LogWriter) error       { return nil }
+func (emptyLogger) LogLevel() Level                    { return 0 }
+func (emptyLogger) SetLevel(Level) error               { return nil }
+func (emptyLogger) Start()                             {}
+func (emptyLogger) Flush()                             {}
+func (emptyLogger) Exit()                              {}
+func (emptyLogger) Stop()                              {}
+func (emptyLogger) logf(Level, string, ...interface{}) {}
+func (emptyLogger) logln(Level, ...interface{})        {}
+func (emptyLogger) log(Level, ...interface{})          {}
 
 // NewLogger return a logger, if params is wrong, use default value
 func NewLogger(flushInterval int, level Level) *Logger {
@@ -217,9 +236,6 @@ func (logger *Logger) Stop() {
 	logger.signal <- _SIGNAL_STOP
 }
 
-//==============================================================================
-//                              Output
-//==============================================================================
 // logf format the log, send it to log write's goroutine
 func (logger *Logger) logf(level Level, format string, v ...interface{}) {
 	logger.RLock()
