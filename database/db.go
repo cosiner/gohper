@@ -5,8 +5,6 @@ import (
 	"fmt"
 
 	"github.com/cosiner/golib/types"
-
-	. "github.com/cosiner/golib/errors"
 )
 
 type (
@@ -39,8 +37,8 @@ type (
 	// SQLCache is container of cached sql
 	SQLCache map[uint]string
 
-	// sqlCreatorFunc is type of sql creator
-	sqlCreatorFunc func(ti *TypeInfo, fields, whereFields *types.LightBitSet) string
+	// SQLCreatorFunc is type of sql creator
+	SQLCreatorFunc func(ti *TypeInfo, fields, whereFields *types.LightBitSet) string
 )
 
 const (
@@ -50,25 +48,38 @@ const (
 	_FIELD_TAG = "column"
 )
 
-var printSQL = func(_ bool, _ string) {}
+var (
+	printSQL    = func(_ bool, _ string) {}
+	EmptyFields = Fields()
+)
+
+// Open open database
+func Open(driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
+	db := NewDB()
+	err := db.Connect(driver, dsn, maxIdle, maxOpen)
+	return db, err
+}
+
+// NewDB create a new db
+func NewDB() *DB {
+	return &DB{
+		types:          make(map[string]*TypeInfo),
+		InsertSQLCache: make(SQLCache),
+		UpdateSQLCache: make(SQLCache),
+		DeleteSQLCache: make(SQLCache),
+		SelectSQLCache: make(SQLCache),
+	}
+}
 
 // Open create a database manager
-func Open(driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
+func (dbm *DB) Connect(driver, dsn string, maxIdle, maxOpen int) error {
 	db, err := sql.Open(driver, dsn)
-	var dbm *DB
 	if err == nil {
 		db.SetMaxIdleConns(maxIdle)
 		db.SetMaxOpenConns(maxOpen)
-		dbm = &DB{
-			DB:             db,
-			types:          make(map[string]*TypeInfo),
-			InsertSQLCache: make(SQLCache),
-			UpdateSQLCache: make(SQLCache),
-			DeleteSQLCache: make(SQLCache),
-			SelectSQLCache: make(SQLCache),
-		}
+		dbm.DB = db
 	}
-	return dbm, err
+	return err
 }
 
 // TypeInfo return type information of given model
@@ -82,10 +93,23 @@ func (db *DB) TypeInfo(v Model) *TypeInfo {
 	return ti
 }
 
+// NumField return field number of a model
+func (db *DB) NumField(v Model) uint {
+	return db.TypeInfo(v).NumField
+}
+
+// ColumnName return return column name of a model field
+func (db *DB) ColumnName(v Model, field uint) (name string) {
+	fields := db.TypeInfo(v).Fields
+	if field < uint(len(fields)) {
+		name = fields[field]
+	}
+	return
+}
+
 // RegisterType register type info, model must not exist
 func (db *DB) RegisterType(v Model) {
 	table := v.Table()
-	Assertf(db.types[table] == nil, "Type %s already registered", table)
 	db.registerType(v, table)
 }
 
@@ -120,9 +144,13 @@ func parse(v Model) *TypeInfo {
 }
 
 // EnableSQLPrint enable sql print for each operation
-func EnableSQLPrint() {
-	printSQL = func(fromcache bool, sql string) {
-		fmt.Printf("fromcache:%t, sql:%s\n", fromcache, sql)
+func EnableSQLPrint(enable bool) {
+	if enable {
+		printSQL = func(fromcache bool, sql string) {
+			fmt.Printf("fromcache:%t, sql:%s\n", fromcache, sql)
+		}
+	} else {
+		printSQL = func(bool, string) {}
 	}
 }
 
@@ -159,10 +187,10 @@ func CacheGet(cache SQLCache, sig uint, newSQL func() string) string {
 	return sql
 }
 
-// cacheGet get sql from cache container, if cache not exist, then create new
+// CacheGet get sql from cache container, if cache not exist, then create new
 // sql and save it
-func (db *DB) cacheGet(cache SQLCache, v Model,
-	fields, whereFields *types.LightBitSet, newSQL sqlCreatorFunc) string {
+func (db *DB) CacheGet(cache SQLCache, v Model,
+	fields, whereFields *types.LightBitSet, newSQL SQLCreatorFunc) string {
 	ti := db.TypeInfo(v)
 	sig := FieldSignature(ti.NumField, fields, whereFields)
 	var sql string
@@ -176,24 +204,23 @@ func (db *DB) cacheGet(cache SQLCache, v Model,
 	return sql
 }
 
-// sqlForInsert create insert sql for given fields
-func sqlForInsert(ti *TypeInfo, fields, _ *types.LightBitSet) string {
-	count := fields.BitCount()
-	cols := ColNames(ti, count, fields)
+// SQLForInsert create insert sql for given fields
+func SQLForInsert(ti *TypeInfo, fields, _ *types.LightBitSet) string {
+	cols := ColNames(ti, fields)
 	return fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", ti.Table,
-		ColsString(cols, ""), types.RepeatJoin("?", ",", int(count)))
+		ColsString(cols, ""), types.RepeatJoin("?", ",", int(fields.BitCount())))
 }
 
 // Insert execure insert operation for model
 func (db *DB) Insert(v Model, fields *types.LightBitSet, needId bool) (int64, error) {
-	sql := db.cacheGet(db.InsertSQLCache, v, fields, nil, sqlForInsert)
+	sql := db.CacheGet(db.InsertSQLCache, v, fields, nil, SQLForInsert)
 	return db.ExecUpdate(sql, v.FieldValues(fields), needId)
 }
 
-// sqlForInsert create update sql for given fields
-func (db *DB) sqlForUpdate(ti *TypeInfo, fields, whereFields *types.LightBitSet) string {
-	cols := ColNames(ti, fields.BitCount(), fields)
-	whereCols := ColNames(ti, whereFields.BitCount(), whereFields)
+// SqlForUpdate create update sql for given fields
+func SqlForUpdate(ti *TypeInfo, fields, whereFields *types.LightBitSet) string {
+	cols := ColNames(ti, fields)
+	whereCols := ColNames(ti, whereFields)
 	return fmt.Sprintf("UPDATE %s SET %s WHERE %s", ti.Table, ColsString(cols, "=?"),
 		ColsString(whereCols, "=?"))
 }
@@ -205,43 +232,47 @@ func (db *DB) Update(v Model, fields *types.LightBitSet, whereFields *types.Ligh
 	newValues := make([]interface{}, 0, len(values)+len(values2))
 	copy(newValues, values)
 	copy(newValues[len(values):], values2)
-	sql := db.cacheGet(db.UpdateSQLCache, v, fields, whereFields, db.sqlForUpdate)
+	sql := db.CacheGet(db.UpdateSQLCache, v, fields, whereFields, SqlForUpdate)
 	return db.ExecUpdate(sql, newValues, false)
 }
 
-// sqlForInsert create delete sql for given fields
-func (db *DB) sqlForDelete(ti *TypeInfo, _, whereFields *types.LightBitSet) string {
-	cols := ColNames(ti, whereFields.BitCount(), whereFields)
+// SQLForDelete create delete sql for given fields
+func SQLForDelete(ti *TypeInfo, _, whereFields *types.LightBitSet) string {
+	cols := ColNames(ti, whereFields)
 	return fmt.Sprintf("DELETE FROM %s WHERE %s", ti.Table, ColsString(cols, "=?"))
 }
 
 // Insert execure delete operation for model
 func (db *DB) Delete(v Model, whereFields *types.LightBitSet) (int64, error) {
 	values := v.FieldValues(whereFields)
-	sql := db.cacheGet(db.DeleteSQLCache, v, nil, whereFields, db.sqlForUpdate)
+	sql := db.CacheGet(db.DeleteSQLCache, v, nil, whereFields, SQLForDelete)
 	return db.ExecUpdate(sql, values, false)
 }
 
-// sqlForInsert create select sql for given fields
-func (db *DB) sqlForSelect(ti *TypeInfo, fields, whereFields *types.LightBitSet) string {
-	cols := ColNames(ti, fields.BitCount(), fields)
-	whereCols := ColNames(ti, whereFields.BitCount(), whereFields)
-	return fmt.Sprintf("SELECT %s FROM %s WHERE %s", ColsString(cols, ""), ti.Table,
-		ColsString(whereCols, "=?"))
+// SQLForSelect create select sql for given fields
+func SQLForSelect(ti *TypeInfo, fields, whereFields *types.LightBitSet) string {
+	cols := ColNames(ti, fields)
+	whereCols := ColNames(ti, whereFields)
+	if len(whereCols) == 0 {
+		return fmt.Sprintf("SELECT %s FROM %s", ColsString(cols, ""), ti.Table)
+	} else {
+		return fmt.Sprintf("SELECT %s FROM %s WHERE %s", ColsString(cols, ""),
+			ti.Table, ColsString(whereCols, "=?"))
+	}
 }
 
 // SelectOne select one row from database
 func (db *DB) SelectOne(v Model, fields, whereFields *types.LightBitSet) error {
 	ptrs := v.FieldPtrs(fields)
 	whereValues := v.FieldValues(whereFields)
-	sql := db.cacheGet(db.SelectSQLCache, v, fields, whereFields, db.sqlForSelect)
+	sql := db.CacheGet(db.SelectSQLCache, v, fields, whereFields, SQLForSelect)
 	return db.ExecQueryRow(sql, whereValues, ptrs)
 }
 
 // SelectMulti select multiple results from database
 func (db *DB) SelectMulti(v Model, fields, whereFields *types.LightBitSet) ([]Model, error) {
 	whereValues := v.FieldValues(whereFields)
-	sql := db.cacheGet(db.SelectSQLCache, v, fields, whereFields, db.sqlForSelect)
+	sql := db.CacheGet(db.SelectSQLCache, v, fields, whereFields, SQLForSelect)
 	vs := make([]Model, 0, 5)
 	return vs, db.ExecQuery(sql, whereValues, func() []interface{} {
 		vs = append(vs, v)
@@ -251,10 +282,32 @@ func (db *DB) SelectMulti(v Model, fields, whereFields *types.LightBitSet) ([]Mo
 	})
 }
 
+// SQLForCount create select count sql
+func SQLForCount(ti *TypeInfo, _, whereFields *types.LightBitSet) string {
+	return fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE %s",
+		ti.Table, ColsString(ColNames(ti, whereFields), "=?"))
+}
+
+// Count return count of rows for model
+func (db *DB) Count(v Model, whereFields *types.LightBitSet) (count uint, err error) {
+	sql := db.CacheGet(db.SelectSQLCache, v, nil, whereFields, SQLForCount)
+	err = db.ExecQueryRow(sql, []interface{}{v.FieldValues(whereFields)},
+		[]interface{}{&count})
+	return
+}
+
+// CountUse return count of rows for model use given arguments
+func (db *DB) CountUse(v Model, whereFields *types.LightBitSet,
+	args []interface{}) (count uint, err error) {
+	sql := db.CacheGet(db.SelectSQLCache, v, nil, whereFields, SQLForCount)
+	err = db.ExecQueryRow(sql, args, []interface{}{&count})
+	return
+}
+
 // ColNames return column names for given fields
-func ColNames(ti *TypeInfo, count uint, fields *types.LightBitSet) []string {
+func ColNames(ti *TypeInfo, fields *types.LightBitSet) []string {
 	fieldNames := ti.Fields
-	names := make([]string, count)
+	names := make([]string, fields.BitCount())
 	index := 0
 	for i, name := range fieldNames {
 		if fields.IsSet(uint(i)) {
@@ -272,7 +325,9 @@ func ColsString(cols []string, suffix string) string {
 
 // FieldSignature create signature from fields
 func FieldSignature(numField uint, fields, whereFields *types.LightBitSet) uint {
-	return fields.Uint()<<numField | whereFields.Uint()
+	sig := fields.Uint() << numField
+	sig |= whereFields.Uint()
+	return sig
 }
 
 // Exec execute a update operation
