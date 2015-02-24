@@ -13,3 +13,12 @@ func IsSlice(s interface{}) bool {
 type Equaler interface {
 	EqualTo(interface{}) bool
 }
+
+// IndirectType return real type of value without pointer
+func IndirectType(v interface{}) reflect.Type {
+	typ := reflect.TypeOf(v)
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+	return typ
+}

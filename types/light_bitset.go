@@ -11,11 +11,19 @@ func NewLightBitSet() *LightBitSet {
 	return &l
 }
 
-// SetFor setup all index bits to 1
-func (l *LightBitSet) SetFor(indexs ...uint) {
-	for _, idx := range indexs {
-		l.Set(idx)
+// NewLightBitSetFrom create a new light bitset from given bits
+func NewLightBitSetFrom(bits ...uint) *LightBitSet {
+	var l uint64
+	for _, b := range bits {
+		l |= uint64(1 << b)
 	}
+	return ((*LightBitSet)(&l))
+}
+
+// ConvertToLightBitSet use a number as bitset
+func ConvertToLightBitSet(b uint) *LightBitSet {
+	var l LightBitSet = LightBitSet(b)
+	return &l
 }
 
 // Set set bit at given index to 1
@@ -52,6 +60,23 @@ func (l *LightBitSet) SetAll() {
 	*l = 1<<64 - 1
 }
 
+// SetAllBefore set all bits before index to 1, index bit is not included
+func (l *LightBitSet) SetAllBefore(index uint) {
+	*l |= (1<<index - 1)
+}
+
+func (l *LightBitSet) SetAllSince(index uint) {
+	*l |= ^(1<<index - 1)
+}
+
+func (l *LightBitSet) UnsetAllBefore(index uint) {
+	*l &= ^(1<<index - 1)
+}
+
+func (l *LightBitSet) UnsetAllSince(index uint) {
+	*l &= (1<<index - 1)
+}
+
 // UnsetAll set all bits to 0
 func (l *LightBitSet) UnsetAll() {
 	*l = 0
@@ -70,4 +95,9 @@ func (l *LightBitSet) Uint() uint {
 // Uint64 return uint64 display of LightBitSet
 func (l *LightBitSet) Uint64() uint64 {
 	return uint64(*l)
+}
+
+// BitCount return the count of bits set to 1
+func (l *LightBitSet) BitCount() uint {
+	return bitCount(uint64(*l))
 }

@@ -6,14 +6,6 @@ import (
 	"testing"
 )
 
-func BenchmarkLightBitSet(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		l := NewLightBitSet()
-		l.SetFor(2, 4, 6, 10, 13)
-		// _ = bs.IsSet(4)
-	}
-}
-
 func TestLightBitSet(t *testing.T) {
 	tt := test.WrapTest(t)
 	l := NewLightBitSet()
@@ -31,4 +23,39 @@ func TestLightBitSet(t *testing.T) {
 	tt.AssertFalse("1", l.IsSet(60))
 	l.FlipAll()
 	tt.AssertTrue("1", l.IsSet(61))
+}
+
+func TestSinceBefore(t *testing.T) {
+	tt := test.WrapTest(t)
+	l := NewLightBitSet()
+	l.SetAllBefore(9)
+	for i := 0; i < 9; i++ {
+		tt.AssertTrue("1", l.IsSet(uint(i)))
+	}
+	l.UnsetAll()
+	l.SetAllSince(9)
+	for i := 9; i < 64; i++ {
+		tt.AssertTrue("1", l.IsSet(uint(i)))
+	}
+	l.SetAll()
+	l.UnsetAllBefore(9)
+	for i := 0; i < 9; i++ {
+		tt.AssertFalse("1", l.IsSet(uint(i)))
+	}
+	l.SetAll()
+	l.UnsetAllSince(9)
+	for i := 0; i < 9; i++ {
+		tt.AssertTrue("1", l.IsSet(uint(i)))
+	}
+	for i := 9; i < 64; i++ {
+		tt.AssertFalse("1", l.IsSet(uint(i)))
+	}
+}
+
+func BenchmarkBitCount(b *testing.B) {
+	l := NewLightBitSet()
+	l.SetAll()
+	for i := 0; i < b.N; i++ {
+		_ = l.BitCount()
+	}
 }

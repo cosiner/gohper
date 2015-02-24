@@ -32,7 +32,7 @@ type (
 		CleanPowerReader
 	}
 
-	// CleanPowerReader is a clean reader and writer without Read method
+	// CleanPowerReader is a clean reader without Read method
 	CleanPowerReader interface {
 		ReadString() (string, error)
 		ReadJSON(interface{}) error
@@ -46,7 +46,7 @@ type (
 		CleanPowerWriter
 	}
 
-	// CleanPowerWriter is a clean reader and writer without Write method
+	// CleanPowerWriter is a clean  writer without Write method
 	CleanPowerWriter interface {
 		WriteString(string) (int, error)
 		WriteJSON(interface{}) error

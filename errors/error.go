@@ -10,10 +10,24 @@ import (
 //                           Assert
 //==============================================================================
 
-// Assert val is true, else panic error
-func Assert(val bool, err error) {
+// Assert assert val is true, else panic error
+func Assert(val bool, err string) {
 	if !val {
 		panic(err)
+	}
+}
+
+// AssertErr assert val is true, else panic error
+func AssertErr(val bool, err error) {
+	if !val {
+		panic(err)
+	}
+}
+
+// Assertf assert val is true, else panic error
+func Assertf(val bool, errformat string, v ...interface{}) {
+	if !val {
+		panic(fmt.Sprintf(errformat, v...))
 	}
 }
 

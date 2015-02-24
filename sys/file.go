@@ -166,9 +166,9 @@ func CloseFd(fd io.Closer) {
 
 // WriteFlag return APPEND if not delete content, else TRUNCATE
 func WriteFlag(delContent bool) int {
-	flag := os.O_APPEND
+	flag := AP
 	if delContent {
-		flag = os.O_TRUNC
+		flag = TC
 	}
 	return flag
 }

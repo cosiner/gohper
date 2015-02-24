@@ -126,6 +126,29 @@ func RepeatJoin(s1, s2 string, count int) string {
 	return str[:len(str)-len(s2)]
 }
 
+// SuffixJoin join string slice with suffix
+func SuffixJoin(s []string, suffix, sep string) string {
+	if len(s) == 0 {
+		return ""
+	}
+	if len(s) == 1 {
+		return s[0] + suffix
+	}
+	n := len(sep) * (len(s) - 1)
+	for i, sl := 0, len(suffix); i < len(s); i++ {
+		n += len(s[i]) + sl
+	}
+	b := make([]byte, n)
+	bp := copy(b, s[0])
+	bp += copy(b[bp:], suffix)
+	for _, s := range s[1:] {
+		bp += copy(b[bp:], sep)
+		bp += copy(b[bp:], s)
+		bp += copy(b[bp:], suffix)
+	}
+	return string(b)
+}
+
 // JoinInt join int slice as string
 func JoinInt(v []int, sep string) (str string) {
 	if len(v) > 0 {
