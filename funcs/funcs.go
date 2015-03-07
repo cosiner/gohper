@@ -107,3 +107,13 @@ func zipFor_T(slice1, slice2 []T, zipLong bool) (res [][]T) {
 	}
 	return res
 }
+
+type Iterator_T interface {
+	Next() T
+}
+
+type FuncInterator_T func() T
+
+func (fn FuncInterator_T) Next() T {
+	return fn()
+}

@@ -3,6 +3,7 @@ package termcolor
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/cosiner/golib/types"
 )
@@ -46,8 +47,9 @@ type TermColor struct {
 // NewColor create a new terminal color render
 func NewColor() *TermColor {
 	return &TermColor{
-		fg: -1,
-		bg: -1,
+		fg:     -1,
+		bg:     -1,
+		enable: true,
 	}
 }
 
@@ -84,6 +86,11 @@ func (tc *TermColor) Render(str string) string {
 		color = append(color, 8)
 	}
 	return fmt.Sprintf("\033[%sm%s\033[0m", types.JoinInt(color, ";"), str)
+}
+
+// RenderTo render string to writer
+func (tc *TermColor) RenderTo(w io.Writer, str string) {
+	w.Write(types.UnsafeBytes(tc.Render(str)))
 }
 
 // Bg set render's background color

@@ -17,9 +17,9 @@ func Assert(val bool, err string) {
 	}
 }
 
-// AssertErr assert val is true, else panic error
-func AssertErr(val bool, err error) {
-	if !val {
+// AssertNoErr assert error is nil, else panic
+func AssertNoErr(err error) {
+	if err != nil {
 		panic(err)
 	}
 }
