@@ -8,7 +8,7 @@ import (
 
 func TestConsoleLog(t *testing.T) {
 	Init(DEF_FLUSHINTERVAL, LEVEL_DEBUG)
-	AddConsoleWriter("")
+	AddConsoleWriter("info=green")
 	Start()
 	Errorln("aaa1")
 	Debugln("aaa2")

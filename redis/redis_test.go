@@ -10,7 +10,7 @@ import (
 
 func TestRedis(t *testing.T) {
 	tt := test.WrapTest(t)
-	store, err := NewRedisStore("addr='127.0.0.1:6379'")
+	store, err := NewRedisStore2("addr='127.0.0.1:6379'")
 	if err != nil {
 		t.Log(err)
 		return
@@ -24,4 +24,10 @@ func TestRedis(t *testing.T) {
 	v, err := ToString(store.Get("test"))
 	OnErrExit(err)
 	tt.AssertEq("Redis2", "{aaa}", v)
+	// store.HSet("userexist", "someone", false)
+	tt.Log(store.IsHExist("userexist", "someone"))
+	store.HRemove("userexist", "someone")
+	tt.Log(store.IsHExist("userexist", "someone"))
+	tt.Log(store.HGet("userexist", "someone"))
+	// tt.Log(ToBool(store.HGet("userexist", "someone")))
 }

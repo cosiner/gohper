@@ -53,7 +53,7 @@ var (
 	EmptyFields = Fields()
 )
 
-// Open open database
+// Open create a database manager and connect to database server
 func Open(driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
 	db := NewDB()
 	err := db.Connect(driver, dsn, maxIdle, maxOpen)
@@ -71,7 +71,7 @@ func NewDB() *DB {
 	}
 }
 
-// Open create a database manager
+// Connect connect to database server
 func (dbm *DB) Connect(driver, dsn string, maxIdle, maxOpen int) error {
 	db, err := sql.Open(driver, dsn)
 	if err == nil {
@@ -296,8 +296,8 @@ func (db *DB) Count(v Model, whereFields *types.LightBitSet) (count uint, err er
 	return
 }
 
-// CountUse return count of rows for model use given arguments
-func (db *DB) CountUse(v Model, whereFields *types.LightBitSet,
+// CountWithArgs return count of rows for model use given arguments
+func (db *DB) CountWithArgs(v Model, whereFields *types.LightBitSet,
 	args []interface{}) (count uint, err error) {
 	sql := db.CacheGet(db.SelectSQLCache, v, EmptyFields, whereFields, SQLForCount)
 	err = db.ExecQueryRow(sql, args, []interface{}{&count})

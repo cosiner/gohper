@@ -10,7 +10,7 @@ type RedisCache struct {
 }
 
 func (rc *RedisCache) Init(config string) error {
-	rs, err := redis.NewRedisStore(config)
+	rs, err := redis.NewRedisStore2(config)
 	if err == nil {
 		rc.redisStore = rs
 	}
@@ -18,7 +18,7 @@ func (rc *RedisCache) Init(config string) error {
 }
 
 func (rc *RedisCache) InitVals(config string, values map[string]interface{}) error {
-	rs, err := redis.NewRedisStore(config)
+	rs, err := redis.NewRedisStore2(config)
 	if err == nil {
 		rc.redisStore = rs
 		for k, v := range values {

@@ -1,6 +1,5 @@
 package log
 
-//==================format======================================================
 var (
 	l logger = emptyLogger{}
 )
@@ -27,6 +26,14 @@ func AddFileWriter(conf string) error {
 	}
 	return l.AddLogWriter(flw)
 }
+
+func AddLogWriter(writer LogWriter) error { return l.AddLogWriter(writer) }
+func LogLevel() Level                     { return l.LogLevel() }
+func SetLevel(level Level) error          { return l.SetLevel(level) }
+func Start()                              { l.Start() }
+func Flush()                              { l.Flush() }
+func Exit()                               { l.Exit() }
+func Stop()                               { l.Stop() }
 
 // Debugf log for debug message
 func Debugf(format string, v ...interface{}) {
