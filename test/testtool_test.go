@@ -5,7 +5,7 @@ import (
 )
 
 func TestTesttool(t *testing.T) {
-	AssertTrue(t, "AssertEq", true)
-	AssertEq(t, "AssertEq", true, true)
-	AssertNE(t, "AssertEq", true, 1 == 2)
+	AssertTrue(t, false)
+	AssertEq(t, true, false)
+	AssertNE(t, true, 1 > 2)
 }

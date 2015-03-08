@@ -9,8 +9,8 @@ import (
 
 func TestUnmarshalPrimitive(t *testing.T) {
 	tt := test.WrapTest(t)
-	bs := []byte("true")
+	bs := "true"
 	var b bool
-	tt.AssertNil("1", UnmarshalPrimitive(bs, reflect.ValueOf(&b)))
-	tt.AssertTrue("2", b)
+	tt.AssertNil(UnmarshalPrimitive(bs, reflect.ValueOf(&b)))
+	tt.AssertTrue(b)
 }

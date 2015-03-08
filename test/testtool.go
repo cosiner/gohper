@@ -3,6 +3,9 @@ package test
 
 import (
 	"fmt"
+	"path/filepath"
+	"runtime"
+	"strconv"
 	"testing"
 )
 
@@ -17,57 +20,79 @@ func WrapTest(t testing.TB) *Test {
 }
 
 // AssertEq assert expect and got is equal, else print error message
-func (t *Test) AssertEq(ident string, expect interface{}, got interface{}) {
-	AssertEq(t.TB, ident, expect, got)
+func (t *Test) AssertEq(expect interface{}, got interface{}) {
+	assertEq(t.TB, 1, expect, got)
 }
 
 // AssertNE assert expect and got is not equal, else print error message
-func (t *Test) AssertNE(ident string, expect interface{}, got interface{}) {
-	AssertNE(t.TB, ident, expect, got)
+func (t *Test) AssertNE(expect interface{}, got interface{}) {
+	assertNE(t.TB, 1, expect, got)
 }
 
 // AssertTrue assert value is true
-func (t *Test) AssertTrue(ident string, val bool) {
-	AssertTrue(t.TB, ident, val)
+func (t *Test) AssertTrue(val bool) {
+	assertEq(t.TB, 1, true, val)
 }
 
 // AssertFalse assert value is false
-func (t *Test) AssertFalse(ident string, val bool) {
-	AssertFalse(t.TB, ident, val)
+func (t *Test) AssertFalse(val bool) {
+	assertEq(t.TB, 1, false, val)
 }
 
 // AssertNil assert value is nil
-func (t *Test) AssertNil(ident string, value interface{}) {
-	AssertNil(t, ident, value)
+func (t *Test) AssertNil(value interface{}) {
+	assertNil(t, 1, value)
 }
 
-// AssertEq assert expect and got is equal, else print error message
-func AssertEq(t testing.TB, ident string, expect interface{}, got interface{}) {
+// assertEq assert expect and got is equal, else print error message
+func AssertEq(t testing.TB, expect interface{}, got interface{}) {
+	assertEq(t, 1, expect, got)
+}
+
+// AssertNE assert expect and got is not equal, else print error message
+func AssertNE(t testing.TB, expect interface{}, got interface{}) {
+	assertNE(t, 1, expect, got)
+}
+
+// AssertNil assert value is nil
+func AssertNil(t testing.TB, value interface{}) {
+	assertNil(t, 1, value)
+}
+
+// AssertTrue assert value is true
+func AssertTrue(t testing.TB, val bool) {
+	assertEq(t, 1, true, val)
+}
+
+// AssertFalse assert value is false
+func AssertFalse(t testing.TB, val bool) {
+	assertEq(t, 1, false, val)
+}
+
+// assertEq assert expect and got is equal, else print error message
+func assertEq(t testing.TB, skip int, expect interface{}, got interface{}) {
 	if expect != got {
-		t.Errorf("Error in %s : expect %s, but got %s\n", ident, expect, got)
+		t.Errorf("Error in %s : expect %s, but got %s\n",
+			position(skip+1), fmt.Sprint(expect), fmt.Sprint(got))
 	}
 }
 
-// AssertNE assert expect and got is not equal, else print error message
-func AssertNE(t testing.TB, ident string, expect interface{}, got interface{}) {
+// assertNE assert expect and got is not equal, else print error message
+func assertNE(t testing.TB, skip int, expect interface{}, got interface{}) {
 	if expect == got {
-		t.Errorf("Error in %s : expect different value, but got same: %s", ident, got)
+		t.Errorf("Error in %s : expect different value, but got same: %s",
+			position(skip+1), fmt.Sprint(got))
 	}
 }
 
-// AssertNil assert value is nil
-func AssertNil(t testing.TB, ident string, value interface{}) {
+// assertNil assert value is nil
+func assertNil(t testing.TB, skip int, value interface{}) {
 	if value != nil {
-		t.Errorf("Error in %s: expect nil value, but got %s", ident, fmt.Sprint(value))
+		t.Errorf("Error in %s: expect nil value, but got %s", position(skip+1), fmt.Sprint(value))
 	}
 }
 
-// AssertTrue assert value is true
-func AssertTrue(t testing.TB, ident string, val bool) {
-	AssertEq(t, ident, true, val)
-}
-
-// AssertFalse assert value is false
-func AssertFalse(t testing.TB, ident string, val bool) {
-	AssertEq(t, ident, false, val)
+func position(skip int) string {
+	pc, file, line, _ := runtime.Caller(skip + 1)
+	return filepath.Base(file) + ": " + filepath.Base(runtime.FuncForPC(pc).Name()) + ": " + strconv.Itoa(line)
 }

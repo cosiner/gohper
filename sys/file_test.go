@@ -11,9 +11,9 @@ func TestCopyFile(t *testing.T) {
 	tt := test.WrapTest(t)
 	src, dst := "/tmp/copytest", "/tmp/copytest.copy"
 	if CreateFor(src, nil) == nil {
-		tt.AssertTrue("CopyFile", CreateFor(src, nil) != nil)
-		tt.AssertTrue("CopyFile1", CopyFile(dst, src) == nil)
-		tt.AssertTrue("CopyFile2", IsFile(dst))
+		tt.AssertTrue(CreateFor(src, nil) != nil)
+		tt.AssertTrue(CopyFile(dst, src) == nil)
+		tt.AssertTrue(IsFile(dst))
 		os.Remove(dst)
 		os.Remove(src)
 	}
@@ -21,6 +21,6 @@ func TestCopyFile(t *testing.T) {
 
 func TestWriteFlag(t *testing.T) {
 	tt := test.WrapTest(t)
-	tt.AssertEq("WriteFlag", AP, WriteFlag(false))
-	tt.AssertEq("WriteFlag", TC, WriteFlag(true))
+	tt.AssertEq(AP, WriteFlag(false))
+	tt.AssertEq(TC, WriteFlag(true))
 }

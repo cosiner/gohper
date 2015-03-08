@@ -41,5 +41,5 @@ func TestWriteL(t *testing.T) {
 	bw := NewBufVWriter(buffer)
 	bw.WriteLString("abc", "de")
 	bw.Flush()
-	tt.AssertTrue("WriteL", bytes.Equal([]byte("abcde"), buffer.Bytes()))
+	tt.AssertTrue(bytes.Equal([]byte("abcde"), buffer.Bytes()))
 }

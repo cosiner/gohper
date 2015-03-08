@@ -26,32 +26,32 @@ func IndirectType(v interface{}) reflect.Type {
 	return typ
 }
 
-func UnmarshalPrimitive(bs []byte, v reflect.Value) (err error) {
+// UnmarshalPrimitive unmarshal bytes to primitive
+func UnmarshalPrimitive(str string, v reflect.Value) (err error) {
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
-	} else {
-		return Err("Value is not a pointer")
+	} else if !v.CanSet() {
+		return Err("Value can't be set")
 	}
-	s := UnsafeString(bs)
 	switch k := v.Kind(); k {
 	case reflect.Bool:
-		v.SetBool(bs[0] == 't')
+		v.SetBool(str[0] == 't')
 	case reflect.String:
-		v.SetString(s)
+		v.SetString(str)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		if n, e := strconv.ParseInt(s, 10, 64); e == nil {
+		if n, e := strconv.ParseInt(str, 10, 64); e == nil {
 			v.SetInt(n)
 		} else {
 			err = e
 		}
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		if n, e := strconv.ParseUint(s, 10, 64); e == nil {
+		if n, e := strconv.ParseUint(str, 10, 64); e == nil {
 			v.SetUint(n)
 		} else {
 			err = e
 		}
 	case reflect.Float32, reflect.Float64:
-		if n, e := strconv.ParseFloat(s, v.Type().Bits()); e == nil {
+		if n, e := strconv.ParseFloat(str, v.Type().Bits()); e == nil {
 			v.SetFloat(n)
 		} else {
 			err = e
@@ -60,4 +60,27 @@ func UnmarshalPrimitive(bs []byte, v reflect.Value) (err error) {
 		err = Errorf("Unsupported type:%s", k.String())
 	}
 	return
+}
+
+// UnmarshalToStruct unmarshal map to struct, only primitive type will be unmarshaled
+func UnmarshalToStruct(values map[string]string, v interface{}) error {
+	value := reflect.ValueOf(v)
+	kind := value.Kind()
+	if kind != reflect.Ptr {
+		return Errorf("Non-pointer type: %s", kind.String())
+	}
+	value = value.Elem()
+	kind = value.Kind()
+	if kind != reflect.Struct {
+		return Errorf("Non-struct type:%s", kind.String())
+	}
+	for k, v := range values {
+		field := value.FieldByName(string(UpperCase(k[0])) + k[1:])
+		if field.CanSet() {
+			if err := UnmarshalPrimitive(v, field); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

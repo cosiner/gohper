@@ -13,13 +13,13 @@ const TIME_FMT = "15:04:05"
 // yyyy : year, yy:year, mm:month, dd:day, HH:hour, MM:minute, SS:second
 func FormatLayout(format string) string {
 	format = strings.Replace(format, "yyyy", "2006", 1)
-	strings.Replace(format, "yy", "06", 1)
-	strings.Replace(format, "mm", "01", 1)
-	strings.Replace(format, "dd", "02", 1)
-	strings.Replace(format, "HH", "15", 1)
-	strings.Replace(format, "MM", "04", 1)
-	strings.Replace(format, "SS", "05", 1)
-	return string(format)
+	format = strings.Replace(format, "yy", "06", 1)
+	format = strings.Replace(format, "mm", "01", 1)
+	format = strings.Replace(format, "dd", "02", 1)
+	format = strings.Replace(format, "HH", "15", 1)
+	format = strings.Replace(format, "MM", "04", 1)
+	format = strings.Replace(format, "SS", "05", 1)
+	return format
 }
 
 // NowTimeUnix is a wrapper of time.Now().Unix()

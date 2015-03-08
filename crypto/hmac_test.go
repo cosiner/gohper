@@ -13,7 +13,7 @@ func TestSecret(t *testing.T) {
 	enc := "abcde"
 	val := SignSecret(key, enc)
 	tt.Log(val)
-	tt.AssertEq("1", enc, VerifySecret(key, val))
+	tt.AssertEq(enc, VerifySecret(key, val))
 	key[0] = 'd'
-	tt.AssertNE("2", enc, VerifySecret(key, val))
+	tt.AssertNE(enc, VerifySecret(key, val))
 }
