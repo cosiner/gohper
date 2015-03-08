@@ -9,15 +9,15 @@ import (
 func TestRandomCache(t *testing.T) {
 	cache, _ := NewCache(RANDOM, "maxsize=1")
 	cache.Set("aaa", "sss")
-	test.AssertEq(t, "RandomCache1", "sss", cache.Get("aaa").(string))
+	test.AssertEq(t, "sss", cache.Get("aaa").(string))
 
 	cache.Set("bbb", "bbb")
-	test.AssertEq(t, "RandomCache2", "bbb", cache.Get("bbb").(string))
-	test.AssertEq(t, "RandomCache5", 1, cache.Cap())
-	test.AssertEq(t, "RandomCache5", 1, cache.Size())
-	test.AssertEq(t, "RandomCache3", nil, cache.Get("aaa"))
+	test.AssertEq(t, "bbb", cache.Get("bbb").(string))
+	test.AssertEq(t, 1, cache.Cap())
+	test.AssertEq(t, 1, cache.Size())
+	test.AssertEq(t, nil, cache.Get("aaa"))
 
-	test.AssertFalse(t, "RandomCache4", cache.Update("dddd", 133))
+	test.AssertFalse(t, cache.Update("dddd", 133))
 }
 
 func TestLRUCache(t *testing.T) {
@@ -26,14 +26,14 @@ func TestLRUCache(t *testing.T) {
 	cache.Set("a", "a")
 	cache.Set("b", "b")
 	cache.Set("c", "c")
-	tt.AssertEq("LRUCACHE1", 3, cache.Size())
-	tt.AssertEq("LRUCACHE2", 3, cache.Cap())
-	tt.AssertEq("LRUCache3", "a", cache.Get("a").(string))
+	tt.AssertEq(3, cache.Size())
+	tt.AssertEq(3, cache.Cap())
+	tt.AssertEq("a", cache.Get("a").(string))
 
 	cache.Set("d", "nc")
-	tt.AssertEq("LRUCache4", nil, cache.Get("b"))
+	tt.AssertEq(nil, cache.Get("b"))
 	cache.Set("e", "nc")
-	tt.AssertEq("LRUCache5", nil, cache.Get("c"))
+	tt.AssertEq(nil, cache.Get("c"))
 }
 
 func TestRedisCache(t *testing.T) {

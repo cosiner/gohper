@@ -22,24 +22,24 @@ pool_max_open=100
 pool_max_idle=20
 		`)
 	val, _ := cfg.Val("aa")
-	test.AssertEq(t, "C1", "ccdd", val)
+	test.AssertEq(t, "ccdd", val)
 
 	_, has := cfg.Val("driver")
-	test.AssertFalse(t, "C2", has)
+	test.AssertFalse(t, has)
 
-	test.AssertEq(t, "C3", cfg.DefSec(), cfg.CurrSec())
+	test.AssertEq(t, cfg.DefSec(), cfg.CurrSec())
 
 	cfg.SetCurrSec("db")
-	test.AssertEq(t, "C4", 3306, cfg.IntValDef("port", 0))
+	test.AssertEq(t, 3306, cfg.IntValDef("port", 0))
 }
 
 func TestLine(t *testing.T) {
 	tt := test.WrapTest(t)
 	c := NewConfig(LINE)
 	c.ParseString("aa=1&bb=2&&dd=123")
-	tt.AssertEq("Line1", 1, c.IntValDef("aa", -1))
-	tt.AssertEq("Line2", 2, c.IntValDef("bb", -1))
-	tt.AssertEq("Line3", "123", c.ValDef("dd", ""))
+	tt.AssertEq(1, c.IntValDef("aa", -1))
+	tt.AssertEq(2, c.IntValDef("bb", -1))
+	tt.AssertEq("123", c.ValDef("dd", ""))
 }
 
 func BenchmarkConf(b *testing.B) {
@@ -129,4 +129,18 @@ pool_max_open=100
 pool_max_idle=20
 		`)
 	}
+}
+
+func TestUnmarshakLine(t *testing.T) {
+	tt := test.WrapTest(t)
+	v := struct {
+		Driver  string
+		Host    string
+		Port    int
+		MaxOpen int
+	}{}
+	c := NewConfig(LINE)
+	tt.AssertNil(c.ParseString("driver=mysql&host=localhost&port=3306&maxOpen=10"))
+	tt.Log(c.UnmarshalCurrSec(&v))
+	tt.Log(v)
 }

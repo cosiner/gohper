@@ -16,8 +16,8 @@ type lineConfig struct {
 	values map[string]string
 }
 
-// newLineConfig return a line config parser
-func newLineConfig() ConfigParser {
+// NewLineConfig return a line config parser
+func NewLineConfig() ConfigParser {
 	return &lineConfig{
 		values: make(map[string]string),
 	}

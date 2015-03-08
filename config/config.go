@@ -50,7 +50,7 @@ func NewConfig(typ ConfigType) (c *Config) {
 	case INI:
 		c = &Config{newIniConfig()}
 	case LINE:
-		c = &Config{newLineConfig()}
+		c = &Config{NewLineConfig()}
 	}
 	return
 }
@@ -102,4 +102,8 @@ func (c *Config) BoolValDef(key string, defaultval bool) bool {
 // IntVal return integer value from current section
 func (c *Config) IntValDef(key string, defaultval int) int {
 	return c.IntValFrom(key, c.CurrSec(), defaultval)
+}
+
+func (c *Config) UnmarshalCurrSec(v interface{}) error {
+	return types.UnmarshalToStruct(c.SectionVals(c.CurrSec()), v)
 }
