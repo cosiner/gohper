@@ -1,7 +1,10 @@
 // Package test is a wrapper of testing that supply some useful functions for test
 package test
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 // Test is a wrapper of testing.testing.TB
 type Test struct {
@@ -33,6 +36,11 @@ func (t *Test) AssertFalse(ident string, val bool) {
 	AssertFalse(t.TB, ident, val)
 }
 
+// AssertNil assert value is nil
+func (t *Test) AssertNil(ident string, value interface{}) {
+	AssertNil(t, ident, value)
+}
+
 // AssertEq assert expect and got is equal, else print error message
 func AssertEq(t testing.TB, ident string, expect interface{}, got interface{}) {
 	if expect != got {
@@ -43,7 +51,14 @@ func AssertEq(t testing.TB, ident string, expect interface{}, got interface{}) {
 // AssertNE assert expect and got is not equal, else print error message
 func AssertNE(t testing.TB, ident string, expect interface{}, got interface{}) {
 	if expect == got {
-		t.Errorf("Error in %s : got same result: %s", ident, got)
+		t.Errorf("Error in %s : expect different value, but got same: %s", ident, got)
+	}
+}
+
+// AssertNil assert value is nil
+func AssertNil(t testing.TB, ident string, value interface{}) {
+	if value != nil {
+		t.Errorf("Error in %s: expect nil value, but got %s", ident, fmt.Sprint(value))
 	}
 }
 

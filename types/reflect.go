@@ -2,6 +2,9 @@ package types
 
 import (
 	"reflect"
+	"strconv"
+
+	. "github.com/cosiner/golib/errors"
 )
 
 // IsSlice check whether or not param is slice
@@ -21,4 +24,40 @@ func IndirectType(v interface{}) reflect.Type {
 		typ = typ.Elem()
 	}
 	return typ
+}
+
+func UnmarshalPrimitive(bs []byte, v reflect.Value) (err error) {
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	} else {
+		return Err("Value is not a pointer")
+	}
+	s := UnsafeString(bs)
+	switch k := v.Kind(); k {
+	case reflect.Bool:
+		v.SetBool(bs[0] == 't')
+	case reflect.String:
+		v.SetString(s)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if n, e := strconv.ParseInt(s, 10, 64); e == nil {
+			v.SetInt(n)
+		} else {
+			err = e
+		}
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		if n, e := strconv.ParseUint(s, 10, 64); e == nil {
+			v.SetUint(n)
+		} else {
+			err = e
+		}
+	case reflect.Float32, reflect.Float64:
+		if n, e := strconv.ParseFloat(s, v.Type().Bits()); e == nil {
+			v.SetFloat(n)
+		} else {
+			err = e
+		}
+	default:
+		err = Errorf("Unsupported type:%s", k.String())
+	}
+	return
 }

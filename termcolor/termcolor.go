@@ -4,6 +4,7 @@ package termcolor
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/cosiner/golib/types"
 )
@@ -95,7 +96,7 @@ func (tc *TermColor) RenderTo(w io.Writer, str string) {
 
 // Bg set render's background color
 func (tc *TermColor) Bg(bg string) *TermColor {
-	tc.bg = Colors[bg]
+	tc.bg = Colors[strings.ToLower(bg)]
 	return tc
 }
 
