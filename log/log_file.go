@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
+
+	t "github.com/cosiner/golib/time"
 
 	"github.com/cosiner/gomodule/config"
 
@@ -13,27 +16,33 @@ import (
 
 const (
 	// log dir permission when create
-	_LOGDIR_PERM  = 0755
-	_CONF_BUFSIZE = "bufsize"
-	_CONF_MAXSIZE = "maxsize"
-	_CONF_LOGDIR  = "logdir"
+	_LOGDIR_PERM = 0755
 )
+
+var timeFormat = t.FormatLayout("yyyymmdd-HHMMSS")
 
 //==============================================================================
 //                           Log Buffer
 //==============================================================================
 // logBuffer represent a log writer for a special level
 type logBuffer struct {
-	writer *FileLogWriter
-	file   *os.File
+	file *os.File
 	*bufio.Writer
-	level  Level
-	nbytes uint64
+	nbytes  uint64
+	logdir  string
+	level   string
+	bufsize uint64
+	maxsize uint64
 }
 
 // newLogBuffer create a new log buffer
-func newLogBuffer(writer *FileLogWriter, level Level) (*logBuffer, error) {
-	buf := &logBuffer{writer, nil, nil, level, 0}
+func newLogBuffer(logdir, level string, bufsize, maxsize uint64) (*logBuffer, error) {
+	buf := &logBuffer{
+		logdir:  logdir,
+		level:   level,
+		bufsize: bufsize,
+		maxsize: maxsize,
+	}
 	return buf, buf.newLogFile()
 }
 
@@ -43,18 +52,20 @@ func (buf *logBuffer) newLogFile() (err error) {
 		buf.Flush()
 		buf.file.Close()
 	}
-	buf.file, err = createLogFile(buf.writer.logdir, buf.level.String())
-	buf.nbytes = 0
-	if err == nil {
-		buf.Writer = bufio.NewWriterSize(buf.file, int(buf.writer.bufsize))
+	filename := fmt.Sprintf("%s.log.%s.%d",
+		buf.level, time.Now().Format(timeFormat), os.Getpid())
+	if buf.file, err = os.Create(filepath.Join(buf.logdir, filename)); err == nil {
+		buf.nbytes = 0
+		buf.Writer = bufio.NewWriterSize(buf.file, int(buf.bufsize))
 	}
 	return
 }
 
 // flush flush log buffer
 func (buf *logBuffer) flush() (err error) {
-	err = buf.Flush()
-	err = buf.file.Sync()
+	if err = buf.Flush(); err == nil {
+		err = buf.file.Sync()
+	}
 	return
 }
 
@@ -67,7 +78,7 @@ func (buf *logBuffer) close() {
 
 // write write log message to log file
 func (buf *logBuffer) write(msg string) (err error) {
-	if buf.nbytes+uint64(len(msg)) >= buf.writer.maxsize {
+	if buf.nbytes+uint64(len(msg)) >= buf.maxsize {
 		if err = buf.newLogFile(); err != nil {
 			return
 		}
@@ -82,39 +93,34 @@ func (buf *logBuffer) write(msg string) (err error) {
 //==============================================================================
 // logWrite is actuall log writer, output is local file
 type FileLogWriter struct {
-	level   Level
-	bufsize uint64
-	maxsize uint64
-	logdir  string
-	files   [_LEVEL_MAX + 1]*logBuffer
+	level Level
+	files []*logBuffer
 }
 
-// Config resolv config, format like bufsize=xxx&maxsize=xxx&logdir=xxx
+// Config resolv config, format like bufsize=xxx&maxsize=xxx&logdir=xxx&level=info
 func (writer *FileLogWriter) Config(conf string) (err error) {
 	c := config.NewConfig(config.LINE)
-	if err = c.ParseString(conf); err == nil {
-		var bufsize, maxsize uint64
-		bufsize, err = types.Str2Bytes(c.ValDef(_CONF_BUFSIZE, "10K"))
-		if err == nil {
-			maxsize, err = types.Str2Bytes(c.ValDef(_CONF_MAXSIZE, "10M"))
-			if err == nil {
-				writer.bufsize = bufsize
-				writer.maxsize = maxsize
-				writer.logdir = c.ValDef(_CONF_LOGDIR,
-					filepath.Join(os.TempDir(), "gologs"))
-				return os.MkdirAll(writer.logdir, _LOGDIR_PERM)
-			}
-		}
+	if err = c.ParseString(conf); err != nil {
+		return
+	}
+	logdir := c.ValDef("logdir", filepath.Join(os.TempDir(), "gologs"))
+	bufsize, err := types.Str2Bytes(c.ValDef("bufsize", "10K"))
+	maxsize, err := types.Str2Bytes(c.ValDef("maxsize", "10M"))
+	writer.level, err = ParseLevel(c.ValDef("level", "info"))
+	err = os.MkdirAll(logdir, _LOGDIR_PERM)
+
+	writer.files = make([]*logBuffer, _LEVEL_MAX+1)
+	for l := writer.level; l <= _LEVEL_MAX && err == nil; l++ {
+		writer.files[l], err = newLogBuffer(logdir, l.String(), bufsize, maxsize)
 	}
 	return
 }
 
-// Write write log to log file
+// Write write log to log file, higher level log will simultaneously
+// output to all lower level log file
 func (writer *FileLogWriter) Write(log *Log) (err error) {
 	for l := writer.level; l <= log.Level; l++ {
-		err = writer.files[l].write(
-			fmt.Sprintf("[%s] %s %s", log.Level.String(), datetime(), log.Message))
-		if err != nil {
+		if writer.files[l].write(log.String()) != nil {
 			return
 		}
 	}
@@ -134,41 +140,4 @@ func (writer *FileLogWriter) Close() {
 		writer.files[l].close()
 		writer.files[l] = nil
 	}
-}
-
-// ResetLevel reset log level
-func (writer *FileLogWriter) ResetLevel(level Level) (err error) {
-	for l := _LEVEL_MIN; l < level; l++ {
-		if buf := writer.files[l]; buf != nil {
-			buf.close()
-		}
-		writer.files[l] = nil
-	}
-	for l := level; l <= _LEVEL_MAX; l++ {
-		if writer.files[l] == nil {
-			writer.files[l], err = newLogBuffer(writer, l)
-			if err != nil {
-				return
-			}
-		}
-	}
-	writer.level = level
-	return
-}
-
-// createLogFile create log file in the format:level.log.yyyymmdd-HHMMSS.pid
-func createLogFile(dir string, filename string) (*os.File, error) {
-	t := timenow()
-	filename = fmt.Sprintf("%s.log.%04d%02d%02d-%02d%02d%02d.%d",
-		filename,
-		t.Year(),
-		t.Month(),
-		t.Day(),
-		t.Hour(),
-		t.Minute(),
-		t.Second(),
-		os.Getpid())
-	fname := filepath.Join(dir, filename)
-	f, err := os.Create(fname)
-	return f, err
 }

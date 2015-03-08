@@ -1,20 +1,30 @@
 package log
 
 import (
+	"fmt"
+
+	"github.com/cosiner/golib/time"
+
 	"github.com/cosiner/golib/errors"
 	"github.com/cosiner/golib/types"
 )
 
-// Level is log level,
-// DEBUG, INFO, WARN, ERROR, FATAL, OFF
-type Level uint8
+type (
+	// Level is log level,
+	// DEBUG, INFO, WARN, ERROR, FATAL,
+	Level uint8
+	// Log represend a log with level and log message
+	Log struct {
+		Level   Level
+		Message string
+		Time    string
+	}
+)
 
-// levelName specified the all log level name
-var levelName = [...]string{"DEBUG", "INFO", "WARN", "ERROR", "FATAL"}
-
-func UnknownLevelErr(str string) error {
-	return errors.Errorf("Unknown level:%s", str)
-}
+var (
+	// levelName specified the all log level name
+	levelName = [...]string{"DEBUG", "INFO", "WARN", "ERROR", "FATAL", "OFF"}
+)
 
 const (
 	LEVEL_DEBUG Level = iota
@@ -22,6 +32,7 @@ const (
 	LEVEL_WARN
 	LEVEL_ERROR
 	LEVEL_FATAL
+	LEVEL_OFF
 	unknownLevel
 	LEVEL_ALL  = LEVEL_DEBUG
 	_LEVEL_MIN = LEVEL_DEBUG
@@ -33,6 +44,10 @@ const (
 	DEF_FILESIZE      = 1024 * 1024 * 10 // max log file size
 	DEF_LEVEL         = LEVEL_INFO       // default log level
 )
+
+func UnknownLevelErr(str string) error {
+	return errors.Errorf("Unknown level:%s", str)
+}
 
 // String return level name, if level is no more than level_off, return actual name
 // else return UNKNOWN
@@ -58,4 +73,34 @@ func ParseLevel(str string) (level Level, err error) {
 		err = UnknownLevelErr(str)
 	}
 	return
+}
+
+// String return a log as string with format "[level] time message"
+func (l *Log) String() string {
+	return fmt.Sprintf("[%5s] %s %s", l.Level.String(), l.Time, l.Message)
+}
+
+// buildLog format log
+func NewLogf(level Level, format string, v ...interface{}) *Log {
+	return &Log{
+		Level:   level,
+		Message: fmt.Sprintf(format, v...),
+		Time:    time.DateTime(),
+	}
+}
+
+func NewLog(level Level, v ...interface{}) *Log {
+	return &Log{
+		Level:   level,
+		Message: fmt.Sprint(v...),
+		Time:    time.DateTime(),
+	}
+}
+
+func NewLogln(level Level, v ...interface{}) *Log {
+	return &Log{
+		Level:   level,
+		Message: fmt.Sprintln(v...),
+		Time:    time.DateTime(),
+	}
 }

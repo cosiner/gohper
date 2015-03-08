@@ -62,6 +62,5 @@ func (clw *ConsoleLogWriter) Write(log *Log) error {
 	return err
 }
 
-func (clw *ConsoleLogWriter) ResetLevel(level Level) error { return nil }
-func (clw *ConsoleLogWriter) Flush()                       {}
-func (clw *ConsoleLogWriter) Close()                       {}
+func (clw *ConsoleLogWriter) Flush() {}
+func (clw *ConsoleLogWriter) Close() {}
