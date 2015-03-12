@@ -20,8 +20,9 @@ const (
 	WHITE      = "white"
 )
 
-// 30:黑 31:红 32:绿 33:黄 34:蓝色 35:紫色 36:深绿 37:白色
-// 30:black 31:red 32:green 33:yellow 34:blue 35:purple 36:deep green 37:white
+// background: 30:黑 31:红 32:绿 33:黄 34:蓝色 35:紫色 36:深绿 37:白色
+// background: 30:black 31:red 32:green 33:yellow 34:blue 35:purple 36:deep green 37:white
+// frontground: 40, 41, ...
 var Colors = map[string]int{
 	BLACK:      0,
 	RED:        1,
@@ -35,14 +36,15 @@ var Colors = map[string]int{
 
 // TermColor is a render for terminal string
 type TermColor struct {
-	enable    bool
-	fg        int
-	bg        int
-	underline bool
-	blink     bool
-	highlight bool
-	inverse   bool
-	hidden    bool
+	enable        bool
+	fg            int
+	bg            int
+	underline     bool
+	blink         bool
+	highlight     bool
+	inverse       bool
+	hidden        bool
+	settingsCount int
 }
 
 // NewColor create a new terminal color render
@@ -64,7 +66,7 @@ func (tc *TermColor) Render(str string) string {
 	if str == "" || !tc.enable {
 		return str
 	}
-	var color []int
+	color := make([]int, 0, tc.settingsCount)
 	if tc.fg != -1 {
 		color = append(color, tc.fg+40)
 	}
@@ -96,42 +98,49 @@ func (tc *TermColor) RenderTo(w io.Writer, str string) {
 
 // Bg set render's background color
 func (tc *TermColor) Bg(bg string) *TermColor {
+	tc.settingsCount++
 	tc.bg = Colors[strings.ToLower(bg)]
 	return tc
 }
 
 // Fg set render's foreground color
 func (tc *TermColor) Fg(fg string) *TermColor {
-	tc.fg = Colors[fg]
+	tc.settingsCount++
+	tc.fg = Colors[strings.ToLower(fg)]
 	return tc
 }
 
 // Highlight enable render to highlight
 func (tc *TermColor) Highlight() *TermColor {
+	tc.settingsCount++
 	tc.highlight = true
 	return tc
 }
 
 // Underline enable render to underline
 func (tc *TermColor) Underline() *TermColor {
+	tc.settingsCount++
 	tc.underline = true
 	return tc
 }
 
 // Blink enable render to blink
 func (tc *TermColor) Blink() *TermColor {
+	tc.settingsCount++
 	tc.blink = true
 	return tc
 }
 
 // Inverse enable render to inverse color
 func (tc *TermColor) Inverse() *TermColor {
+	tc.settingsCount++
 	tc.inverse = true
 	return tc
 }
 
 // Hidden enable render to hidden color
 func (tc *TermColor) Hidden() *TermColor {
+	tc.settingsCount++
 	tc.hidden = true
 	return tc
 }

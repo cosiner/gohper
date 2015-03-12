@@ -3,10 +3,9 @@ package test
 
 import (
 	"fmt"
-	"path/filepath"
-	"runtime"
-	"strconv"
 	"testing"
+
+	"github.com/cosiner/golib/runtime"
 )
 
 // Test is a wrapper of testing.testing.TB
@@ -73,7 +72,7 @@ func AssertFalse(t testing.TB, val bool) {
 func assertEq(t testing.TB, skip int, expect interface{}, got interface{}) {
 	if expect != got {
 		t.Errorf("Error in %s : expect %s, but got %s\n",
-			position(skip+1), fmt.Sprint(expect), fmt.Sprint(got))
+			runtime.CallerPosition(skip+1), fmt.Sprint(expect), fmt.Sprint(got))
 	}
 }
 
@@ -81,18 +80,13 @@ func assertEq(t testing.TB, skip int, expect interface{}, got interface{}) {
 func assertNE(t testing.TB, skip int, expect interface{}, got interface{}) {
 	if expect == got {
 		t.Errorf("Error in %s : expect different value, but got same: %s",
-			position(skip+1), fmt.Sprint(got))
+			runtime.CallerPosition(skip+1), fmt.Sprint(got))
 	}
 }
 
 // assertNil assert value is nil
 func assertNil(t testing.TB, skip int, value interface{}) {
 	if value != nil {
-		t.Errorf("Error in %s: expect nil value, but got %s", position(skip+1), fmt.Sprint(value))
+		t.Errorf("Error in %s: expect nil value, but got %s", runtime.CallerPosition(skip+1), fmt.Sprint(value))
 	}
-}
-
-func position(skip int) string {
-	pc, file, line, _ := runtime.Caller(skip + 1)
-	return filepath.Base(file) + ": " + filepath.Base(runtime.FuncForPC(pc).Name()) + ": " + strconv.Itoa(line)
 }

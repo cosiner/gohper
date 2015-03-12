@@ -5,7 +5,28 @@ import (
 	"bytes"
 	"io"
 	"os"
+
+	"github.com/cosiner/golib/types"
 )
+
+var _newLine = []byte("\n")
+
+// WriteBytesln write bytes to writer and append a newline character
+func WriteBytesln(w io.Writer, bs []byte) (int, error) {
+	c, e := w.Write(bs)
+	if e == nil {
+		_, e = w.Write(_newLine)
+		if e == nil {
+			c += 1
+		}
+	}
+	return c, e
+}
+
+// WriteBytesln write string to writer and append a newline character
+func WriteStrln(w io.Writer, s string) (int, error) {
+	return WriteBytesln(w, types.UnsafeBytes(s))
+}
 
 // BufReader return a new bufio.Reader from exist io.Reader
 // if current reader is already bufferd, return itself

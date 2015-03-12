@@ -75,6 +75,9 @@ func UnmarshalToStruct(values map[string]string, v interface{}) error {
 		return Errorf("Non-struct type:%s", kind.String())
 	}
 	for k, v := range values {
+		if k == "" {
+			continue
+		}
 		field := value.FieldByName(string(UpperCase(k[0])) + k[1:])
 		if field.CanSet() {
 			if err := UnmarshalPrimitive(v, field); err != nil {

@@ -1,11 +1,9 @@
 package test
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestTesttool(t *testing.T) {
-	AssertTrue(t, false)
-	AssertEq(t, true, false)
-	AssertNE(t, true, 1 > 2)
+	assertNil(t, 0, nil)
+	assertEq(t, 0, 1, 1)
+	assertNE(t, 0, t, nil)
 }
