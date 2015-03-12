@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/cosiner/golib/termcolor"
@@ -58,7 +59,11 @@ func (clw *ConsoleLogWriter) DisableColor() {
 
 // Write write
 func (clw *ConsoleLogWriter) Write(log *Log) error {
-	_, err := fmt.Print(clw.termColor[log.Level].Render(log.String()))
+	out := os.Stdout
+	if log.Level >= LEVEL_ERROR {
+		out = os.Stderr
+	}
+	_, err := fmt.Fprint(out, clw.termColor[log.Level].Render(log.String()))
 	return err
 }
 

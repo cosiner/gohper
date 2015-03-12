@@ -76,7 +76,9 @@ func NewLogger(flushInterval int, level Level) Logger {
 
 // AddLogWroter add a  log writer, nil writer will be auto-ignored
 func (logger *logger) AddLogWriter(writer LogWriter) {
-	logger.writers = append(logger.writers, writer)
+	if logger.level < LEVEL_OFF {
+		logger.writers = append(logger.writers, writer)
+	}
 }
 
 func (logger *logger) AddLogWriterWithConf(writer LogWriter, conf string) error {
