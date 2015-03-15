@@ -57,8 +57,8 @@ func BenchmarkRgxMap(b *testing.B) {
 }
 
 func BenchmarkRgxSlice(b *testing.B) {
-	pattern := regexp.MustCompile("^/[a-zA-Z]*/[0-9]*$")
+	pattern := regexp.MustCompile("^/[a-zA-Z]*/[0-9]*/[0-9]*/[0-9]*$")
 	for i := 0; i < b.N; i++ {
-		_ = pattern.FindStringSubmatch("/user/123")
+		_ = pattern.FindStringSubmatch("/user/123/123/123")
 	}
 }

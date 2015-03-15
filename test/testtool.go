@@ -43,6 +43,11 @@ func (t *Test) AssertNil(value interface{}) {
 	assertNil(t, 1, value)
 }
 
+// AssertNil assert value is nil
+func (t *Test) AssertNNil(value interface{}) {
+	assertNNil(t, 1, value)
+}
+
 // assertEq assert expect and got is equal, else print error message
 func AssertEq(t testing.TB, expect interface{}, got interface{}) {
 	assertEq(t, 1, expect, got)
@@ -56,6 +61,10 @@ func AssertNE(t testing.TB, expect interface{}, got interface{}) {
 // AssertNil assert value is nil
 func AssertNil(t testing.TB, value interface{}) {
 	assertNil(t, 1, value)
+}
+
+func AssertNNil(t testing.TB, value interface{}) {
+	assertNNil(t, 1, value)
 }
 
 // AssertTrue assert value is true
@@ -88,5 +97,11 @@ func assertNE(t testing.TB, skip int, expect interface{}, got interface{}) {
 func assertNil(t testing.TB, skip int, value interface{}) {
 	if value != nil {
 		t.Errorf("Error in %s: expect nil value, but got %s", runtime.CallerPosition(skip+1), fmt.Sprint(value))
+	}
+}
+
+func assertNNil(t testing.TB, skip int, value interface{}) {
+	if value == nil {
+		t.Errorf("Error in %s: expect non-nil value, but got nil", runtime.CallerPosition(skip+1))
 	}
 }

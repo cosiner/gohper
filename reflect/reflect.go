@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"strconv"
 
+	"github.com/cosiner/golib/goutil"
+
 	. "github.com/cosiner/golib/errors"
 )
 
@@ -78,7 +80,7 @@ func UnmarshalToStruct(values map[string]string, v interface{}) error {
 		if k == "" {
 			continue
 		}
-		field := value.FieldByName(string(UpperCase(k[0])) + k[1:])
+		field := value.FieldByName(goutil.ExportedCase(k))
 		if field.CanSet() {
 			if err := UnmarshalPrimitive(v, field); err != nil {
 				return err

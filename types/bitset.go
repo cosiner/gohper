@@ -162,7 +162,7 @@ func (bs *BitSet) BitCount() uint {
 	var n uint
 	bs.clearTop()
 	bs.unitOp(func(index uint) {
-		n += bitCount(bs.set[index])
+		n += BitCount(bs.set[index])
 	})
 	return n
 }
@@ -300,7 +300,7 @@ func (bs *BitSet) unitOp(f func(index uint)) *BitSet {
 }
 
 // count of 1 bit
-func bitCount(n uint64) uint {
+func BitCount(n uint64) uint {
 	n -= (n >> 1) & 0x5555555555555555
 	n = (n>>2)&0x3333333333333333 + n&0x3333333333333333
 	n += n >> 4

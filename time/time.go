@@ -9,17 +9,20 @@ const DATETIME_FMT = "2006/01/02 15:04:05"
 const DATE_FMT = "2006/01/02"
 const TIME_FMT = "15:04:05"
 
+var formatReplacer = strings.NewReplacer([]string{
+	"yyyy", "2006",
+	"yy", "06",
+	"mm", "01",
+	"dd", "02",
+	"HH", "15",
+	"MM", "04",
+	"SS", "05",
+}...)
+
 // FormatLayout convert human readable time format to golang time format
 // yyyy : year, yy:year, mm:month, dd:day, HH:hour, MM:minute, SS:second
 func FormatLayout(format string) string {
-	format = strings.Replace(format, "yyyy", "2006", 1)
-	format = strings.Replace(format, "yy", "06", 1)
-	format = strings.Replace(format, "mm", "01", 1)
-	format = strings.Replace(format, "dd", "02", 1)
-	format = strings.Replace(format, "HH", "15", 1)
-	format = strings.Replace(format, "MM", "04", 1)
-	format = strings.Replace(format, "SS", "05", 1)
-	return format
+	return formatReplacer.Replace(format)
 }
 
 // NowTimeUnix is a wrapper of time.Now().Unix()

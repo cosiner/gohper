@@ -39,18 +39,16 @@ func Assertf(val bool, errformat string, v ...interface{}) {
 var ERR = Err("")
 
 // errStr is a error implementation
-type errStr struct {
-	s string
-}
+type errStr string
 
 // Error implements builtin error
-func (es *errStr) Error() string {
-	return es.s
+func (es errStr) Error() string {
+	return string(es)
 }
 
 // Err wrap a string to error
 func Err(str string) error {
-	return &errStr{s: str}
+	return errStr(str)
 }
 
 // Error make an error with given params

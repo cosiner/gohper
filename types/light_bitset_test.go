@@ -53,9 +53,7 @@ func TestSinceBefore(t *testing.T) {
 }
 
 func BenchmarkBitCount(b *testing.B) {
-	l := NewLightBitSet()
-	l.SetAll()
 	for i := 0; i < b.N; i++ {
-		_ = l.BitCount()
+		_ = BitCount(0x121241112a)
 	}
 }
