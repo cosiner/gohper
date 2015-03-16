@@ -112,6 +112,9 @@ func (logger *logger) Start() {
 				for _, writer := range logger.writers {
 					writer.Write(log)
 				}
+				if logger.level == LEVEL_DEBUG {
+					panic(log.String())
+				}
 			case <-ticker:
 				for _, writer := range logger.writers {
 					writer.Flush()
