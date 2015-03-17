@@ -1,6 +1,7 @@
 package database
 
 import (
+	"github.com/cosiner/golib/reflect"
 	"database/sql"
 	"fmt"
 
@@ -124,7 +125,7 @@ func (db *DB) registerType(v Model, table string) *TypeInfo {
 // it will first use field tag as column name, if no tag specified,
 // use field name's camel_case
 func parse(v Model) *TypeInfo {
-	typ := types.IndirectType(v)
+	typ := reflect.IndirectType(v)
 	fieldNum := typ.NumField()
 	fields := make([]string, 0, fieldNum)
 	for i := 0; i < fieldNum; i++ {

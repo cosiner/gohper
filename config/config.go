@@ -4,6 +4,7 @@ package config
 import (
 	"strconv"
 
+	"github.com/cosiner/golib/reflect"
 	"github.com/cosiner/golib/types"
 )
 
@@ -105,5 +106,5 @@ func (c *Config) IntValDef(key string, defaultval int) int {
 }
 
 func (c *Config) UnmarshalCurrSec(v interface{}) error {
-	return types.UnmarshalToStruct(c.SectionVals(c.CurrSec()), v)
+	return reflect.UnmarshalToStruct(c.SectionVals(c.CurrSec()), v)
 }
