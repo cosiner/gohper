@@ -19,7 +19,7 @@ var formatReplacer = strings.NewReplacer([]string{
 	"SS", "05",
 }...)
 
-func UnixNanoSinceNow(sec int) *time.Time {
+func UnixNanoSinceNow(sec int) int64 {
 	return time.Now().Add(time.Duration(sec) * time.Second).UnixNano()
 }
 

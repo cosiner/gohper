@@ -281,16 +281,14 @@ func ReadGZIP(rd io.Reader, v interface{}) error {
 }
 
 func WriteGZIP(wr io.Writer, v interface{}) error {
-	w, err := gzip.NewWriter(wr)
-	if err == nil {
-		switch v := v.(type) {
-		case string:
-			w.Write(types.UnsafeBytes(v))
-		case []byte:
-			w.Write(v)
-		default:
-			err = Err("Only support string and []byte")
-		}
+	w := gzip.NewWriter(wr)
+	switch v := v.(type) {
+	case string:
+		w.Write(types.UnsafeBytes(v))
+	case []byte:
+		w.Write(v)
+	default:
+		return Err("Only support string and []byte")
 	}
-	return err
+	return nil
 }
