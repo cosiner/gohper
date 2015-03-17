@@ -3,11 +3,14 @@ package encoding
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/gob"
 	"encoding/json"
 	"encoding/xml"
 	"io"
 	"io/ioutil"
+
+	. "github.com/cosiner/golib/errors"
 
 	"github.com/cosiner/golib/types"
 )
@@ -259,4 +262,35 @@ func ReadJSON(rd io.Reader, v interface{}) error {
 // ReadXML read bytes from reader and decode to interface address use xml decoder
 func ReadXML(rd io.Reader, v interface{}) error {
 	return Read(rd, v, xml.Unmarshal)
+}
+
+func ReadGZIP(rd io.Reader, v interface{}) error {
+	r, err := gzip.NewReader(rd)
+	if err == nil {
+		if s, is := v.(*string); !is {
+			return Err("value must be pointer to string")
+		} else {
+			var bs []byte
+			bs, err = ioutil.ReadAll(r)
+			if err == nil {
+				*s = string(bs)
+			}
+		}
+	}
+	return err
+}
+
+func WriteGZIP(wr io.Writer, v interface{}) error {
+	w, err := gzip.NewWriter(wr)
+	if err == nil {
+		switch v := v.(type) {
+		case string:
+			w.Write(types.UnsafeBytes(v))
+		case []byte:
+			w.Write(v)
+		default:
+			err = Err("Only support string and []byte")
+		}
+	}
+	return err
 }

@@ -19,6 +19,10 @@ var formatReplacer = strings.NewReplacer([]string{
 	"SS", "05",
 }...)
 
+func UnixNanoSinceNow(sec int) *time.Time {
+	return time.Now().Add(time.Duration(sec) * time.Second).UnixNano()
+}
+
 // FormatLayout convert human readable time format to golang time format
 // yyyy : year, yy:year, mm:month, dd:day, HH:hour, MM:minute, SS:second
 func FormatLayout(format string) string {

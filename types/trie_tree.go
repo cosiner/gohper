@@ -1,3 +1,5 @@
+// the TrieTree is port from package zerver's router
+// but simplified the implementation
 package types
 
 import (

@@ -3,7 +3,7 @@ package crypto
 import (
 	"bytes"
 	"crypto/hmac"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/base64"
 	"strconv"
 
@@ -21,7 +21,7 @@ func SignSecret(secret []byte, value string) string {
 	encoding.Encode(encVal, types.UnsafeBytes(value))
 	now := make([]byte, 0, 10)
 	now = strconv.AppendInt(now, time.Now().UnixNano()<<32>>32, 10)
-	hash := hmac.New(sha1.New, secret)
+	hash := hmac.New(sha256.New, secret)
 	hash.Write(encVal)
 	hash.Write(now)
 	sig := hash.Sum(nil)
@@ -41,7 +41,7 @@ func VerifySecret(secret []byte, value string) (result string) {
 			encVal := sections[0]
 			now := sections[1]
 			sig := sections[2]
-			hash := hmac.New(sha1.New, secret)
+			hash := hmac.New(sha256.New, secret)
 			hash.Write(encVal)
 			hash.Write(now)
 			if bytes.Equal(hash.Sum(nil), sig) {
