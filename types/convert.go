@@ -82,6 +82,17 @@ func Str2IntDef(s string, def int) int {
 	return val
 }
 
+var hexTable = []byte{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'}
+
+func Uint2Hex(u uint64) []byte {
+	s := make([]byte, 16)
+	for i := 15; i >= 0; i-- {
+		s[i] = hexTable[byte(u)&0xF]
+		u = u >> 4
+	}
+	return s
+}
+
 // HexStr2Uint convert a hexadecimal string to uint
 // if string is invalid, return an error
 func HexStr2Uint(str string) (n uint, err error) {
@@ -112,20 +123,20 @@ func HexStr2Uint(str string) (n uint, err error) {
 }
 
 // BytesToHexStr transfer binary to hex string
-func BytesToHexStr(src []byte) string {
+func Bytes2HexStr(src []byte) string {
 	return hex.EncodeToString(src)
 }
 
 // BytesToHex transfer binary to hex bytes
-func BytesToHex(src []byte) []byte {
-	dst := make([]byte, 0, 2*len(src))
+func Bytes2Hex(src []byte) []byte {
+	dst := make([]byte, 2*len(src))
 	hex.Encode(dst, src)
 	return dst
 }
 
 // HexToBytes transfer hex bytes to binary
-func HexToBytes(src []byte) []byte {
-	dst := make([]byte, 0, len(src)/2)
+func Hex2Bytes(src []byte) []byte {
+	dst := make([]byte, len(src)/2)
 	hex.Decode(dst, src)
 	return dst
 }
