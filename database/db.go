@@ -55,6 +55,22 @@ var (
 	EmptyFields = Fields()
 )
 
+// EnableSQLPrint enable sql print for each operation
+func EnableSQLPrint(enable bool, formatter func(formart string, v ...interface{})) {
+	if enable {
+		if formatter == nil {
+			formatter = func(format string, v ...interface{}) {
+				fmt.Printf(format, v...)
+			}
+		}
+		printSQL = func(fromcache bool, sql string) {
+			formatter("fromcache:%t, sql:%s\n", fromcache, sql)
+		}
+	} else {
+		printSQL = func(bool, string) {}
+	}
+}
+
 // Open create a database manager and connect to database server
 func Open(driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
 	db := NewDB()
@@ -142,17 +158,6 @@ func parse(v Model) *TypeInfo {
 		NumField: uint(fieldNum),
 		Table:    v.Table(),
 		Fields:   fields,
-	}
-}
-
-// EnableSQLPrint enable sql print for each operation
-func EnableSQLPrint(enable bool) {
-	if enable {
-		printSQL = func(fromcache bool, sql string) {
-			fmt.Printf("fromcache:%t, sql:%s\n", fromcache, sql)
-		}
-	} else {
-		printSQL = func(bool, string) {}
 	}
 }
 
