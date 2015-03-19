@@ -6,13 +6,14 @@ package crypto
 
 import (
 	"crypto/sha256"
+
+	"github.com/cosiner/golib/types"
 )
 
 // SaltBits is the bit count of random generated Salt
 const SaltBits = sha256.Size
 
 // sha is a sha256 encryptor
-var sha = sha256.New()
 
 // ShaEncrypt use sha256 to encrypt message
 func ShaEncrypt(msg, fixSalt string) (dst []byte, randSalt []byte, err error) {
@@ -26,11 +27,11 @@ func ShaEncrypt(msg, fixSalt string) (dst []byte, randSalt []byte, err error) {
 // ShaEncryptWithSalt use gived salt as random salt
 // sha256(sha256(msg) + sha256(fixSalt + salt)), randomString is SaltBits length
 func ShaEncryptWithSalt(msg, fixSalt string, salt []byte) (dst []byte, err error) {
-	sha.Reset()
-	sha.Write([]byte(msg))
+	var sha = sha256.New()
+	sha.Write(types.UnsafeBytes(msg))
 	encMsg := sha.Sum(nil)
 	sha.Reset()
-	sha.Write([]byte(fixSalt))
+	sha.Write(types.UnsafeBytes(fixSalt))
 	sha.Write(salt)
 	newSalt := sha.Sum(nil)
 	sha.Reset()
