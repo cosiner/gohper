@@ -1,9 +1,10 @@
 package database
 
 import (
-	"github.com/cosiner/golib/reflect"
 	"database/sql"
 	"fmt"
+
+	"github.com/cosiner/golib/reflect"
 
 	"github.com/cosiner/golib/types"
 )

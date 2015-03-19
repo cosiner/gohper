@@ -112,7 +112,7 @@ func (logger *logger) Start() {
 				for _, writer := range logger.writers {
 					writer.Write(log)
 				}
-				if logger.level == LEVEL_DEBUG {
+				if logger.level == LEVEL_DEBUG && log.Level >= LEVEL_ERROR {
 					panic(log.String())
 				}
 			case <-ticker:
