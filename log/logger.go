@@ -112,9 +112,6 @@ func (logger *logger) Start() {
 				for _, writer := range logger.writers {
 					writer.Write(log)
 				}
-				if logger.level == LEVEL_DEBUG && log.Level >= LEVEL_ERROR {
-					panic(log.String())
-				}
 			case <-ticker:
 				for _, writer := range logger.writers {
 					writer.Flush()
@@ -133,103 +130,116 @@ func (logger *logger) Flush() {
 	logger.signal <- _SIGNAL_FLUSH
 }
 
-func (logger *logger) logf(level Level, format string, v ...interface{}) {
+func (logger *logger) logf(level Level, format string, v ...interface{}) *Log {
 	if level >= logger.level {
-		logger.logs <- NewLogf(level, format, v...)
+		log := NewLogf(level, format, v...)
+		logger.logs <- log
+		return log
 	}
+	return nil
 }
 
-func (logger *logger) logln(level Level, v ...interface{}) {
+func (logger *logger) logln(level Level, v ...interface{}) *Log {
 	if level >= logger.level {
-		logger.logs <- NewLogln(level, v...)
+		log := NewLogln(level, v...)
+		logger.logs <- log
+		return log
 	}
+	return nil
 }
 
-func (logger *logger) log(level Level, v ...interface{}) {
+func (logger *logger) log(level Level, v ...interface{}) *Log {
 	if level >= logger.level {
-		logger.logs <- NewLog(level, v...)
+		log := NewLog(level, v...)
+		logger.logs <- log
+		return log
 	}
+	return nil
 }
 
 // Debugf log for debug message
-func (l *logger) Debugf(format string, v ...interface{}) {
-	l.logf(LEVEL_DEBUG, format, v...)
+func (logger *logger) Debugf(format string, v ...interface{}) {
+	logger.logf(LEVEL_DEBUG, format, v...)
 }
 
 // Infof log for info message
-func (l *logger) Infof(format string, v ...interface{}) {
-	l.logf(LEVEL_INFO, format, v...)
+func (logger *logger) Infof(format string, v ...interface{}) {
+	logger.logf(LEVEL_INFO, format, v...)
 }
 
 // Warnf log for warning message
-func (l *logger) Warnf(format string, v ...interface{}) {
-	l.logf(LEVEL_WARN, format, v...)
+func (logger *logger) Warnf(format string, v ...interface{}) {
+	logger.logf(LEVEL_WARN, format, v...)
 }
 
 // Errorf log for error message
-func (l *logger) Errorf(format string, v ...interface{}) {
-	l.logf(LEVEL_ERROR, format, v...)
+func (logger *logger) Errorf(format string, v ...interface{}) {
+	if log := logger.logf(LEVEL_ERROR, format, v...); logger.level == LEVEL_DEBUG {
+		panic(log)
+	}
 }
 
 // Fatalf log for fatal message
-func (l *logger) Fatalf(format string, v ...interface{}) {
-	log := NewLogf(LEVEL_FATAL, format, v...)
-	if LEVEL_FATAL > l.level {
-		l.logs <- log
+func (logger *logger) Fatalf(format string, v ...interface{}) {
+	if log := logger.logf(LEVEL_FATAL, format, v...); log != nil {
+		panic(log)
 	}
-	panic(log)
 }
 
 // Debugln log for debug message
-func (l *logger) Debugln(v ...interface{}) {
-	l.logln(LEVEL_DEBUG, v...)
+func (logger *logger) Debugln(v ...interface{}) {
+	logger.logln(LEVEL_DEBUG, v...)
 }
 
 // Infoln log for info message
-func (l *logger) Infoln(v ...interface{}) {
-	l.logln(LEVEL_INFO, v...)
+func (logger *logger) Infoln(v ...interface{}) {
+	logger.logln(LEVEL_INFO, v...)
 }
 
 // Warnln log for warning message
-func (l *logger) Warnln(v ...interface{}) {
-	l.logln(LEVEL_WARN, v...)
+func (logger *logger) Warnln(v ...interface{}) {
+	logger.logln(LEVEL_WARN, v...)
 }
 
 // Errorln log for error message
-func (l *logger) Errorln(v ...interface{}) {
-	l.logln(LEVEL_ERROR, v...)
+func (logger *logger) Errorln(v ...interface{}) {
+	if log := logger.logln(LEVEL_ERROR, v...); logger.level == LEVEL_DEBUG {
+		panic(log)
+	}
 }
 
 // Fatalln log for fatal message
-func (l *logger) Fatalln(v ...interface{}) {
-	log := NewLogln(LEVEL_FATAL, v...)
-	l.logs <- log
-	panic(log)
+func (logger *logger) Fatalln(v ...interface{}) {
+	if log := logger.logln(LEVEL_FATAL, v...); log != nil {
+		panic(log)
+	}
 }
 
 // Debug log for debug message
-func (l *logger) Debug(v ...interface{}) {
-	l.log(LEVEL_DEBUG, v...)
+func (logger *logger) Debug(v ...interface{}) {
+	logger.log(LEVEL_DEBUG, v...)
 }
 
 // Info log for info message
-func (l *logger) Info(v ...interface{}) {
-	l.log(LEVEL_INFO, v...)
+func (logger *logger) Info(v ...interface{}) {
+	logger.log(LEVEL_INFO, v...)
 }
 
 // Warn log for warning message
-func (l *logger) Warn(v ...interface{}) {
-	l.log(LEVEL_WARN, v...)
+func (logger *logger) Warn(v ...interface{}) {
+	logger.log(LEVEL_WARN, v...)
 }
 
 // Error log for error message
-func (l *logger) Error(v ...interface{}) {
-	l.log(LEVEL_ERROR, v...)
+func (logger *logger) Error(v ...interface{}) {
+	if log := logger.log(LEVEL_ERROR, v...); logger.level == LEVEL_DEBUG {
+		panic(log)
+	}
 }
 
 // Fatal log for error message
-func (l *logger) Fatal(v ...interface{}) {
-	log := NewLog(LEVEL_FATAL, v...)
-	l.logs <- log
-	panic(log)
+func (logger *logger) Fatal(v ...interface{}) {
+	if log := logger.log(LEVEL_FATAL, v...); log != nil {
+		panic(log)
+	}
 }

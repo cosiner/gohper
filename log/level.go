@@ -40,7 +40,7 @@ const (
 
 	DEF_FLUSHINTERVAL = 30               // flush interval for a flush timer
 	DEF_BUFSIZE       = 1024 * 10        // bufsize for log buffer
-	DEF_BACKLOG       = 10               // channel's back log count
+	DEF_BACKLOG       = 100              // channel's back log count
 	DEF_FILESIZE      = 1024 * 1024 * 10 // max log file size
 	DEF_LEVEL         = LEVEL_INFO       // default log level
 )
