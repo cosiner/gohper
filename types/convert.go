@@ -99,10 +99,9 @@ func HexStr2Uint(str string) (n uint, err error) {
 	err = Errorf("Invalid hexadecimal string %s", str)
 	if len(str) <= 2 {
 		return
-	} else {
-		if head := str[:2]; head != "0x" && head != "0X" {
-			return
-		}
+	}
+	if head := str[:2]; head != "0x" && head != "0X" {
+		return
 	}
 	str = str[2:]
 	for _, c := range str {

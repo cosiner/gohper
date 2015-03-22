@@ -13,9 +13,7 @@ const (
 	NUMERALS     = "1234567890"
 	ALPHANUMERIC = ALPHABET + NUMERALS
 	ASCII        = ALPHANUMERIC + "~!@#$%^&*()-_+={}[]\\|<,>.?/\"';:`"
-)
 
-var (
 	numNegativeError  = Err("Number cannot be negative")
 	charsetEmptyError = Err("Charset cannot be empty")
 )

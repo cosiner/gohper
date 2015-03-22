@@ -16,6 +16,12 @@ type TrieTree struct {
 }
 
 func (tt *TrieTree) AddPath(path string, value interface{}) {
+	tt.AddPathFor(path, func(t *TrieTree) {
+		t.Value = value
+	})
+}
+
+func (tt *TrieTree) AddPathFor(path string, fn func(*TrieTree)) {
 	str := tt.str
 	if str == "" && len(tt.childChars) == 0 {
 		tt.str = path
@@ -29,7 +35,7 @@ func (tt *TrieTree) AddPath(path string, value interface{}) {
 			if diff == strLen {
 				for i, c := range tt.childChars {
 					if c == first {
-						tt.childs[i].AddPath(path[diff:], value)
+						tt.childs[i].AddPathFor(path[diff:], fn)
 					}
 				}
 			} else { // diff < strLen
@@ -42,7 +48,7 @@ func (tt *TrieTree) AddPath(path string, value interface{}) {
 			tt.moveAllToChild(str[diff:], path)
 		}
 	}
-	tt.Value = value
+	fn(tt)
 }
 
 // moveAllToChild move all attributes to a new node, and make this new node

@@ -6,7 +6,7 @@ import (
 )
 
 // nil value for T
-var NILFor_T T = nil
+var NILFor_T T
 
 // MapFor_T iterate every elements of slice
 func MapFor_T(slice []T, fn func(int, T)) {

@@ -65,19 +65,6 @@ func (p *Pair) TrimQuote() (err error) {
 	return
 }
 
-// TrimAll trim space and quote for pair
-func (p *Pair) TrimAll() (err error) {
-	var key, value string
-	key, err = TrimQuote(p.Key)
-	if err == nil {
-		value, err = TrimQuote(p.Value)
-		if err == nil {
-			p.Key, p.Value = TrimSpace(key), TrimSpace(value)
-		}
-	}
-	return
-}
-
 // NoKey check whether pair has key or not
 func (p *Pair) NoKey() bool {
 	return p.Key == ""

@@ -17,7 +17,7 @@ func WriteBytesln(w io.Writer, bs []byte) (int, error) {
 	if e == nil {
 		_, e = w.Write(_newLine)
 		if e == nil {
-			c += 1
+			c++
 		}
 	}
 	return c, e

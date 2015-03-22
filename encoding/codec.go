@@ -269,12 +269,11 @@ func ReadGZIP(rd io.Reader, v interface{}) error {
 	if err == nil {
 		if s, is := v.(*string); !is {
 			return Err("value must be pointer to string")
-		} else {
-			var bs []byte
-			bs, err = ioutil.ReadAll(r)
-			if err == nil {
-				*s = string(bs)
-			}
+		}
+		var bs []byte
+		bs, err = ioutil.ReadAll(r)
+		if err == nil {
+			*s = string(bs)
 		}
 	}
 	return err

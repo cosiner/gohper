@@ -35,20 +35,12 @@ func Assertf(val bool, errformat string, v ...interface{}) {
 //                         Error Format
 //==============================================================================
 
-// ERR is a nil error for those condition only need an error
-var ERR = Err("")
-
 // errStr is a error implementation
-type errStr string
+type Err string
 
 // Error implements builtin error
-func (es errStr) Error() string {
-	return string(es)
-}
-
-// Err wrap a string to error
-func Err(str string) error {
-	return errStr(str)
+func (e Err) Error() string {
+	return string(e)
 }
 
 // Error make an error with given params

@@ -53,8 +53,8 @@ func UpperCase(b byte) byte {
 
 // TrimQuote trim quote for string, if quote don't match, return an error
 func TrimQuote(str string) (s string, err error) {
-	s = str
-	if l := len(str); l > 0 {
+	s = TrimSpace(str)
+	if l := len(s); l > 0 {
 		c := s[0]
 		if c == '\'' || c == '"' || c == '`' {
 			if s[l-1] == c {
