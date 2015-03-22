@@ -32,6 +32,9 @@ const (
 	LRU
 	// REDIS is redis cacher
 	REDIS
+
+	ErrUnsupportedType = Err("Not supported cache type")
+	ErrWrongFormat     = Err("Wrong format of config")
 )
 
 // Cache is cache interface
@@ -68,7 +71,7 @@ func NewCache(typ CacherType, config string) (cache Cache, err error) {
 	case REDIS:
 		cache = new(RedisCache)
 	default:
-		return nil, Err("Not supported cache type")
+		return nil, ErrUnsupportedType
 	}
 	return cache, cache.Init(config)
 }
@@ -86,11 +89,9 @@ func fixSize(values map[string]interface{}, size int) {
 func parseMaxSize(config string) (maxsize int, err error) {
 	pair := types.ParsePair(config, "=")
 	if pair.NoKey() || pair.NoValue() || pair.Key != "maxsize" {
-		err = Err("Wrong format of config")
-	} else {
-		if maxsize, err = pair.IntValue(); err != nil || maxsize <= 0 {
-			err = Err("Wrong format of config")
-		}
+		err = ErrWrongFormat
+	} else if maxsize, err = pair.IntValue(); err != nil || maxsize <= 0 {
+		err = ErrWrongFormat
 	}
 	return
 }

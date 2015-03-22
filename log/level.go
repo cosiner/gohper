@@ -54,9 +54,8 @@ func UnknownLevelErr(str string) error {
 func (l Level) String() string {
 	if l <= _LEVEL_MAX {
 		return levelName[l]
-	} else {
-		return "UNKNOWN"
 	}
+	return "UNKNOWN"
 }
 
 // ParseLevel parse level from string regardless of string case

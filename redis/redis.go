@@ -21,6 +21,11 @@ var (
 	ToBool    = redis.Bool
 )
 
+const (
+	ErrWrongIdleSetting = Err("Wrong idle settings for redis")
+	ErrRedisAddr        = Err("Not specified redis server address")
+)
+
 // RedisStore is a wrapper for "github.com/garyburd/redigo/redis"
 type RedisStore struct {
 	connPool *redis.Pool // redis connection pool
@@ -48,10 +53,10 @@ func (rs *RedisStore) Init(conf string) error {
 
 func (rs *RedisStore) init(maxidle, idleTimeout int, addr string) error {
 	if maxidle < 0 || idleTimeout < 0 {
-		return Err("Wrong idle settings for redis")
+		return ErrWrongIdleSetting
 	}
 	if addr == "" {
-		return Err("Not specified redis server address")
+		return ErrRedisAddr
 	}
 	rs.connPool = &redis.Pool{
 		MaxIdle:     maxidle,

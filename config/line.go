@@ -28,7 +28,7 @@ func (lc *lineConfig) ParseString(str string) (err error) {
 	fields := strings.Split(str, "&")
 	for _, f := range fields {
 		pair := types.ParsePair(f, "=")
-		if err = pair.TrimAll(); err == nil {
+		if err = pair.TrimQuote(); err == nil {
 			if pair.NoKey() {
 				if pair.HasValue() {
 					err = Errorf("Wrong Format:%s", f)

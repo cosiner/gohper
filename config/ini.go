@@ -12,7 +12,10 @@ import (
 
 // default section, if there is no section,
 // all key-value pairs will be placed under this section
-const GLOBAL_OPTION string = "global"
+const (
+	GLOBAL_OPTION = "global"
+	ErrNoContent  = Err("No Content")
+)
 
 // iniConfig implements a ini format parser
 type iniConfig struct {
@@ -33,7 +36,7 @@ func (ic *iniConfig) ValFrom(key, section string) (val string, has bool) {
 // ParseString parse from string
 func (ic *iniConfig) ParseString(content string) error {
 	if content == "" {
-		return Err("No Content")
+		return ErrNoContent
 	}
 
 	return ic.parse(types.StringReader(content))
@@ -146,7 +149,7 @@ func parseLine(line []byte) (pair *types.Pair, result lineType) {
 		return
 	}
 	pair = types.ParsePair(string(line), "=")
-	if pair.TrimAll() != nil || pair.NoKey() {
+	if pair.TrimQuote() != nil || pair.NoKey() {
 		result = _ERRFORMAT
 	} else {
 		key := pair.Key
