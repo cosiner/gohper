@@ -8,12 +8,13 @@ import (
 )
 
 func ErrForDuplicateKey(err error, newErrFunc func(key string) error) error {
-	const DUPLICATE = "Duplicate"
+	const duplicate = "Duplicate"
+	const forKey = "for key"
 	s := err.Error()
-	index := strings.Index(s, DUPLICATE)
+	index := strings.Index(s, duplicate)
 	if index >= 0 {
-		s = s[index+len(DUPLICATE):]
-		if index = strings.Index(s, "for key") + 7; index >= 0 {
+		s = s[index+len(duplicate):]
+		if index = strings.Index(s, forKey) + len(forKey); index >= 0 {
 			s, _ = types.TrimQuote(s[index:])
 			if e := newErrFunc(s); e != nil {
 				return e

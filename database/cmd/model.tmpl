@@ -7,7 +7,7 @@
 {{$recv := (printf "(%s *%s)" $self $normalModel)}}
 const (
     {{range $index, $field := $fields}}{{with $field}}{{.ConstName}}{{end}} {{if eq $index  0}} uint = iota {{end}}
-    {{end}}{{$upperModel}}_FIELDEND
+    {{end}}{{$lowerModel}}FieldEnd
 )
 
 func {{$recv}} Table() string {
@@ -15,21 +15,21 @@ func {{$recv}} Table() string {
 }
 
 func {{$recv}} FieldValues(fields *types.LightBitSet) []interface{} {
-    vals, index := make([]interface{}, 0, fields.BitCount()), 0
+    vals, index := make([]interface{}, fields.BitCount()), 0
     {{range $fields}} if fields.IsSet({{.ConstName}}) {
-    vals = append(vals, {{$self}}.{{.Name}})
-    index++
+        vals[index] = {{$self}}.{{.Name}}
+        index++
     }
-    {{end}}return vals
+    {{end}}return vals[:index]
 }
 
 func {{$recv}} FieldPtrs(fields *types.LightBitSet) []interface{} {
-    vals, index := make([]interface{}, 0, fields.BitCount()), 0
+    vals, index := make([]interface{}, fields.BitCount()), 0
     {{range $fields}} if fields.IsSet({{.ConstName}}) {
-    vals = append(vals, &({{$self}}.{{.Name}}))
+        vals[index] = &({{$self}}.{{.Name}})
         index++
     }
-    {{end}}return vals
+    {{end}}return vals[:index]
 }
 
 func {{$recv}} New() database.Model {

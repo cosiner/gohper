@@ -24,8 +24,8 @@ type (
 		Table() string
 		FieldValues(*types.LightBitSet) []interface{}
 		FieldPtrs(*types.LightBitSet) []interface{}
-		ErrorForNoRows() error
-		ErrorForDuplicateKey(key string) error
+		NotFoundErr() error
+		DuplicateValueErr(key string) error
 		New() Model
 	}
 
@@ -162,7 +162,7 @@ func parse(v Model) *TypeInfo {
 		fields = append(fields, types.SnakeString(fieldName))
 	}
 	err := sql.ErrNoRows
-	if e := v.ErrorForNoRows(); e != nil {
+	if e := v.NotFoundErr(); e != nil {
 		err = e
 	}
 	return &TypeInfo{
@@ -235,7 +235,9 @@ func (db *DB) Insert(v Model, fields *types.LightBitSet, needId bool) (int64, er
 	sql, _ := db.CacheGet(db.InsertSQLCache, v, fields, EmptyFields, SQLForInsert)
 	c, err := db.ExecUpdate(sql, v.FieldValues(fields), needId)
 	if db.driver == _MYSQL_DB {
-		err = ErrForDuplicateKey(err, v.ErrorForDuplicateKey)
+		if e := ErrForDuplicateKey(err, v.DuplicateValueErr); e != nil {
+			err = e
+		}
 	}
 	return c, err
 }

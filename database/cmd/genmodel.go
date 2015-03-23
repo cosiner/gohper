@@ -19,12 +19,12 @@ import (
 )
 
 var (
-	infile       string
-	outfile      string
-	models       string
-	tmpl         string
-	useTmpl      string
-	printDefTmpl bool
+	infile     string
+	outfile    string
+	models     string
+	tmpl       string
+	useErrTmpl bool
+	copyTmpl   bool
 )
 
 func cliArgs() {
@@ -32,26 +32,29 @@ func cliArgs() {
 	flag.StringVar(&outfile, "o", "", "output file")
 	flag.StringVar(&models, "m", "", "models to parse, seperate by comma")
 	flag.StringVar(&tmpl, "t", "", "template file")
-	flag.BoolVar(&printDefTmpl, "deftmpl", false, "print default path of template file")
-	flag.StringVar(&useTmpl, "ut", "", "use this file as default template file")
+	flag.BoolVar(&useErrTmpl, "e", false, "create error functions")
+	flag.BoolVar(&copyTmpl, "cp", false, "copy tmpl file to default path")
 	flag.Parse()
 }
 
+const TmplName = "model.tmpl"
+const ErrTmplName = "model_error.tmpl"
+
 //go:generate cp model.tmpl ~/.config/go/model.tmpl
+//go:generate cp model_error.tmpl ~/.config/go/model_error.tmpl
 func main() {
 	cliArgs()
-	defTmplPath := filepath.Join(sys.HomeDir(), ".config", "go", "model.tmpl")
-	if printDefTmpl {
-		ExitWith(defTmplPath)
-	}
-
-	if useTmpl != "" {
-		if sys.IsExist(defTmplPath) {
-			ExitErrorln("default template file already exist or is a directory")
-		}
-		OnErrDo(sys.CopyFile(defTmplPath, useTmpl), ExitErrln)
+	if copyTmpl {
+		sys.CopyFile(filepath.Join(sys.HomeDir(), ".config", "go", TmplName), TmplName)
+		sys.CopyFile(filepath.Join(sys.HomeDir(), ".config", "go", ErrTmplName), ErrTmplName)
 		return
 	}
+
+	tmplName := TmplName
+	if useErrTmpl {
+		tmplName = ErrTmplName
+	}
+	defTmplPath := filepath.Join(sys.HomeDir(), ".config", "go", tmplName)
 
 	if infile == "" {
 		ExitErrorln("No input file specified.")
@@ -79,15 +82,6 @@ func main() {
 		}
 		return nil
 	}))
-}
-
-func excludeField(field *ast.Field) bool {
-	if t, is := field.Type.(*ast.Ident); is {
-		if t.Name == "ColumnParser" {
-			return true
-		}
-	}
-	return false
 }
 
 type StructName struct {
@@ -189,9 +183,6 @@ func (mv *modelVisitor) walk(tree *ast.File) {
 							continue
 						}
 						for _, f := range t.Fields.List { // model field
-							if excludeField(f) {
-								continue
-							}
 							for _, ident := range f.Names {
 								name := ident.Name
 								if goutil.IsExported(name) {
