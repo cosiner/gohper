@@ -1,7 +1,10 @@
 package database
 
 import (
+	"database/sql"
 	"testing"
+
+	"github.com/cosiner/golib/test"
 
 	"github.com/cosiner/golib/types"
 )
@@ -20,62 +23,66 @@ func BenchmarkTypeInfo(b *testing.B) {
 
 func BenchmarkFields(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_ = Fields(USER_ID, USER_NAME)
+		_ = USER_ID | USER_NAME
 	}
 }
 
 func BenchmarkFieldsCount(b *testing.B) {
-	fs := Fields(USER_ID, USER_NAME)
+	fs := USER_ID | USER_NAME
 	for i := 0; i < b.N; i++ {
-		_ = fs.BitCount()
+		_ = types.BitCountUint(fs)
 	}
 }
 
 func TestSQLCache(t *testing.T) {
 	db := NewDB()
 	u := &User{}
-	t.Log(db.CacheGet(db.SelectSQLCache, u, Fields(USER_ID, USER_NAME), EmptyFields, SQLForSelect))
+	sql, _ := db.CacheGet(db.SelectSQLCache, u, USER_ID|USER_NAME, 0, SQLForSelect)
+	test.AssertEq(t, "SELECT id,name FROM user", sql)
+}
+
+func (u *User) NotFoundErr() error {
+	return sql.ErrNoRows
+}
+
+func (u *User) DuplicateValueErr(key string) error {
+	return nil
 }
 
 const (
-	USER_ID uint = iota
+	USER_ID uint = 1 << iota
 	USER_NAME
+	userFieldEnd
 )
 
 func (u *User) Table() string {
 	return "user"
 }
 
-func (u *User) FieldValues(fields *types.LightBitSet) []interface{} {
-	if fields == nil {
-		return nil
-	}
-	vals, index := make([]interface{}, 0, fields.BitCount()), 0
-	if fields.IsSet(USER_ID) {
-		vals = append(vals, u.Id)
+func (u *User) FieldValues(fields uint) []interface{} {
+	vals, index := make([]interface{}, types.BitCountUint(fields)), 0
+	if fields&USER_ID != 0 {
+		vals[index] = u.Id
 		index++
 	}
-	if fields.IsSet(USER_NAME) {
-		vals = append(vals, u.Name)
+	if fields&USER_NAME != 0 {
+		vals[index] = u.Name
 		index++
 	}
-	return vals
+	return vals[:index]
 }
 
-func (u *User) FieldPtrs(fields *types.LightBitSet) []interface{} {
-	if fields == nil {
-		return nil
-	}
-	vals, index := make([]interface{}, 0, fields.BitCount()), 0
-	if fields.IsSet(USER_ID) {
-		vals = append(vals, &(u.Id))
+func (u *User) FieldPtrs(fields uint) []interface{} {
+	vals, index := make([]interface{}, types.BitCountUint(fields)), 0
+	if fields&USER_ID != 0 {
+		vals[index] = &(u.Id)
 		index++
 	}
-	if fields.IsSet(USER_NAME) {
-		vals = append(vals, &(u.Name))
+	if fields&USER_NAME != 0 {
+		vals[index] = &(u.Name)
 		index++
 	}
-	return vals
+	return vals[:index]
 }
 
 func (u *User) New() Model {

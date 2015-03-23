@@ -6,7 +6,7 @@
 {{$self := $model.Self}}
 {{$recv := (printf "(%s *%s)" $self $normalModel)}}
 const (
-    {{range $index, $field := $fields}}{{with $field}}{{.ConstName}}{{end}} {{if eq $index  0}} uint = iota {{end}}
+    {{range $index, $field := $fields}}{{with $field}}{{.ConstName}}{{end}} {{if eq $index  0}} uint = 1 << iota {{end}}
     {{end}}{{$lowerModel}}FieldEnd
 )
 
@@ -14,18 +14,18 @@ func {{$recv}} Table() string {
     return "{{$lowerModel}}"
 }
 
-func {{$recv}} FieldValues(fields *types.LightBitSet) []interface{} {
-    vals, index := make([]interface{}, fields.BitCount()), 0
-    {{range $fields}} if fields.IsSet({{.ConstName}}) {
+func {{$recv}} FieldValues(fields uint) []interface{} {
+    vals, index := make([]interface{}, types.BitCountUint(fields)), 0
+    {{range $fields}} if fields&{{.ConstName}} != 0 {
         vals[index] = {{$self}}.{{.Name}}
         index++
     }
     {{end}}return vals[:index]
 }
 
-func {{$recv}} FieldPtrs(fields *types.LightBitSet) []interface{} {
-    vals, index := make([]interface{}, fields.BitCount()), 0
-    {{range $fields}} if fields.IsSet({{.ConstName}}) {
+func {{$recv}} FieldPtrs(fields uint) []interface{} {
+    vals, index := make([]interface{}, types.BitCountUint(fields)), 0
+    {{range $fields}} if fields&{{.ConstName}} != 0 {
         vals[index] = &({{$self}}.{{.Name}})
         index++
     }
