@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"github.com/cosiner/golib/types"
+	"github.com/cosiner/gohper/lib/types"
 )
 
 type randCache struct {

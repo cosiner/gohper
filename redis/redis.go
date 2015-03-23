@@ -3,9 +3,9 @@ package redis
 import (
 	"time"
 
-	. "github.com/cosiner/golib/errors"
+	. "github.com/cosiner/gohper/lib/errors"
 
-	"github.com/cosiner/gomodule/config"
+	"github.com/cosiner/gohper/config"
 
 	"github.com/garyburd/redigo/redis"
 )

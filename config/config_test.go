@@ -3,7 +3,7 @@ package config
 import (
 	"testing"
 
-	"github.com/cosiner/golib/test"
+	"github.com/cosiner/gohper/lib/test"
 )
 
 func TestIni(t *testing.T) {

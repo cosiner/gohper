@@ -3,7 +3,7 @@ package cache
 import (
 	"testing"
 
-	"github.com/cosiner/golib/test"
+	"github.com/cosiner/gohper/lib/test"
 )
 
 func TestRandomCache(t *testing.T) {

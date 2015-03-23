@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/cosiner/golib/test"
+	"github.com/cosiner/gohper/lib/test"
 
-	"github.com/cosiner/golib/types"
+	"github.com/cosiner/gohper/lib/types"
 )
 
 type User struct {

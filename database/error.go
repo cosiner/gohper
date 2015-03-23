@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"strings"
 
-	"github.com/cosiner/golib/types"
+	"github.com/cosiner/gohper/lib/types"
 )
 
 func ErrForDuplicateKey(err error, newErrFunc func(key string) error) error {

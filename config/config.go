@@ -4,8 +4,8 @@ package config
 import (
 	"strconv"
 
-	"github.com/cosiner/golib/reflect"
-	"github.com/cosiner/golib/types"
+	"github.com/cosiner/gohper/lib/reflect"
+	"github.com/cosiner/gohper/lib/types"
 )
 
 // ConfigParser is a interface of actual parser

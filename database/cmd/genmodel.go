@@ -9,11 +9,11 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/cosiner/golib/sys"
+	"github.com/cosiner/gohper/lib/sys"
 
-	. "github.com/cosiner/golib/errors"
-	"github.com/cosiner/golib/goutil"
-	"github.com/cosiner/golib/types"
+	. "github.com/cosiner/gohper/lib/errors"
+	"github.com/cosiner/gohper/lib/goutil"
+	"github.com/cosiner/gohper/lib/types"
 
 	"flag"
 )

@@ -4,10 +4,10 @@ import (
 	"io"
 	"os"
 
-	. "github.com/cosiner/golib/errors"
+	. "github.com/cosiner/gohper/lib/errors"
 
-	"github.com/cosiner/golib/sys"
-	"github.com/cosiner/golib/types"
+	"github.com/cosiner/gohper/lib/sys"
+	"github.com/cosiner/gohper/lib/types"
 )
 
 // default section, if there is no section,

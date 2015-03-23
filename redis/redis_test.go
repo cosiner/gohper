@@ -3,9 +3,9 @@ package redis
 import (
 	"testing"
 
-	. "github.com/cosiner/golib/errors"
+	. "github.com/cosiner/gohper/lib/errors"
 
-	"github.com/cosiner/golib/test"
+	"github.com/cosiner/gohper/lib/test"
 )
 
 func TestRedis(t *testing.T) {

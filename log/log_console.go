@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cosiner/golib/termcolor"
-	"github.com/cosiner/gomodule/config"
+	"github.com/cosiner/gohper/lib/termcolor"
+	"github.com/cosiner/gohper/config"
 )
 
 // bgColor create color render use given background color, default highlight

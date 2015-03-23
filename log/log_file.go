@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"time"
 
-	t "github.com/cosiner/golib/time"
+	t "github.com/cosiner/gohper/lib/time"
 
-	"github.com/cosiner/gomodule/config"
+	"github.com/cosiner/gohper/config"
 
-	"github.com/cosiner/golib/types"
+	"github.com/cosiner/gohper/lib/types"
 )
 
 const (

@@ -3,11 +3,11 @@ package config
 import (
 	"strings"
 
-	"github.com/cosiner/golib/sys"
+	"github.com/cosiner/gohper/lib/sys"
 
-	. "github.com/cosiner/golib/errors"
+	. "github.com/cosiner/gohper/lib/errors"
 
-	"github.com/cosiner/golib/types"
+	"github.com/cosiner/gohper/lib/types"
 )
 
 // lineConfig parse format:key1=val1&key2=val2

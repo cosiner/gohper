@@ -1,7 +1,7 @@
 package log
 
 import (
-	e "github.com/cosiner/golib/errors"
+	e "github.com/cosiner/gohper/lib/errors"
 
 	"testing"
 )

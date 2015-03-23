@@ -3,7 +3,7 @@ package log
 import (
 	"time"
 
-	"github.com/cosiner/golib/errors"
+	"github.com/cosiner/gohper/lib/errors"
 )
 
 type (

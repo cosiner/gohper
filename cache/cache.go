@@ -6,8 +6,8 @@
 package cache
 
 import (
-	. "github.com/cosiner/golib/errors"
-	"github.com/cosiner/golib/types"
+	. "github.com/cosiner/gohper/lib/errors"
+	"github.com/cosiner/gohper/lib/types"
 )
 
 // CacherType is implemented cache algorithm

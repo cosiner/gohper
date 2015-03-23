@@ -3,8 +3,8 @@ package cache
 // import (
 // 	"time"
 
-// 	. "github.com/cosiner/golib/errors"
-// 	"github.com/cosiner/golib/types"
+// 	. "github.com/cosiner/gohper/lib/errors"
+// 	"github.com/cosiner/gohper/lib/types"
 
 // 	"sync"
 // )

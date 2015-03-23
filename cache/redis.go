@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"github.com/cosiner/gomodule/redis"
+	"github.com/cosiner/gohper/redis"
 )
 
 // RedisCache is only a adapter of redis store

@@ -3,10 +3,10 @@ package log
 import (
 	"fmt"
 
-	"github.com/cosiner/golib/time"
+	"github.com/cosiner/gohper/lib/time"
 
-	"github.com/cosiner/golib/errors"
-	"github.com/cosiner/golib/types"
+	"github.com/cosiner/gohper/lib/errors"
+	"github.com/cosiner/gohper/lib/types"
 )
 
 type (
