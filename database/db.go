@@ -9,6 +9,21 @@ import (
 	"github.com/cosiner/golib/types"
 )
 
+const (
+	INSERT SQLType = iota
+	DELETE
+	UPDATE
+	SELECT
+	typEnd
+
+	// _FIELD_SEP is seperator of columns
+	_FIELD_SEP = ","
+	// _FIELD_TAG is tag name of database column
+	_FIELD_TAG = "column"
+
+	_MYSQL_DB = "mysql"
+)
+
 type (
 	// TypeInfo represent information of type
 	// contains field count, table name, field names, field offsets
@@ -17,6 +32,7 @@ type (
 		Table       string
 		Fields      []string
 		ErrOnNoRows error
+		Cache       []SQLCache
 	}
 
 	// Model represent a database model
@@ -33,11 +49,7 @@ type (
 	DB struct {
 		driver string
 		*sql.DB
-		types          map[string]*TypeInfo
-		InsertSQLCache SQLCache
-		UpdateSQLCache SQLCache
-		DeleteSQLCache SQLCache
-		SelectSQLCache SQLCache
+		types map[string]*TypeInfo
 	}
 
 	// SQLCache is container of cached sql
@@ -45,20 +57,65 @@ type (
 
 	// SQLCreatorFunc is type of sql creator
 	SQLCreatorFunc func(ti *TypeInfo, fields, whereFields uint) string
-)
 
-const (
-	// _FIELD_SEP is seperator of columns
-	_FIELD_SEP = ","
-	// _FIELD_TAG is tag name of database column
-	_FIELD_TAG = "column"
-
-	_MYSQL_DB = "mysql"
+	SQLType int
 )
 
 var (
 	printSQL = func(_ bool, _ string) {}
 )
+
+// parseTypeInfo parse model to get type info, model must be struct
+// it will first use field tag as column name, if no tag specified,
+// use field name's camel_case
+func parseTypeInfo(v Model) *TypeInfo {
+	typ := reflect.IndirectType(v)
+	fieldNum := typ.NumField()
+	fields := make([]string, 0, fieldNum)
+	for i := 0; i < fieldNum; i++ {
+		field := typ.Field(i)
+		tag := field.Tag
+		fieldName := tag.Get(_FIELD_TAG)
+		if fieldName == "" {
+			fieldName = field.Name
+		}
+		fields = append(fields, types.SnakeString(fieldName))
+	}
+	err := sql.ErrNoRows
+	if e := v.NotFoundErr(); e != nil {
+		err = e
+	}
+	ti := &TypeInfo{
+		NumField:    uint(fieldNum),
+		Table:       v.Table(),
+		Fields:      fields,
+		ErrOnNoRows: err,
+		Cache:       make([]SQLCache, typEnd),
+	}
+	for i := SQLType(0); i < typEnd; i++ {
+		ti.Cache[i] = make(SQLCache)
+	}
+	return ti
+}
+
+func (ti *TypeInfo) CacheGet(typ SQLType, fields, whereFields uint, newSQLFunc SQLCreatorFunc) (sql string) {
+	cache := ti.Cache[typ]
+	sig := FieldSignature(ti.NumField, fields, whereFields)
+	if sql = cache[sig]; sql == "" {
+		sql = newSQLFunc(ti, fields, whereFields)
+		cache[sig] = sql
+		printSQL(false, sql)
+	} else {
+		printSQL(true, sql)
+	}
+	return
+}
+
+func (ti *TypeInfo) ExtendType(typ SQLType) {
+	cache := make([]SQLCache, typ)
+	copy(cache, ti.Cache)
+	ti.Cache = cache
+}
 
 // EnableSQLPrint enable sql print for each operation
 func EnableSQLPrint(enable bool, formatter func(formart string, v ...interface{})) {
@@ -86,11 +143,7 @@ func Open(driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
 // NewDB create a new db
 func NewDB() *DB {
 	return &DB{
-		types:          make(map[string]*TypeInfo),
-		InsertSQLCache: make(SQLCache),
-		UpdateSQLCache: make(SQLCache),
-		DeleteSQLCache: make(SQLCache),
-		SelectSQLCache: make(SQLCache),
+		types: make(map[string]*TypeInfo),
 	}
 }
 
@@ -106,8 +159,21 @@ func (db *DB) Connect(driver, dsn string, maxIdle, maxOpen int) error {
 	return err
 }
 
+// RegisterType register type info, model must not exist
+func (db *DB) RegisterType(v Model) {
+	table := v.Table()
+	db.registerType(v, table)
+}
+
+// registerType save type info of model
+func (db *DB) registerType(v Model, table string) *TypeInfo {
+	ti := parseTypeInfo(v)
+	db.types[table] = ti
+	return ti
+}
+
 // TypeInfo return type information of given model
-// if type info not exist, it will parse it and save type info
+// if type info not exist, it will parseTypeInfo it and save type info
 func (db *DB) TypeInfo(v Model) *TypeInfo {
 	table := v.Table()
 	ti := db.types[table]
@@ -131,82 +197,12 @@ func (db *DB) ColumnName(v Model, field uint) (name string) {
 	return
 }
 
-// RegisterType register type info, model must not exist
-func (db *DB) RegisterType(v Model) {
-	table := v.Table()
-	db.registerType(v, table)
-}
-
-// registerType save type info of model
-func (db *DB) registerType(v Model, table string) *TypeInfo {
-	ti := parse(v)
-	db.types[table] = ti
-	return ti
-}
-
-// parse parse model to get type info, model must be struct
-// it will first use field tag as column name, if no tag specified,
-// use field name's camel_case
-func parse(v Model) *TypeInfo {
-	typ := reflect.IndirectType(v)
-	fieldNum := typ.NumField()
-	fields := make([]string, 0, fieldNum)
-	for i := 0; i < fieldNum; i++ {
-		field := typ.Field(i)
-		tag := field.Tag
-		fieldName := tag.Get(_FIELD_TAG)
-		if fieldName == "" {
-			fieldName = field.Name
-		}
-		fields = append(fields, types.SnakeString(fieldName))
-	}
-	err := sql.ErrNoRows
-	if e := v.NotFoundErr(); e != nil {
-		err = e
-	}
-	return &TypeInfo{
-		NumField:    uint(fieldNum),
-		Table:       v.Table(),
-		Fields:      fields,
-		ErrOnNoRows: err,
-	}
-}
-
 // FieldsExcp create fieldset except given fields
 func FieldsExcp(numField uint, fields uint) uint {
 	return (1<<numField - 1) & (^fields)
 }
 
-// CacheGet get sql from cache container, if cache not exist
-// then create new sql and save it
-func CacheGet(cache SQLCache, sig uint, newSQL func() string) string {
-	var sql string
-	if sql := cache[sig]; sql == "" {
-		sql = newSQL()
-		cache[sig] = sql
-		printSQL(false, sql)
-	} else {
-		printSQL(true, sql)
-	}
-	return sql
-}
-
 // CacheGet get sql from cache container, if cache not exist, then create new
-// sql and save it
-func (db *DB) CacheGet(cache SQLCache, v Model,
-	fields, whereFields uint, newSQL SQLCreatorFunc) (string, *TypeInfo) {
-	ti := db.TypeInfo(v)
-	var sql string
-	sig := FieldSignature(ti.NumField, fields, whereFields)
-	if sql = cache[sig]; sql == "" {
-		sql = newSQL(ti, fields, whereFields)
-		cache[sig] = sql
-		printSQL(false, sql)
-	} else {
-		printSQL(true, sql)
-	}
-	return sql, ti
-}
 
 // SQLForInsert create insert sql for given fields
 func SQLForInsert(ti *TypeInfo, fields, _ uint) string {
@@ -217,7 +213,7 @@ func SQLForInsert(ti *TypeInfo, fields, _ uint) string {
 
 // Insert execure insert operation for model
 func (db *DB) Insert(v Model, fields uint, needId bool) (int64, error) {
-	sql, _ := db.CacheGet(db.InsertSQLCache, v, fields, 0, SQLForInsert)
+	sql := db.TypeInfo(v).CacheGet(INSERT, fields, 0, SQLForInsert)
 	c, err := db.ExecUpdate(sql, v.FieldValues(fields), needId)
 	if db.driver == _MYSQL_DB {
 		if e := ErrForDuplicateKey(err, v.DuplicateValueErr); e != nil {
@@ -239,10 +235,11 @@ func SqlForUpdate(ti *TypeInfo, fields, whereFields uint) string {
 func (db *DB) Update(v Model, fields uint, whereFields uint) (int64, error) {
 	values := v.FieldValues(fields)
 	values2 := v.FieldValues(whereFields)
-	newValues := make([]interface{}, 0, len(values)+len(values2))
+	newValues := make([]interface{}, len(values)+len(values2))
 	copy(newValues, values)
 	copy(newValues[len(values):], values2)
-	sql, ti := db.CacheGet(db.UpdateSQLCache, v, fields, whereFields, SqlForUpdate)
+	ti := db.TypeInfo(v)
+	sql := ti.CacheGet(UPDATE, fields, whereFields, SqlForUpdate)
 	c, e := db.ExecUpdate(sql, newValues, false)
 	return c, ErrForNoRows(e, ti.ErrOnNoRows)
 }
@@ -256,7 +253,8 @@ func SQLForDelete(ti *TypeInfo, _, whereFields uint) string {
 // Insert execure delete operation for model
 func (db *DB) Delete(v Model, whereFields uint) (int64, error) {
 	values := v.FieldValues(whereFields)
-	sql, ti := db.CacheGet(db.DeleteSQLCache, v, 0, whereFields, SQLForDelete)
+	ti := db.TypeInfo(v)
+	sql := ti.CacheGet(DELETE, 0, whereFields, SQLForDelete)
 	c, e := db.ExecUpdate(sql, values, false)
 	return c, ErrForNoRows(e, ti.ErrOnNoRows)
 }
@@ -277,14 +275,16 @@ func SQLForSelect(ti *TypeInfo, fields, whereFields uint) string {
 func (db *DB) SelectOne(v Model, fields, whereFields uint) error {
 	ptrs := v.FieldPtrs(fields)
 	whereValues := v.FieldValues(whereFields)
-	sql, ti := db.CacheGet(db.SelectSQLCache, v, fields, whereFields, SQLForSelect)
+	ti := db.TypeInfo(v)
+	sql := ti.CacheGet(SELECT, fields, whereFields, SQLForSelect)
 	return ErrForNoRows(db.ExecQueryRow(sql, whereValues, ptrs), ti.ErrOnNoRows)
 }
 
 // SelectMulti select multiple results from database
 func (db *DB) SelectMulti(v Model, fields, whereFields uint) ([]Model, error) {
 	whereValues := v.FieldValues(whereFields)
-	sql, ti := db.CacheGet(db.SelectSQLCache, v, fields, whereFields, SQLForSelect)
+	ti := db.TypeInfo(v)
+	sql := ti.CacheGet(SELECT, fields, whereFields, SQLForSelect)
 	vs := make([]Model, 0, 5)
 	return vs, ErrForNoRows(db.ExecQuery(sql, whereValues, func() []interface{} {
 		vs = append(vs, v)
@@ -302,7 +302,7 @@ func SQLForCount(ti *TypeInfo, _, whereFields uint) string {
 
 // Count return count of rows for model
 func (db *DB) Count(v Model, whereFields uint) (count uint, err error) {
-	sql, _ := db.CacheGet(db.SelectSQLCache, v, 0, whereFields, SQLForCount)
+	sql := db.TypeInfo(v).CacheGet(SELECT, 0, whereFields, SQLForCount)
 	err = db.ExecQueryRow(sql, []interface{}{v.FieldValues(whereFields)},
 		[]interface{}{&count})
 	return
@@ -311,7 +311,7 @@ func (db *DB) Count(v Model, whereFields uint) (count uint, err error) {
 // CountWithArgs return count of rows for model use given arguments
 func (db *DB) CountWithArgs(v Model, whereFields uint,
 	args []interface{}) (count uint, err error) {
-	sql, _ := db.CacheGet(db.SelectSQLCache, v, 0, whereFields, SQLForCount)
+	sql := db.TypeInfo(v).CacheGet(SELECT, 0, whereFields, SQLForCount)
 	err = db.ExecQueryRow(sql, args, []interface{}{&count})
 	return
 }

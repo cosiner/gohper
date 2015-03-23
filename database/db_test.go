@@ -16,8 +16,9 @@ type User struct {
 
 func BenchmarkTypeInfo(b *testing.B) {
 	db := NewDB()
+	u := &User{}
 	for i := 0; i < b.N; i++ {
-		_ = db.TypeInfo(&User{})
+		_ = db.TypeInfo(u)
 	}
 }
 
@@ -34,10 +35,18 @@ func BenchmarkFieldsCount(b *testing.B) {
 	}
 }
 
+func BenchmarkSQLGet(b *testing.B) {
+	db := NewDB()
+	u := &User{}
+	for i := 0; i < b.N; i++ {
+		_ = db.TypeInfo(u).CacheGet(SELECT, USER_ID|USER_NAME, 0, SQLForSelect)
+	}
+}
+
 func TestSQLCache(t *testing.T) {
 	db := NewDB()
 	u := &User{}
-	sql, _ := db.CacheGet(db.SelectSQLCache, u, USER_ID|USER_NAME, 0, SQLForSelect)
+	sql := db.TypeInfo(u).CacheGet(SELECT, USER_ID|USER_NAME, 0, SQLForSelect)
 	test.AssertEq(t, "SELECT id,name FROM user", sql)
 }
 
