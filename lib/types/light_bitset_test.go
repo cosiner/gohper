@@ -57,3 +57,9 @@ func BenchmarkBitCount(b *testing.B) {
 		_ = BitCountUint(0x121241112a)
 	}
 }
+
+func TestBitCount(t *testing.T) {
+	tt := test.WrapTest(t)
+	tt.AssertEq(2, BitCountUint(3))
+	tt.Log(BitCount(3))
+}

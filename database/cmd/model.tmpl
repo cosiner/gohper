@@ -7,7 +7,7 @@
 {{$recv := (printf "(%s *%s)" $self $normalModel)}}
 const (
     {{range $index, $field := $fields}}{{with $field}}{{.ConstName}}{{end}} {{if eq $index  0}} uint = 1 << iota {{end}}
-    {{end}}{{$lowerModel}}FieldEnd
+    {{end}}{{$lowerModel}}FieldEnd = iota
 )
 
 func {{$recv}} Table() string {
