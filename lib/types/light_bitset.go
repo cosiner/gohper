@@ -98,6 +98,6 @@ func (l *LightBitSet) Uint64() uint64 {
 }
 
 // BitCount return the count of bits set to 1
-func (l *LightBitSet) BitCount() uint {
+func (l *LightBitSet) BitCount() int {
 	return BitCount(uint64(*l))
 }

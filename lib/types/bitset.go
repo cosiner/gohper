@@ -158,8 +158,8 @@ func (bs *BitSet) Bits() (res []uint) {
 }
 
 // BitCount count 1 bits
-func (bs *BitSet) BitCount() uint {
-	var n uint
+func (bs *BitSet) BitCount() int {
+	var n int
 	bs.clearTop()
 	bs.unitOp(func(index uint) {
 		n += BitCount(bs.set[index])
@@ -300,11 +300,21 @@ func (bs *BitSet) unitOp(f func(index uint)) *BitSet {
 }
 
 // count of 1 bit
-func BitCount(n uint64) uint {
+func BitCount(n uint64) int {
 	n -= (n >> 1) & 0x5555555555555555
 	n = (n>>2)&0x3333333333333333 + n&0x3333333333333333
 	n += n >> 4
 	n &= 0x0f0f0f0f0f0f0f0f
 	n *= 0x0101010101010101
-	return uint(n >> 56)
+	return int(n >> 56)
+}
+
+func BitCountUint(x uint) int {
+	var n = uint64(x)
+	n -= (n >> 1) & 0x5555555555555555
+	n = (n>>2)&0x3333333333333333 + n&0x3333333333333333
+	n += n >> 4
+	n &= 0x0f0f0f0f0f0f0f0f
+	n *= 0x0101010101010101
+	return int(n >> 56)
 }

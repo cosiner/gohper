@@ -54,6 +54,6 @@ func TestSinceBefore(t *testing.T) {
 
 func BenchmarkBitCount(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_ = BitCount(0x121241112a)
+		_ = BitCountUint(0x121241112a)
 	}
 }
