@@ -3,8 +3,12 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"reflect"
+	"strings"
 
-	"github.com/cosiner/gohper/lib/reflect"
+	"github.com/cosiner/gohper/lib/goutil"
+
+	ref "github.com/cosiner/gohper/lib/reflect"
 
 	"github.com/cosiner/gohper/lib/types"
 )
@@ -19,7 +23,8 @@ const (
 	// _FIELD_SEP is seperator of columns
 	_FIELD_SEP = ","
 	// _FIELD_TAG is tag name of database column
-	_FIELD_TAG = "column"
+	_FIELD_TAG    = "column"
+	_FIELD_NOTCOL = "notcol"
 
 	_MYSQL_DB = "mysql"
 )
@@ -69,17 +74,21 @@ var (
 // it will first use field tag as column name, if no tag specified,
 // use field name's camel_case
 func parseTypeInfo(v Model) *TypeInfo {
-	typ := reflect.IndirectType(v)
+	typ := ref.IndirectType(v)
 	fieldNum := typ.NumField()
 	fields := make([]string, 0, fieldNum)
 	for i := 0; i < fieldNum; i++ {
 		field := typ.Field(i)
-		tag := field.Tag
-		fieldName := tag.Get(_FIELD_TAG)
-		if fieldName == "" {
-			fieldName = field.Name
+		fieldName := field.Name
+		if goutil.IsExported(fieldName) &&
+			strings.Contains(string(field.Tag), _FIELD_NOTCOL) &&
+			!(field.Anonymous &&
+				field.Type.Kind() == reflect.Struct) {
+			if tagName := field.Tag.Get(_FIELD_TAG); tagName != "" {
+				fieldName = tagName
+			}
+			fields = append(fields, types.SnakeString(fieldName))
 		}
-		fields = append(fields, types.SnakeString(fieldName))
 	}
 	err := sql.ErrNoRows
 	if e := v.NotFoundErr(); e != nil {

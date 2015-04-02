@@ -13,6 +13,17 @@ type User struct {
 	Id   int
 	Name string
 }
+type UUU User
+type VIPUser struct {
+	Level int
+	UUU
+	User
+}
+
+func TestEmbed(t *testing.T) {
+	tt := test.WrapTest(t)
+	tt.Log(parseTypeInfo(&VIPUser{}).Fields)
+}
 
 func BenchmarkTypeInfo(b *testing.B) {
 	db := NewDB()

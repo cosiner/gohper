@@ -69,6 +69,10 @@ func (rs *RedisStore) init(maxidle, idleTimeout int, addr string) error {
 	return nil
 }
 
+func (rs *RedisStore) Conn() redis.Conn {
+	return rs.connPool.Get()
+}
+
 // Query excute operation that need an replay value
 func (rs *RedisStore) Query(cmd string, args ...interface{}) (reply interface{}, err error) {
 	c := rs.connPool.Get()

@@ -82,12 +82,22 @@ func Str2IntDef(s string, def int) int {
 	return val
 }
 
-var hexTable = []byte{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'}
+var hexTable = []byte("0123456789ABCDEF")
+var hexTableLower = []byte("0123456789abcdef")
 
 func Uint2Hex(u uint64) []byte {
 	s := make([]byte, 16)
 	for i := 15; i >= 0; i-- {
 		s[i] = hexTable[byte(u)&0xF]
+		u = u >> 4
+	}
+	return s
+}
+
+func Uint2LowerHex(u uint64) []byte {
+	s := make([]byte, 16)
+	for i := 15; i >= 0; i-- {
+		s[i] = hexTableLower[byte(u)&0xF]
 		u = u >> 4
 	}
 	return s
