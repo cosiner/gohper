@@ -16,6 +16,7 @@ import (
 	"github.com/cosiner/gohper/lib/types"
 
 	"flag"
+	"fmt"
 )
 
 var (
@@ -63,7 +64,7 @@ func main() {
 	tree, err := parser.ParseFile(token.NewFileSet(), infile, nil, 0)
 	OnErrDo(err, ExitErrln)
 	mv := new(modelVisitor)
-	mv.addModels(models)
+	mv.addModelNeedParse(models)
 	mv.walk(tree)
 	if len(mv.models) == 0 {
 		return
@@ -125,13 +126,23 @@ func buildModelFields(models map[string][]string) map[*StructName][]*FieldName {
 }
 
 type modelVisitor struct {
-	models map[string][]string
+	models      map[string][]string
+	modelsParse map[string]bool
 }
 
 // initContainer init result container
 func (mv *modelVisitor) initContainer() {
 	if mv.models == nil {
 		mv.models = make(map[string][]string, 10)
+	}
+}
+
+func (mv *modelVisitor) addModelNeedParse(models []string) {
+	mv.modelsParse = make(map[string]bool)
+	for _, m := range models {
+		if m != "" {
+			mv.modelsParse[m] = true
+		}
 	}
 }
 
@@ -159,15 +170,7 @@ func (mv *modelVisitor) add(model, field string) {
 // if visitor's model list is not empty, only parse model exist in list
 // otherwise parse all
 func (mv *modelVisitor) needParse(model string) bool {
-	if !goutil.IsExported(model) {
-		return false
-	}
-	if mv.models != nil && len(mv.models) > 0 {
-		if _, has := mv.models[model]; !has {
-			return false
-		}
-	}
-	return true
+	return goutil.IsExported(model) && (len(mv.modelsParse) == 0 || mv.modelsParse[model])
 }
 
 // walk parse ast tree to find exported struct and it's fields
@@ -179,6 +182,7 @@ func (mv *modelVisitor) walk(tree *ast.File) {
 					spec, _ := spec.(*ast.TypeSpec)
 					if t, is := spec.Type.(*ast.StructType); is { // type struct
 						model := spec.Name.Name // model name
+						fmt.Println(model, mv.needParse(model))
 						if !mv.needParse(model) {
 							continue
 						}
