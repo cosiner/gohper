@@ -32,8 +32,14 @@ type (
 		ErrOnNoRows error
 		Cache       []SQLCache
 	}
-	Cols      []string
-	ColsCount int
+	Cols interface {
+		String() string
+		Paramed() string
+		OnlyParam() string
+		Length() int
+	}
+	cols      []string
+	singleCol string
 )
 
 const (
@@ -53,8 +59,8 @@ const (
 var (
 	printSQL = func(_ bool, _ string) {}
 	// SQLTypeEnd used as all model's sql statement type count
-	SQLTypeEnd = defaultTypeEnd
-	nilCols    = make(Cols, 0)
+	SQLTypeEnd      = defaultTypeEnd
+	nilCols    Cols = make(cols, 0)
 )
 
 // EnableSQLPrint enable sql print for each operation
@@ -209,40 +215,22 @@ func (ti *TypeInfo) CountSQL(_, whereFields uint) string {
 }
 
 func (ti *TypeInfo) Where(fields uint) string {
-	if cols := ti.Cols(fields); len(cols) != 0 {
+	if cols := ti.Cols(fields); cols.Length() != 0 {
 		return "WHERE " + cols.Paramed()
 	}
 	return ""
 }
 
 func (ti *TypeInfo) TypedWhere(fields uint) string {
-	if cols := ti.TypedCols(fields); len(cols) != 0 {
+	if cols := ti.TypedCols(fields); cols.Length() != 0 {
 		return "WHERE " + cols.Paramed()
 	}
 	return ""
 }
 
-func (ti *TypeInfo) Col(field uint) string {
-	var index int = -1
-	for field > 0 {
-		index++
-		field >>= 1
-	}
-	if index < 0 || index >= int(ti.NumField) {
-		return ""
-	}
-	return ti.Fields[index]
-}
-
-func (ti *TypeInfo) TypedCol(field uint) string {
-	name := ti.Col(field)
-	if name != "" {
-		name = ti.Table + "." + name
-	}
-	return name
-}
-
 // Cols return column names for given fields
+// if fields is only one, return single column
+// else return column slice
 func (ti *TypeInfo) Cols(fields uint) Cols {
 	return ti.colNames(fields, "")
 }
@@ -255,7 +243,7 @@ func (ti *TypeInfo) TypedCols(fields uint) Cols {
 
 func (ti *TypeInfo) colNames(fields uint, prefix string) Cols {
 	fieldNames := ti.Fields
-	if colCount := types.BitCountUint(fields); colCount > 0 {
+	if colCount := types.BitCountUint(fields); colCount > 1 {
 		names := make([]string, colCount)
 		var index uint
 		for i, l := uint(0), uint(len(fieldNames)); i < l; i++ {
@@ -264,30 +252,57 @@ func (ti *TypeInfo) colNames(fields uint, prefix string) Cols {
 				index++
 			}
 		}
-		return names[:index]
+		return cols(names[:index])
+	} else if colCount == 1 {
+		for i, l := uint(0), uint(len(fieldNames)); i < l; i++ {
+			if (1<<i)&fields != 0 {
+				return singleCol(prefix + fieldNames[i])
+			}
+		}
 	}
 	return nilCols
 }
 
 // String return columns string join with ",",
 // result like "foo, bar"
-func (cols Cols) String() string {
-	return types.SuffixJoin(cols, "", _FIELD_SEP)
+func (c cols) String() string {
+	return types.SuffixJoin(c, "", _FIELD_SEP)
 }
 
 // Paramed return columns string joind with "=?,", last "," was trimed,
 // result like "foo=?, bar=?"
-func (cols Cols) Paramed() string {
-	return types.SuffixJoin(cols, "=?", _FIELD_SEP)
+func (c cols) Paramed() string {
+	return types.SuffixJoin(c, "=?", _FIELD_SEP)
 }
 
 // OnlyParam return columns placeholdered string, each column was replaced with "?"
 // result like "?, ?, ?, ?", count of "?" is colums length
-func (cols Cols) OnlyParam() string {
-	return types.RepeatJoin("?", ",", len(cols))
+func (c cols) OnlyParam() string {
+	return types.RepeatJoin("?", ",", len(c))
 }
 
-// OnlyParam is same as Cols.OnlyParam
-func (c ColsCount) OnlyParam() string {
-	return types.RepeatJoin("?", ",", int(c))
+func (c cols) Length() int {
+	return len(c)
+}
+
+// String return columns string join with ",",
+// result like "foo, bar"
+func (c singleCol) String() string {
+	return string(c)
+}
+
+// Paramed return columns string joind with "=?,", last "," was trimed,
+// result like "foo=?, bar=?"
+func (c singleCol) Paramed() string {
+	return string(c) + "=?"
+}
+
+// OnlyParam return columns placeholdered string, each column was replaced with "?"
+// result like "?, ?, ?, ?", count of "?" is colums length
+func (c singleCol) OnlyParam() string {
+	return "?"
+}
+
+func (c singleCol) Length() int {
+	return 1
 }

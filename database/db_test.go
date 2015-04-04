@@ -66,7 +66,7 @@ func TestCustom(t *testing.T) {
 		nti.TypedCols(NAME_FIRST|NAME_LAST),
 		uti.Table,
 		nti.Table,
-		uti.TypedCol(USER_NAME)+"="+nti.TypedCol(NAME_FIRST))
+		uti.TypedCols(USER_NAME)+"="+nti.TypedCols(NAME_FIRST))
 }
 
 const (
