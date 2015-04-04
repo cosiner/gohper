@@ -52,3 +52,8 @@ func TestStringLastIndexN(t *testing.T) {
 	tt.AssertEq(0, StrLastIndexN("123123123", "12", 3))
 	tt.AssertEq(-1, StrLastIndexN("123123123", "12", 4))
 }
+
+func TestRepeatJoin(t *testing.T) {
+	tt := test.WrapTest(t)
+	tt.Log(RepeatJoin("abc", "=?", 10))
+}

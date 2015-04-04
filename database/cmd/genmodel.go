@@ -183,10 +183,12 @@ func (mv *modelVisitor) walk(tree *ast.File) {
 							continue
 						}
 						for _, f := range t.Fields.List { // model field
-							for _, ident := range f.Names {
-								name := ident.Name
-								if goutil.IsExported(name) {
-									mv.add(model, name)
+							if f.Tag == nil || !strings.Contains(f.Tag.Value, "notcol") {
+								for _, ident := range f.Names {
+									name := ident.Name
+									if goutil.IsExported(name) {
+										mv.add(model, name)
+									}
 								}
 							}
 						}

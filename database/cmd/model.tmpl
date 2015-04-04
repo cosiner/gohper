@@ -14,8 +14,8 @@ func {{$recv}} Table() string {
     return "{{$lowerModel}}"
 }
 
-func {{$recv}} FieldValues(fields uint) []interface{} {
-    vals, index := make([]interface{}, types.BitCountUint(fields)), 0
+func {{$recv}} FieldValues(fields,reserve uint) []interface{} {
+    vals, index := make([]interface{}, types.BitCountUint(fields) + int(reserve)), 0
     {{range $fields}} if fields&{{.ConstName}} != 0 {
         vals[index] = {{$self}}.{{.Name}}
         index++

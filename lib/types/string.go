@@ -117,13 +117,25 @@ func EndWith(str, end string) bool {
 	return strings.HasSuffix(str, end)
 }
 
-// RepeatJoin repeat s1 count times, then join with s2
-func RepeatJoin(s1, s2 string, count int) string {
-	if count <= 0 {
+// RepeatJoin repeat s count times as a string slice, then join with sep
+func RepeatJoin(s, sep string, count int) string {
+	switch {
+	case count <= 0:
 		return ""
+	case count == 1:
+		return s
+	case count == 2:
+		return s + sep + s
+	default:
+		bs := make([]byte, 0, (len(s)+len(sep))*count-len(sep))
+		buf := bytes.NewBuffer(bs)
+		buf.WriteString(s)
+		for i := 1; i < count; i++ {
+			buf.WriteString(sep)
+			buf.WriteString(s)
+		}
+		return buf.String()
 	}
-	str := strings.Repeat(s1+s2, count)
-	return str[:len(str)-len(s2)]
 }
 
 // SuffixJoin join string slice with suffix
