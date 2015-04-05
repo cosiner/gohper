@@ -1,7 +1,10 @@
 package log
 
 import (
+	"fmt"
 	"time"
+
+	"github.com/cosiner/gohper/lib/runtime"
 
 	"github.com/cosiner/gohper/lib/errors"
 )
@@ -159,6 +162,7 @@ func (logger *logger) log(level Level, v ...interface{}) *Log {
 
 // Debugf log for debug message
 func (logger *logger) Debugf(format string, v ...interface{}) {
+	format = fmt.Sprintf("%s %s", runtime.CallerPosition(1), format)
 	logger.logf(LEVEL_DEBUG, format, v...)
 }
 
@@ -188,7 +192,7 @@ func (logger *logger) Fatalf(format string, v ...interface{}) {
 
 // Debugln log for debug message
 func (logger *logger) Debugln(v ...interface{}) {
-	logger.logln(LEVEL_DEBUG, v...)
+	logger.logln(LEVEL_DEBUG, append([]interface{}{runtime.CallerPosition(1)}, v...)...)
 }
 
 // Infoln log for info message
@@ -217,7 +221,7 @@ func (logger *logger) Fatalln(v ...interface{}) {
 
 // Debug log for debug message
 func (logger *logger) Debug(v ...interface{}) {
-	logger.log(LEVEL_DEBUG, v...)
+	logger.log(LEVEL_DEBUG, append([]interface{}{runtime.CallerPosition(1)}, v...)...)
 }
 
 // Info log for info message

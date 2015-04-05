@@ -132,7 +132,7 @@ func (db *DB) SelectOne(v Model, fields, whereFields uint) error {
 	rows, ti, err := db.limitSelectRows(v, fields, whereFields, 0, 1)
 	if err == nil {
 		if rows.Next() {
-			err = rows.Scan(v.FieldPtrs(fields))
+			err = rows.Scan(v.FieldPtrs(fields)...)
 		} else {
 			err = ti.ErrOnNoRows
 		}
@@ -150,7 +150,7 @@ func (db *DB) SelectLimit(v Model, fields, whereFields uint, start, count int) (
 		for rows.Next() {
 			has = true
 			model := v.New()
-			if err = rows.Scan(model.FieldPtrs(fields)); err != nil {
+			if err = rows.Scan(model.FieldPtrs(fields)...); err != nil {
 				models = nil
 				break
 			} else {

@@ -347,8 +347,8 @@ func Compare(s1, s2 string) int {
 	}
 }
 
-// Valid check whether all chars of string is in encoding string
-func Valid(encoding, s string) bool {
+// AllCharIn check whether all chars of string is in encoding string
+func AllCharsIn(s, encoding string) bool {
 	for i := 0; i < len(s); i++ {
 		if CharIn(s[i], encoding) < 0 {
 			return false
