@@ -182,8 +182,9 @@ func (mv *modelVisitor) walk(tree *ast.File) {
 					spec, _ := spec.(*ast.TypeSpec)
 					if t, is := spec.Type.(*ast.StructType); is { // type struct
 						model := spec.Name.Name // model name
-						fmt.Println(model, mv.needParse(model))
-						if !mv.needParse(model) {
+						needParse := mv.needParse(model)
+						fmt.Println(model, needParse)
+						if !needParse {
 							continue
 						}
 						for _, f := range t.Fields.List { // model field

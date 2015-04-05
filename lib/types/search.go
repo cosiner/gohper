@@ -51,3 +51,33 @@ func StringIn(str string, strs []string) int {
 	}
 	return -1
 }
+
+// NumberIn search index of number in sorted numbers with ascending order
+func NumberIn(n int, nums []int) int {
+	for l, h := 0, len(nums)-1; l <= h; {
+		m := l + (h-l)>>1
+		if c := nums[m]; c == n {
+			return m
+		} else if c < n {
+			l = m + 1
+		} else {
+			h = m - 1
+		}
+	}
+	return -1
+}
+
+// CharIn search index of char in sorted string with ascending order
+func CharIn(b byte, s string) int {
+	for l, h := 0, len(s)-1; l <= h; {
+		m := l + (h-l)>>1
+		if c := s[m]; c == b {
+			return m
+		} else if c < b {
+			l = m + 1
+		} else {
+			h = m - 1
+		}
+	}
+	return -1
+}

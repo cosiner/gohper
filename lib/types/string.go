@@ -1,4 +1,4 @@
-package types
+ types
 
 import (
 	"bytes"
@@ -324,4 +324,25 @@ func AbridgeStringToLower(str string) (s string) {
 		s = string(ret)
 	}
 	return
+}
+
+// Compare compare two string, if equal, 0 was returned, if s1 > s2, 1 was returned,
+// otherwise -1 was returned
+func Compare(s1, s2 string) int {
+	l1, l2 := len(s1), len(s2)
+	for i := 0; i < l1 && i < l2; i++ {
+		if s[i] < s2[i] {
+			return -1
+		} else if s1[i] > s2[i] {
+			return 1
+		}
+	}
+	switch {
+	case l1 < l2:
+		return -1
+	case l1 == l2:
+		return 0
+	default:
+		return 1
+	}
 }

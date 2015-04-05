@@ -109,6 +109,10 @@ func (rs *RedisStore) HGet(h, key string) (interface{}, error) {
 	return rs.Query("HGET", h, key)
 }
 
+func (rs *RedisStore) HExists(h, key string) (bool, error) {
+	return ToBool(rs.Query("HEXISTs", h, key))
+}
+
 // Set bind an value to key
 func (rs *RedisStore) Set(key string, val interface{}) error {
 	return rs.Update("SET", key, val)
@@ -140,6 +144,10 @@ func (rs *RedisStore) Modify(key string, val interface{}) (success bool, err err
 // Remove remove exist key
 func (rs *RedisStore) Remove(key string) error {
 	return rs.Update("DEL", key)
+}
+
+func (rs *RedisStore) Exists(key string) (bool, error) {
+	return ToBool(rs.Query("EXISTs", key))
 }
 
 // HRemove remove exist key from an hash table
