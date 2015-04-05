@@ -1,4 +1,4 @@
- types
+package types
 
 import (
 	"bytes"
@@ -331,7 +331,7 @@ func AbridgeStringToLower(str string) (s string) {
 func Compare(s1, s2 string) int {
 	l1, l2 := len(s1), len(s2)
 	for i := 0; i < l1 && i < l2; i++ {
-		if s[i] < s2[i] {
+		if s1[i] < s2[i] {
 			return -1
 		} else if s1[i] > s2[i] {
 			return 1
@@ -345,4 +345,14 @@ func Compare(s1, s2 string) int {
 	default:
 		return 1
 	}
+}
+
+// Valid check whether all chars of string is in encoding string
+func Valid(encoding, s string) bool {
+	for i := 0; i < len(s); i++ {
+		if CharIn(s[i], encoding) < 0 {
+			return false
+		}
+	}
+	return true
 }

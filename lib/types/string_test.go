@@ -57,3 +57,10 @@ func TestRepeatJoin(t *testing.T) {
 	tt := test.WrapTest(t)
 	tt.Log(RepeatJoin("abc", "=?", 10))
 }
+
+func TestValid(t *testing.T) {
+	tt := test.WrapTest(t)
+	tt.AssertTrue(Valid("abcdefghijklmn", ""))
+	tt.AssertTrue(Valid("abcdefghijklmn", "abc"))
+	tt.AssertFalse(Valid("abcdefghijklmn", "ao"))
+}
