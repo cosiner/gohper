@@ -8,6 +8,7 @@
 * Log: level, colorful console log, file log with split
 * Database: sql cache, code generation, high-performance
 * Redis: simple wrapper of [garyburd/redigo](github.com/garyburd/redigo/redis)
+* Validate: series validators as a chain and behave like a single validator, then chain it again
 * Lib: some common utils for go, errors/test/regexp/sys/terminal color/data structures
 
 ###License

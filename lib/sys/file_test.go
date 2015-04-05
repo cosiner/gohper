@@ -8,19 +8,19 @@ import (
 )
 
 func TestCopyFile(t *testing.T) {
-	tt := test.WrapTest(t)
+	tt := test.Wrap(t)
 	src, dst := "/tmp/copytest", "/tmp/copytest.copy"
 	if CreateFor(src, nil) == nil {
-		tt.AssertTrue(CreateFor(src, nil) != nil)
-		tt.AssertTrue(CopyFile(dst, src) == nil)
-		tt.AssertTrue(IsFile(dst))
+		tt.True(CreateFor(src, nil) != nil)
+		tt.True(CopyFile(dst, src) == nil)
+		tt.True(IsFile(dst))
 		os.Remove(dst)
 		os.Remove(src)
 	}
 }
 
 func TestWriteFlag(t *testing.T) {
-	tt := test.WrapTest(t)
-	tt.AssertEq(AP, WriteFlag(false))
-	tt.AssertEq(TC, WriteFlag(true))
+	tt := test.Wrap(t)
+	tt.Eq(AP, WriteFlag(false))
+	tt.Eq(TC, WriteFlag(true))
 }

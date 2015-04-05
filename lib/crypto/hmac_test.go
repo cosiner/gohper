@@ -9,11 +9,11 @@ import (
 var key = []byte("abcdefghijklmn")
 
 func TestSecret(t *testing.T) {
-	tt := test.WrapTest(t)
+	tt := test.Wrap(t)
 	enc := "abcde"
 	val := SignSecret(key, enc)
 	tt.Log(val)
-	tt.AssertEq(enc, VerifySecret(key, val))
+	tt.Eq(enc, VerifySecret(key, val))
 	key[0] = 'd'
-	tt.AssertNE(enc, VerifySecret(key, val))
+	tt.NE(enc, VerifySecret(key, val))
 }

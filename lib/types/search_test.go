@@ -7,13 +7,13 @@ import (
 )
 
 func TestStringIn(t *testing.T) {
-	test.AssertEq(t, 1, StringIn("b", []string{"a", "b", "c"}))
-	test.AssertEq(t, 0, StringIn("a", []string{"a", "b", "c"}))
-	test.AssertEq(t, -1, StringIn("d", []string{"a", "b", "c"}))
+	test.Eq(t, 1, StringIn("b", []string{"a", "b", "c"}))
+	test.Eq(t, 0, StringIn("a", []string{"a", "b", "c"}))
+	test.Eq(t, -1, StringIn("d", []string{"a", "b", "c"}))
 }
 
 func TestCharIn(t *testing.T) {
-	tt := test.WrapTest(t)
+	tt := test.Wrap(t)
 	tt.Log(CharIn('a', "abc"))
 	tt.Log(CharIn('a', "abcd"))
 

@@ -7,7 +7,7 @@ import (
 )
 
 func TestConsoleLog(t *testing.T) {
-	logger := NewLogger(DEF_FLUSHINTERVAL, LEVEL_DEBUG)
+	logger := NewLogger(DEF_FLUSHINTERVAL, LEVEL_INFO)
 	logger.AddLogWriterWithConf(new(ConsoleLogWriter), "info=green")
 	logger.Start()
 	logger.Errorln("aaa1")

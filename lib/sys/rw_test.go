@@ -36,10 +36,10 @@ func TestWriteV(t *testing.T) {
 }
 
 func TestWriteL(t *testing.T) {
-	tt := test.WrapTest(t)
+	tt := test.Wrap(t)
 	buffer := bytes.NewBuffer([]byte{})
 	bw := NewBufVWriter(buffer)
 	bw.WriteLString("abc", "de")
 	bw.Flush()
-	tt.AssertTrue(bytes.Equal([]byte("abcde"), buffer.Bytes()))
+	tt.True(bytes.Equal([]byte("abcde"), buffer.Bytes()))
 }

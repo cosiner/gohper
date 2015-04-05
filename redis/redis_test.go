@@ -9,7 +9,7 @@ import (
 )
 
 func TestRedis(t *testing.T) {
-	tt := test.WrapTest(t)
+	tt := test.Wrap(t)
 	store, err := NewRedisStore2("addr='127.0.0.1:6379'")
 	if err != nil {
 		t.Log(err)
@@ -19,11 +19,11 @@ func TestRedis(t *testing.T) {
 	store.Incr("test")
 	s, err := ToInt(store.Get("test"))
 	OnErrExit(err)
-	tt.AssertEq(124, s)
+	tt.Eq(124, s)
 	store.Set("test", struct{ Name string }{"aaa"})
 	v, err := ToString(store.Get("test"))
 	OnErrExit(err)
-	tt.AssertEq("{aaa}", v)
+	tt.Eq("{aaa}", v)
 	// store.HSet("userexist", "someone", false)
 	tt.Log(store.IsHExist("userexist", "someone"))
 	store.HRemove("userexist", "someone")

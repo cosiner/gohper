@@ -57,7 +57,7 @@ func TestSQLCache(t *testing.T) {
 	u := &User{}
 	ti := db.TypeInfo(u)
 	sql := ti.CacheGet(database.LIMIT_SELECT, USER_ID|USER_NAME, 0, ti.LimitSelectSQL)
-	test.AssertEq(t, "SELECT id,name FROM user  LIMIT ?, ?", sql)
+	test.Eq(t, "SELECT id,name FROM user  LIMIT ?, ?", sql)
 }
 
 func TestCustom(t *testing.T) {

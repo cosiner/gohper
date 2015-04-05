@@ -7,60 +7,60 @@ import (
 )
 
 func TestSnakeString(t *testing.T) {
-	test.AssertEq(t, "_xy_xy", SnakeString("_xy_xy"))
-	test.AssertEq(t, "_xy_xy", SnakeString("_xyXy"))
-	test.AssertEq(t, "_xy xy", SnakeString("_Xy Xy"))
-	test.AssertEq(t, "_xy_xy", SnakeString("_Xy_Xy"))
+	test.Eq(t, "_xy_xy", SnakeString("_xy_xy"))
+	test.Eq(t, "_xy_xy", SnakeString("_xyXy"))
+	test.Eq(t, "_xy xy", SnakeString("_Xy Xy"))
+	test.Eq(t, "_xy_xy", SnakeString("_Xy_Xy"))
 }
 
 func TestCamelString(t *testing.T) {
-	test.AssertEq(t, "XyXy", CamelString("xy_xy"))
-	test.AssertEq(t, "Xy__Xy", CamelString("xy__Xy"))
-	test.AssertEq(t, "Xy Xy", CamelString("xy Xy"))
-	test.AssertEq(t, "XY Xy", CamelString("x_y Xy"))
-	test.AssertEq(t, "X_Y XY", CamelString("x__y XY"))
-	test.AssertEq(t, "XY XY", CamelString("x_y xY"))
-	test.AssertEq(t, "XY XY", CamelString("x_y _x_y"))
-	test.AssertEq(t, "  XY", CamelString("  x_y"))
+	test.Eq(t, "XyXy", CamelString("xy_xy"))
+	test.Eq(t, "Xy__Xy", CamelString("xy__Xy"))
+	test.Eq(t, "Xy Xy", CamelString("xy Xy"))
+	test.Eq(t, "XY Xy", CamelString("x_y Xy"))
+	test.Eq(t, "X_Y XY", CamelString("x__y XY"))
+	test.Eq(t, "XY XY", CamelString("x_y xY"))
+	test.Eq(t, "XY XY", CamelString("x_y _x_y"))
+	test.Eq(t, "  XY", CamelString("  x_y"))
 }
 
 func TestAbridgeString(t *testing.T) {
-	tt := test.WrapTest(t)
+	tt := test.Wrap(t)
 
-	tt.AssertEq("ABC", AbridgeString("AaaBbbCcc"))
-	tt.AssertEq("ABC", AbridgeString("AaaBbbCcc"))
+	tt.Eq("ABC", AbridgeString("AaaBbbCcc"))
+	tt.Eq("ABC", AbridgeString("AaaBbbCcc"))
 }
 
 func TestTrimQuote(t *testing.T) {
-	tt := test.WrapTest(t)
+	tt := test.Wrap(t)
 	s, err := TrimQuote("\"aaa\"")
-	tt.AssertEq("aaa", s)
-	tt.AssertEq(err, nil)
+	tt.Eq("aaa", s)
+	tt.Eq(err, nil)
 }
 
 func TestStringIndexN(t *testing.T) {
-	tt := test.WrapTest(t)
-	tt.AssertEq(3, StrIndexN("123123123", "12", 2))
-	tt.AssertEq(6, StrIndexN("123123123", "12", 3))
-	tt.AssertEq(-1, StrIndexN("123123123", "12", 4))
+	tt := test.Wrap(t)
+	tt.Eq(3, StrIndexN("123123123", "12", 2))
+	tt.Eq(6, StrIndexN("123123123", "12", 3))
+	tt.Eq(-1, StrIndexN("123123123", "12", 4))
 }
 
 func TestStringLastIndexN(t *testing.T) {
-	tt := test.WrapTest(t)
-	tt.AssertEq(6, StrLastIndexN("123123123", "12", 1))
-	tt.AssertEq(3, StrLastIndexN("123123123", "12", 2))
-	tt.AssertEq(0, StrLastIndexN("123123123", "12", 3))
-	tt.AssertEq(-1, StrLastIndexN("123123123", "12", 4))
+	tt := test.Wrap(t)
+	tt.Eq(6, StrLastIndexN("123123123", "12", 1))
+	tt.Eq(3, StrLastIndexN("123123123", "12", 2))
+	tt.Eq(0, StrLastIndexN("123123123", "12", 3))
+	tt.Eq(-1, StrLastIndexN("123123123", "12", 4))
 }
 
 func TestRepeatJoin(t *testing.T) {
-	tt := test.WrapTest(t)
+	tt := test.Wrap(t)
 	tt.Log(RepeatJoin("abc", "=?", 10))
 }
 
 func TestValid(t *testing.T) {
-	tt := test.WrapTest(t)
-	tt.AssertTrue(Valid("abcdefghijklmn", ""))
-	tt.AssertTrue(Valid("abcdefghijklmn", "abc"))
-	tt.AssertFalse(Valid("abcdefghijklmn", "ao"))
+	tt := test.Wrap(t)
+	tt.True(AllCharsIn("", "abcdefghijklmn"))
+	tt.True(AllCharsIn("abc", "abcdefghijklmn"))
+	tt.False(AllCharsIn("ao", "abcdefghijklmn"))
 }

@@ -6,7 +6,7 @@ import (
 )
 
 func TestEvent(t *testing.T) {
-	// tt := test.WrapTest(t)
+	// tt := test.Wrap(t)
 	On(fmt.Println).Do(func() {
 		fmt.Println()
 	})
