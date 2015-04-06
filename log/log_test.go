@@ -7,8 +7,8 @@ import (
 )
 
 func TestConsoleLog(t *testing.T) {
-	logger := NewLogger(DEF_FLUSHINTERVAL, LEVEL_INFO)
-	logger.AddLogWriterWithConf(new(ConsoleLogWriter), "info=green")
+	logger := New(DEF_FLUSHINTERVAL, LEVEL_INFO)
+	logger.AddConfWriter(new(ConsoleLogWriter), "info=green")
 	logger.Start()
 	logger.Errorln("aaa1")
 	logger.Debugln("aaa2")
@@ -21,8 +21,8 @@ func TestConsoleLog(t *testing.T) {
 }
 
 func TestFileLog(t *testing.T) {
-	logger := NewLogger(DEF_FLUSHINTERVAL, LEVEL_INFO)
-	e.OnErrExit(logger.AddLogWriterWithConf(new(FileLogWriter), "bufsize=10240&maxsize=10240&logdir=/tmp/logs&level=info"))
+	logger := New(DEF_FLUSHINTERVAL, LEVEL_INFO)
+	e.OnErrExit(logger.AddConfWriter(new(FileLogWriter), "bufsize=10240&maxsize=10240&logdir=/tmp/logs&level=info"))
 	logger.Start()
 	logger.Warnln("DDDDDDDDDDDDDDDD")
 	logger.Warnln("DDDDDDDDDDDDDDDD")

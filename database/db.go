@@ -31,13 +31,13 @@ type (
 
 // Open create a database manager and connect to database server
 func Open(driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
-	db := NewDB()
+	db := New()
 	err := db.Connect(driver, dsn, maxIdle, maxOpen)
 	return db, err
 }
 
-// NewDB create a new db
-func NewDB() *DB {
+// New create a new db
+func New() *DB {
 	return &DB{
 		types:        make(map[string]*TypeInfo),
 		CommonCacher: NewCommonCacher(0),

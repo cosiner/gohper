@@ -59,10 +59,10 @@ type Cache interface {
 	Cap() int
 }
 
-// NewCache return a actual cache container
+// New return a actual cache container
 // for cacher with elimination:Random and LRU, maxsize is the max capcity of cache
 // for ordinary cache, no config need, no error returned
-func NewCache(typ CacherType, config string) (cache Cache, err error) {
+func New(typ CacherType, config string) (cache Cache, err error) {
 	switch typ {
 	case RANDOM:
 		cache = new(randCache)

@@ -31,14 +31,14 @@ type RedisStore struct {
 	connPool *redis.Pool // redis connection pool
 }
 
-// NewRedisStore return an new RedisStore with given conf
+// New return an new RedisStore with given conf
 // conf like maxidle=*&idletimeout=*&addr=*
-func NewRedisStore2(conf string) (*RedisStore, error) {
+func New2(conf string) (*RedisStore, error) {
 	rs := new(RedisStore)
 	return rs, rs.Init(conf)
 }
 
-func NewRedisStore(maxidle, idletimeout int, addr string) (*RedisStore, error) {
+func New(maxidle, idletimeout int, addr string) (*RedisStore, error) {
 	rs := new(RedisStore)
 	return rs, rs.init(maxidle, idletimeout, addr)
 }

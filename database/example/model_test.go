@@ -23,7 +23,7 @@ type Name struct {
 }
 
 func BenchmarkTypeInfo(b *testing.B) {
-	db := database.NewDB()
+	db := database.New()
 	u := &User{}
 	for i := 0; i < b.N; i++ {
 		_ = db.TypeInfo(u)
@@ -44,7 +44,7 @@ func BenchmarkFieldsCount(b *testing.B) {
 }
 
 func BenchmarkSQLGet(b *testing.B) {
-	db := database.NewDB()
+	db := database.New()
 	u := &User{}
 	for i := 0; i < b.N; i++ {
 		ti := db.TypeInfo(u)
@@ -53,7 +53,7 @@ func BenchmarkSQLGet(b *testing.B) {
 }
 
 func TestSQLCache(t *testing.T) {
-	db := database.NewDB()
+	db := database.New()
 	u := &User{}
 	ti := db.TypeInfo(u)
 	sql := ti.CacheGet(database.LIMIT_SELECT, USER_ID|USER_NAME, 0, ti.LimitSelectSQL)
@@ -61,7 +61,7 @@ func TestSQLCache(t *testing.T) {
 }
 
 func TestCustom(t *testing.T) {
-	db := database.NewDB()
+	db := database.New()
 	uti := db.TypeInfo(&User{})
 	nti := db.TypeInfo(&Name{})
 	t.Logf("SELECT %s,%s FROM %s,%s WHERE %s=%s\n",
