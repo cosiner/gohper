@@ -11,32 +11,35 @@ import (
 
 type (
 	Logger interface {
-		AddLogWriter(LogWriter)
-		AddLogWriterWithConf(LogWriter, string) error
+		AddWriter(Writer)
+		AddConfWriter(Writer, string) error
 		Start()
-		LogLevel() Level
+		Level() Level
 		SetLevel(Level) error
 		Flush()
 
 		Debugf(string, ...interface{})
+		PosDebugf(int, string, ...interface{})
 		Infof(string, ...interface{})
 		Warnf(string, ...interface{})
 		Errorf(string, ...interface{})
 		Fatalf(string, ...interface{})
 		Debugln(...interface{})
+		PosDebugln(int, ...interface{})
 		Infoln(...interface{})
 		Warnln(...interface{})
 		Errorln(...interface{})
 		Fatalln(...interface{})
 		Debug(...interface{})
+		PosDebug(int, ...interface{})
 		Info(...interface{})
 		Warn(...interface{})
 		Error(...interface{})
 		Fatal(...interface{})
 	}
 
-	// LogWriter is actual log writer
-	LogWriter interface {
+	// Writer is actual log writer
+	Writer interface {
 		// Config config writer
 		Config(conf string) error
 		// Writer output log
@@ -50,7 +53,7 @@ type (
 	// Logger
 	logger struct {
 		level         Level
-		writers       []LogWriter
+		writers       []Writer
 		flushInterval time.Duration
 		logs          chan *Log
 		signal        chan byte
@@ -62,7 +65,7 @@ const (
 )
 
 // NewLogger return a logger, if params is wrong, use default value
-func NewLogger(flushInterval int, level Level) Logger {
+func New(flushInterval int, level Level) Logger {
 	if level < _LEVEL_MIN || level > LEVEL_OFF {
 		level = DEF_LEVEL
 	}
@@ -77,23 +80,23 @@ func NewLogger(flushInterval int, level Level) Logger {
 	}
 }
 
-// AddLogWroter add a  log writer, nil writer will be auto-ignored
-func (logger *logger) AddLogWriter(writer LogWriter) {
+// AddWriter add a  log writer, nil writer will be auto-ignored
+func (logger *logger) AddWriter(writer Writer) {
 	if logger.level < LEVEL_OFF {
 		logger.writers = append(logger.writers, writer)
 	}
 }
 
-func (logger *logger) AddLogWriterWithConf(writer LogWriter, conf string) error {
+func (logger *logger) AddConfWriter(writer Writer, conf string) error {
 	err := writer.Config(conf)
 	if err == nil {
-		logger.AddLogWriter(writer)
+		logger.AddWriter(writer)
 	}
 	return err
 }
 
-// LogLevel return logger's level
-func (logger *logger) LogLevel() (l Level) {
+// Level return logger's level
+func (logger *logger) Level() (l Level) {
 	return logger.level
 }
 
@@ -160,9 +163,13 @@ func (logger *logger) log(level Level, v ...interface{}) *Log {
 	return nil
 }
 
+func (logger *logger) PosDebugf(skip int, format string, v ...interface{}) {
+	format = fmt.Sprintf("%s %s", runtime.CallerPosition(skip+1), format)
+	logger.logf(LEVEL_DEBUG, format, v...)
+}
+
 // Debugf log for debug message
 func (logger *logger) Debugf(format string, v ...interface{}) {
-	format = fmt.Sprintf("%s %s", runtime.CallerPosition(1), format)
 	logger.logf(LEVEL_DEBUG, format, v...)
 }
 
@@ -190,9 +197,13 @@ func (logger *logger) Fatalf(format string, v ...interface{}) {
 	}
 }
 
+func (logger *logger) PosDebugln(skip int, v ...interface{}) {
+	logger.logln(LEVEL_DEBUG, append([]interface{}{runtime.CallerPosition(skip + 1)}, v...)...)
+}
+
 // Debugln log for debug message
 func (logger *logger) Debugln(v ...interface{}) {
-	logger.logln(LEVEL_DEBUG, append([]interface{}{runtime.CallerPosition(1)}, v...)...)
+	logger.logln(LEVEL_DEBUG, v...)
 }
 
 // Infoln log for info message
@@ -221,7 +232,12 @@ func (logger *logger) Fatalln(v ...interface{}) {
 
 // Debug log for debug message
 func (logger *logger) Debug(v ...interface{}) {
-	logger.log(LEVEL_DEBUG, append([]interface{}{runtime.CallerPosition(1)}, v...)...)
+	logger.log(LEVEL_DEBUG, v...)
+}
+
+// Debug log for debug message
+func (logger *logger) PosDebug(skip int, v ...interface{}) {
+	logger.log(LEVEL_DEBUG, append([]interface{}{runtime.CallerPosition(skip + 1)}, v...)...)
 }
 
 // Info log for info message

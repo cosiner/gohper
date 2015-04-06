@@ -62,7 +62,7 @@ func (vc ValidChain) Validate(s string) error {
 	return nil
 }
 
-// Validate validate string with validators, return last error or nil
+// Validate2Last validate string with validators, return last error or nil
 func (vc ValidChain) Validate2Last(s string) error {
 	var err error
 	for _, v := range vc {
@@ -133,7 +133,7 @@ func (v Validator) ValidateV2Last(s ...string) error {
 	return err
 }
 
-// ValidateMulV validate multiple string with validators, first validator process all string,
+// ValidateV validate multiple string with validators, first validator process all string,
 // then next validator, etc.., return first error or nil
 func (vc ValidChain) ValidateV(s ...string) error {
 	for _, v := range vc {
@@ -144,7 +144,7 @@ func (vc ValidChain) ValidateV(s ...string) error {
 	return nil
 }
 
-// ValidateMulV validate multiple string with validators, first validator process all string,
+// ValidateV2Last validate multiple string with validators, first validator process all string,
 // then next validator, etc.., return last error or nil
 func (vc ValidChain) ValidateV2Last(s ...string) error {
 	var err error
@@ -156,13 +156,13 @@ func (vc ValidChain) ValidateV2Last(s ...string) error {
 	return err
 }
 
-// ValidateMulS validate multiple string with validators, all validator process first string,
+// ValidateS validate multiple string with validators, all validator process first string,
 // then next string, etc.., return first error or nil
 func (vc ValidChain) ValidateS(s ...string) error {
 	return Validator(vc.Validate).ValidateV(s...)
 }
 
-// ValidateMul2LastS validate multiple string with validators, all validator process first string,
+// ValidateS2Last validate multiple string with validators, all validator process first string,
 // then next string, etc.., return last error or nil
 func (vc ValidChain) ValidateS2Last(s ...string) error {
 	return Validator(vc.Validate2Last).ValidateV2Last(s...)
