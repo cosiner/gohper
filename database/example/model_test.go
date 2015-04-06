@@ -11,7 +11,6 @@ import (
 )
 
 //go:generate gomodel -i $GOFILE
-//go:generate gomodel -i $GOFILE -e
 type User struct {
 	Id   int
 	Name string
@@ -71,3 +70,96 @@ func TestCustom(t *testing.T) {
 		nti.Table,
 		uti.TypedCols(USER_NAME), nti.TypedCols(NAME_FIRST))
 }
+
+
+
+
+
+
+
+const (
+    NAME_FIRST  uint = 1 << iota 
+    NAME_LAST 
+    nameFieldEnd = iota
+)
+
+func (n *Name) Table() string {
+    return "name"
+}
+
+func (n *Name) FieldValues(fields,reserve uint) []interface{} {
+    vals, index := make([]interface{}, types.BitCountUint(fields) + int(reserve)), 0
+     if fields&NAME_FIRST != 0 {
+        vals[index] = n.First
+        index++
+    }
+     if fields&NAME_LAST != 0 {
+        vals[index] = n.Last
+        index++
+    }
+    return vals[:index]
+}
+
+func (n *Name) FieldPtrs(fields uint) []interface{} {
+    vals, index := make([]interface{}, types.BitCountUint(fields)), 0
+     if fields&NAME_FIRST != 0 {
+        vals[index] = &(n.First)
+        index++
+    }
+     if fields&NAME_LAST != 0 {
+        vals[index] = &(n.Last)
+        index++
+    }
+    return vals[:index]
+}
+
+func (n *Name) New() database.Model {
+    return new(Name)
+}
+
+
+
+
+
+
+
+const (
+    USER_ID  uint = 1 << iota 
+    USER_NAME 
+    userFieldEnd = iota
+)
+
+func (u *User) Table() string {
+    return "user"
+}
+
+func (u *User) FieldValues(fields,reserve uint) []interface{} {
+    vals, index := make([]interface{}, types.BitCountUint(fields) + int(reserve)), 0
+     if fields&USER_ID != 0 {
+        vals[index] = u.Id
+        index++
+    }
+     if fields&USER_NAME != 0 {
+        vals[index] = u.Name
+        index++
+    }
+    return vals[:index]
+}
+
+func (u *User) FieldPtrs(fields uint) []interface{} {
+    vals, index := make([]interface{}, types.BitCountUint(fields)), 0
+     if fields&USER_ID != 0 {
+        vals[index] = &(u.Id)
+        index++
+    }
+     if fields&USER_NAME != 0 {
+        vals[index] = &(u.Name)
+        index++
+    }
+    return vals[:index]
+}
+
+func (u *User) New() database.Model {
+    return new(User)
+}
+

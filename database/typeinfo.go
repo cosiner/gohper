@@ -1,7 +1,6 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
 	"reflect"
 	"strings"
@@ -26,11 +25,10 @@ type (
 	// TypeInfo represent information of type
 	// contains field count, table name, field names, field offsets
 	TypeInfo struct {
-		NumField    uint
-		Table       string
-		Fields      []string
-		ErrOnNoRows error
-		Cache       []SQLCache
+		NumField uint
+		Table    string
+		Fields   []string
+		Cache    []SQLCache
 	}
 	Cols interface {
 		String() string
@@ -138,16 +136,11 @@ func parseTypeInfo(v Model) *TypeInfo {
 			fields = append(fields, types.SnakeString(fieldName))
 		}
 	}
-	err := sql.ErrNoRows
-	if e := v.NotFoundErr(); e != nil {
-		err = e
-	}
 	ti := &TypeInfo{
-		NumField:    uint(fieldNum),
-		Table:       v.Table(),
-		Fields:      fields,
-		ErrOnNoRows: err,
-		Cache:       make([]SQLCache, SQLTypeEnd),
+		NumField: uint(fieldNum),
+		Table:    v.Table(),
+		Fields:   fields,
+		Cache:    make([]SQLCache, SQLTypeEnd),
 	}
 	for i := SQLType(0); i < SQLTypeEnd; i++ {
 		ti.Cache[i] = make(SQLCache)

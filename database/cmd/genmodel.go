@@ -20,12 +20,12 @@ import (
 )
 
 var (
-	infile     string
-	outfile    string
-	models     string
-	tmpl       string
-	useErrTmpl bool
-	copyTmpl   bool
+	infile  string
+	outfile string
+	models  string
+	tmpl    string
+	// useErrTmpl bool
+	copyTmpl bool
 )
 
 func cliArgs() {
@@ -33,13 +33,14 @@ func cliArgs() {
 	flag.StringVar(&outfile, "o", "", "output file")
 	flag.StringVar(&models, "m", "", "models to parse, seperate by comma")
 	flag.StringVar(&tmpl, "t", "", "template file")
-	flag.BoolVar(&useErrTmpl, "e", false, "create error functions")
+	// flag.BoolVar(&useErrTmpl, "e", false, "create error functions")
 	flag.BoolVar(&copyTmpl, "cp", false, "copy tmpl file to default path")
 	flag.Parse()
 }
 
 const TmplName = "model.tmpl"
-const ErrTmplName = "model_error.tmpl"
+
+// const ErrTmplName = "model_error.tmpl"
 
 //go:generate cp model.tmpl ~/.config/go/model.tmpl
 //go:generate cp model_error.tmpl ~/.config/go/model_error.tmpl
@@ -47,14 +48,14 @@ func main() {
 	cliArgs()
 	if copyTmpl {
 		sys.CopyFile(filepath.Join(sys.HomeDir(), ".config", "go", TmplName), TmplName)
-		sys.CopyFile(filepath.Join(sys.HomeDir(), ".config", "go", ErrTmplName), ErrTmplName)
+		// sys.CopyFile(filepath.Join(sys.HomeDir(), ".config", "go", ErrTmplName), ErrTmplName)
 		return
 	}
 
 	tmplName := TmplName
-	if useErrTmpl {
-		tmplName = ErrTmplName
-	}
+	// if useErrTmpl {
+	// 	tmplName = ErrTmplName
+	// }
 	defTmplPath := filepath.Join(sys.HomeDir(), ".config", "go", tmplName)
 
 	if infile == "" {

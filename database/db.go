@@ -2,9 +2,9 @@ package database
 
 import "database/sql"
 
-const (
-	_MYSQL_DB = "mysql"
-)
+// const (
+// 	_MYSQL_DB = "mysql"
+// )
 
 type (
 	// Model represent a database model
@@ -15,14 +15,12 @@ type (
 		// it's recommand, not force
 		FieldValues(fields uint, reserveSize uint) []interface{}
 		FieldPtrs(uint) []interface{}
-		NotFoundErr() error
-		DuplicateValueErr(key string) error
 		New() Model
 	}
 
 	// DB holds database connection, all typeinfos, and sql cache
 	DB struct {
-		driver string
+		// driver string
 		*sql.DB
 		types map[string]*TypeInfo
 		CommonCacher
@@ -50,7 +48,6 @@ func (db *DB) Connect(driver, dsn string, maxIdle, maxOpen int) error {
 	if err == nil {
 		db_.SetMaxIdleConns(maxIdle)
 		db_.SetMaxOpenConns(maxOpen)
-		db.driver = driver
 		db.DB = db_
 	}
 	return err
@@ -88,13 +85,7 @@ func (db *DB) TypeInfo(v Model) *TypeInfo {
 func (db *DB) Insert(v Model, fields uint, needId bool) (int64, error) {
 	ti := db.TypeInfo(v)
 	sql := ti.CacheGet(INSERT, fields, 0, ti.InsertSQL)
-	c, err := db.ExecUpdate(sql, v.FieldValues(fields, 0), needId)
-	if db.driver == _MYSQL_DB {
-		if e := ErrForDuplicateKey(err, v.DuplicateValueErr); e != nil {
-			err = e
-		}
-	}
-	return c, err
+	return db.ExecUpdate(sql, v.FieldValues(fields, 0), needId)
 }
 
 // Insert execure update operation for model
@@ -106,8 +97,7 @@ func (db *DB) Update(v Model, fields uint, whereFields uint) (int64, error) {
 	copy(newValues[len(values):], values2)
 	ti := db.TypeInfo(v)
 	sql := ti.CacheGet(UPDATE, fields, whereFields, ti.UpdateSQL)
-	c, e := db.ExecUpdate(sql, newValues, false)
-	return c, ErrForNoRows(e, ti.ErrOnNoRows)
+	return db.ExecUpdate(sql, newValues, false)
 }
 
 // Insert execure delete operation for model
@@ -115,26 +105,24 @@ func (db *DB) Delete(v Model, whereFields uint) (int64, error) {
 	values := v.FieldValues(whereFields, 0)
 	ti := db.TypeInfo(v)
 	sql := ti.CacheGet(DELETE, 0, whereFields, ti.DeleteSQL)
-	c, e := db.ExecUpdate(sql, values, false)
-	return c, ErrForNoRows(e, ti.ErrOnNoRows)
+	return db.ExecUpdate(sql, values, false)
 }
 
-func (db *DB) limitSelectRows(v Model, fields, whereFields uint, start, count int) (*sql.Rows, *TypeInfo, error) {
+func (db *DB) limitSelectRows(v Model, fields, whereFields uint, start, count int) (*sql.Rows, error) {
 	ti := db.TypeInfo(v)
 	sql := ti.CacheGet(LIMIT_SELECT, fields, whereFields, ti.LimitSelectSQL)
 	args := append(append(v.FieldValues(whereFields, 2), start), count)
-	rows, err := db.Query(sql, args...)
-	return rows, ti, err
+	return db.Query(sql, args...)
 }
 
 // SelectOne select one row from database
 func (db *DB) SelectOne(v Model, fields, whereFields uint) error {
-	rows, ti, err := db.limitSelectRows(v, fields, whereFields, 0, 1)
+	rows, err := db.limitSelectRows(v, fields, whereFields, 0, 1)
 	if err == nil {
 		if rows.Next() {
 			err = rows.Scan(v.FieldPtrs(fields)...)
 		} else {
-			err = ti.ErrOnNoRows
+			err = sql.ErrNoRows
 		}
 	}
 	rows.Close()
@@ -143,7 +131,7 @@ func (db *DB) SelectOne(v Model, fields, whereFields uint) error {
 
 // Select select multiple results from database
 func (db *DB) SelectLimit(v Model, fields, whereFields uint, start, count int) (models []Model, err error) {
-	rows, ti, err := db.limitSelectRows(v, fields, whereFields, start, count)
+	rows, err := db.limitSelectRows(v, fields, whereFields, start, count)
 	if err == nil {
 		has := false
 		models = make([]Model, 0, count)
@@ -158,7 +146,7 @@ func (db *DB) SelectLimit(v Model, fields, whereFields uint, start, count int) (
 			}
 		}
 		if !has {
-			err = ti.ErrOnNoRows
+			err = sql.ErrNoRows
 		}
 	}
 	rows.Close()

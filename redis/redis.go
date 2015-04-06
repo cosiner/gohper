@@ -19,6 +19,7 @@ var (
 	ToUint64  = redis.Uint64
 	ToFloat64 = redis.Float64
 	ToBool    = redis.Bool
+	ErrNil    = redis.ErrNil
 )
 
 const (
