@@ -2,10 +2,6 @@ package database
 
 import "database/sql"
 
-// const (
-// 	_MYSQL_DB = "mysql"
-// )
-
 type (
 	// Model represent a database model
 	Model interface {

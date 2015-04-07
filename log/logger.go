@@ -164,8 +164,10 @@ func (logger *logger) log(level Level, v ...interface{}) *Log {
 }
 
 func (logger *logger) PosDebugf(skip int, format string, v ...interface{}) {
-	format = fmt.Sprintf("%s %s", runtime.CallerPosition(skip+1), format)
-	logger.logf(LEVEL_DEBUG, format, v...)
+	if logger.level == LEVEL_DEBUG {
+		format = fmt.Sprintf("%s %s", runtime.CallerPosition(skip+1), format)
+		logger.logf(LEVEL_DEBUG, format, v...)
+	}
 }
 
 // Debugf log for debug message
@@ -192,13 +194,13 @@ func (logger *logger) Errorf(format string, v ...interface{}) {
 
 // Fatalf log for fatal message
 func (logger *logger) Fatalf(format string, v ...interface{}) {
-	if log := logger.logf(LEVEL_FATAL, format, v...); log != nil {
-		panic(log)
-	}
+	panic(logger.logf(LEVEL_FATAL, format, v...))
 }
 
 func (logger *logger) PosDebugln(skip int, v ...interface{}) {
-	logger.logln(LEVEL_DEBUG, append([]interface{}{runtime.CallerPosition(skip + 1)}, v...)...)
+	if logger.level == LEVEL_DEBUG {
+		logger.logln(LEVEL_DEBUG, append([]interface{}{runtime.CallerPosition(skip + 1)}, v...)...)
+	}
 }
 
 // Debugln log for debug message
@@ -237,7 +239,9 @@ func (logger *logger) Debug(v ...interface{}) {
 
 // Debug log for debug message
 func (logger *logger) PosDebug(skip int, v ...interface{}) {
-	logger.log(LEVEL_DEBUG, append([]interface{}{runtime.CallerPosition(skip + 1)}, v...)...)
+	if logger.level == LEVEL_DEBUG {
+		logger.log(LEVEL_DEBUG, append([]interface{}{runtime.CallerPosition(skip + 1)}, v...)...)
+	}
 }
 
 // Info log for info message
