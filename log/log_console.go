@@ -2,11 +2,12 @@ package log
 
 import (
 	"fmt"
-	"os"
+	"io"
 	"strings"
 
-	"github.com/cosiner/gohper/lib/termcolor"
 	"github.com/cosiner/gohper/config"
+	"github.com/cosiner/gohper/lib/termcolor"
+	"github.com/mattn/go-colorable"
 )
 
 // bgColor create color render use given background color, default highlight
@@ -26,12 +27,16 @@ var defTermColor = [5]*termcolor.TermColor{
 // ConsoleLogWriter output log to console
 type ConsoleLogWriter struct {
 	termColor [5]*termcolor.TermColor
+	out       io.Writer
+	err       io.Writer
 }
 
 // Config config console log writer
 // parameter conf can use to config color for each log level, such as
 // warn="black"&info="green"&error="red"...
 func (clw *ConsoleLogWriter) Config(conf string) error {
+	clw.out = colorable.NewColorableStdout()
+	clw.err = colorable.NewColorableStderr()
 	clw.termColor = defTermColor
 	if conf != "" {
 		c := config.NewConfig(config.LINE)
@@ -59,9 +64,9 @@ func (clw *ConsoleLogWriter) DisableColor() {
 
 // Write write
 func (clw *ConsoleLogWriter) Write(log *Log) error {
-	out := os.Stdout
+	out := clw.out
 	if log.Level >= LEVEL_ERROR {
-		out = os.Stderr
+		out = clw.err
 	}
 	_, err := fmt.Fprint(out, clw.termColor[log.Level].Render(log.String()))
 	return err
