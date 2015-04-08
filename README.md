@@ -6,10 +6,10 @@
 * Cache: lru, random-elimate
 * Config parse: ini, line(key=value&key=value)
 * Log: level, colorful console log, file log with split
-* Database: sql cache, code generation, high-performance
+* Database: code generation, bitset, sql cache, high-performance, no reflection at runtime.
 * Redis: simple wrapper of [garyburd/redigo](github.com/garyburd/redigo/redis)
 * Validate: series validators as a chain and behave like a single validator, then chain it again
-* Lib: some common utils for go, errors/test/regexp/sys/terminal color/data structures
+* Lib: some common utils for go, errors/testing/regexp/sys/terminal color/data structures
 
 ###License
 MIT.
