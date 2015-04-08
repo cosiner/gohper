@@ -1,0 +1,39 @@
+{{range $model, $fields := .}}
+{{$normalModel := $model.Name}}
+{{$lowerModel := $model.LowerName}}
+{{$upperModel := $model.UpperName}}
+{{$unexportModel := $model.UnexportedName}}
+{{$self := $model.Self}}
+{{$recv := (printf "(%s *%s)" $self $normalModel)}}
+const (
+    {{range $index, $field := $fields}}{{with $field}}{{.ConstName}}{{end}} {{if eq $index  0}} uint = 1 << iota {{end}}
+    {{end}}{{$lowerModel}}FieldEnd = iota
+)
+
+func {{$recv}} Table() string {
+    return "{{$lowerModel}}"
+}
+
+func {{$recv}} Vals(fields uint, vals []interface{}) {
+    if fields != 0 {
+        index := 0
+        {{range $fields}} if fields&{{.ConstName}} != 0 {
+            vals[index] = {{$self}}.{{.Name}}
+            index++
+        }
+    {{end}}}
+}
+
+func {{$recv}} Ptrs(fields uint, ptrs []interface{}) {
+    if fields != 0 {
+        index := 0
+        {{range $fields}} if fields&{{.ConstName}} != 0 {
+            ptrs[index] = &({{$self}}.{{.Name}})
+            index++
+        }
+    {{end}}}
+}
+
+func {{$recv}} New() database.Model {
+    return new({{$normalModel}})
+}{{end}}

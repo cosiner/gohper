@@ -20,12 +20,12 @@ import (
 )
 
 var (
-	infile  string
-	outfile string
-	models  string
-	tmpl    string
-	// useErrTmpl bool
-	copyTmpl bool
+	infile       string
+	outfile      string
+	models       string
+	tmpl         string
+	copyTmpl     bool
+	useCamelCase bool
 )
 
 func cliArgs() {
@@ -33,31 +33,24 @@ func cliArgs() {
 	flag.StringVar(&outfile, "o", "", "output file")
 	flag.StringVar(&models, "m", "", "models to parse, seperate by comma")
 	flag.StringVar(&tmpl, "t", "", "template file")
-	// flag.BoolVar(&useErrTmpl, "e", false, "create error functions")
+
+	// make it true to enable default CamelCase
+	flag.BoolVar(&useCamelCase, "cc", false, "use CamelCase of constants")
 	flag.BoolVar(&copyTmpl, "cp", false, "copy tmpl file to default path")
 	flag.Parse()
 }
 
 const TmplName = "model.tmpl"
 
-// const ErrTmplName = "model_error.tmpl"
+// change this if need
+var defTmplPath = filepath.Join(sys.HomeDir(), ".config", "go", TmplName)
 
-//go:generate cp model.tmpl ~/.config/go/model.tmpl
-//go:generate cp model_error.tmpl ~/.config/go/model_error.tmpl
 func main() {
 	cliArgs()
 	if copyTmpl {
-		sys.CopyFile(filepath.Join(sys.HomeDir(), ".config", "go", TmplName), TmplName)
-		// sys.CopyFile(filepath.Join(sys.HomeDir(), ".config", "go", ErrTmplName), ErrTmplName)
+		sys.CopyFile(defTmplPath, TmplName)
 		return
 	}
-
-	tmplName := TmplName
-	// if useErrTmpl {
-	// 	tmplName = ErrTmplName
-	// }
-	defTmplPath := filepath.Join(sys.HomeDir(), ".config", "go", tmplName)
-
 	if infile == "" {
 		ExitErrorln("No input file specified.")
 	}
@@ -101,9 +94,15 @@ type FieldName struct {
 }
 
 func NewFieldName(model *StructName, field string) *FieldName {
-	return &FieldName{Name: field,
-		ColumnName: strings.ToLower(types.SnakeString(field)),
-		ConstName:  model.UpperName + "_" + strings.ToUpper(field)}
+	f := &FieldName{
+		Name: field,
+	}
+	if useCamelCase {
+		f.ConstName = model.Name + field
+	} else {
+		f.ConstName = model.UpperName + "_" + strings.ToUpper(field)
+	}
+	return f
 }
 
 func NewStructName(name string) *StructName {
@@ -131,13 +130,6 @@ type modelVisitor struct {
 	modelsParse map[string]bool
 }
 
-// initContainer init result container
-func (mv *modelVisitor) initContainer() {
-	if mv.models == nil {
-		mv.models = make(map[string][]string, 10)
-	}
-}
-
 func (mv *modelVisitor) addModelNeedParse(models []string) {
 	mv.modelsParse = make(map[string]bool)
 	for _, m := range models {
@@ -147,22 +139,11 @@ func (mv *modelVisitor) addModelNeedParse(models []string) {
 	}
 }
 
-// addModels add models that need parse
-func (mv *modelVisitor) addModels(models []string) {
-	if len(models) == 0 {
-		return
-	}
-	mv.initContainer()
-	for _, m := range models {
-		if m != "" {
-			mv.models[m] = nil
-		}
-	}
-}
-
 // add add an model and it's field to parse result
 func (mv *modelVisitor) add(model, field string) {
-	mv.initContainer()
+	if mv.models == nil {
+		mv.models = make(map[string][]string, 10)
+	}
 	mv.models[model] = append(mv.models[model], field)
 }
 

@@ -20,7 +20,7 @@ type (
 	// SQLCache is container of cached sql
 	SQLCache map[uint]string
 
-	CommonCacher []SQLCache
+	Cacher []SQLCache
 
 	// TypeInfo represent information of type
 	// contains field count, table name, field names, field offsets
@@ -28,8 +28,9 @@ type (
 		NumField uint
 		Table    string
 		Fields   []string
-		Cache    []SQLCache
+		Cacher
 	}
+
 	Cols interface {
 		String() string
 		Paramed() string
@@ -61,8 +62,8 @@ var (
 	nilCols    Cols = make(cols, 0)
 )
 
-// EnableSQLPrint enable sql print for each operation
-func EnableSQLPrint(enable bool, formatter func(formart string, v ...interface{})) {
+// SQLPrint enable sql print for each operation
+func SQLPrint(enable bool, formatter func(formart string, v ...interface{})) {
 	if enable {
 		if formatter == nil {
 			formatter = func(format string, v ...interface{}) {
@@ -72,8 +73,6 @@ func EnableSQLPrint(enable bool, formatter func(formart string, v ...interface{}
 		printSQL = func(fromcache bool, sql string) {
 			formatter("[SQL]CachedSQL:%t, sql:%s\n", fromcache, sql)
 		}
-	} else {
-		printSQL = func(bool, string) {}
 	}
 }
 
@@ -87,28 +86,28 @@ func FieldsIdentity(numField uint, fields, whereFields uint) uint {
 	return fields<<numField | whereFields
 }
 
-// NewCommonCacher create a common sql cacher with given type end,
+// NewCacher create a common sql cacher with given type end,
 // if type end is 0, use global type end
-func NewCommonCacher(typEnd SQLType) CommonCacher {
+func NewCacher(typEnd SQLType) Cacher {
 	if typEnd == 0 {
 		typEnd = SQLTypeEnd
 	}
-	return make(CommonCacher, typEnd)
+	return make(Cacher, typEnd)
 }
 
-func (c CommonCacher) CacheGet(typ SQLType, id uint, create func() string) string {
+func (c Cacher) CacheGet(typ SQLType, id uint, create func() string) string {
 	sql, has := c[typ][id]
-	if !has {
+	if has {
+		printSQL(true, sql)
+	} else {
 		sql = create()
 		c[typ][id] = sql
 		printSQL(false, sql)
-	} else {
-		printSQL(true, sql)
 	}
 	return sql
 }
 
-func (c CommonCacher) SQLTypeEnd(typ SQLType) CommonCacher {
+func (c Cacher) SQLTypeEnd(typ SQLType) Cacher {
 	if int(typ) == len(c) {
 		return c
 	}
@@ -117,48 +116,17 @@ func (c CommonCacher) SQLTypeEnd(typ SQLType) CommonCacher {
 	return cache
 }
 
-// it will first use field tag as column name, if no tag specified,
-// use field name's camel_case
-func parseTypeInfo(v Model) *TypeInfo {
-	typ := ref.IndirectType(v)
-	fieldNum := typ.NumField()
-	fields := make([]string, 0, fieldNum)
-	for i := 0; i < fieldNum; i++ {
-		field := typ.Field(i)
-		fieldName := field.Name
-		if goutil.IsExported(fieldName) &&
-			!strings.Contains(string(field.Tag), _FIELD_NOTCOL) &&
-			!(field.Anonymous &&
-				field.Type.Kind() == reflect.Struct) {
-			if tagName := field.Tag.Get(_FIELD_TAG); tagName != "" {
-				fieldName = tagName
-			}
-			fields = append(fields, types.SnakeString(fieldName))
-		}
-	}
-	ti := &TypeInfo{
-		NumField: uint(fieldNum),
-		Table:    v.Table(),
-		Fields:   fields,
-		Cache:    make([]SQLCache, SQLTypeEnd),
-	}
-	for i := SQLType(0); i < SQLTypeEnd; i++ {
-		ti.Cache[i] = make(SQLCache)
-	}
-	return ti
-}
-
 func (ti *TypeInfo) SQLTypeEnd(typ SQLType) {
-	if int(typ) != len(ti.Cache) {
+	if int(typ) != len(ti.Cacher) {
 		cache := make([]SQLCache, typ)
-		copy(cache, ti.Cache)
-		ti.Cache = cache
+		copy(cache, ti.Cacher)
+		ti.Cacher = cache
 	}
 }
 
 // CacheGet get sql from cache container, if cache not exist, then create new
 func (ti *TypeInfo) CacheGet(typ SQLType, fields, whereFields uint, create SQLCreator) (sql string) {
-	cache := ti.Cache[typ]
+	cache := ti.Cacher[typ]
 	id := FieldsIdentity(ti.NumField, fields, whereFields)
 	if sql = cache[id]; sql == "" {
 		sql = create(fields, whereFields)
@@ -236,7 +204,7 @@ func (ti *TypeInfo) TypedCols(fields uint) Cols {
 
 func (ti *TypeInfo) colNames(fields uint, prefix string) Cols {
 	fieldNames := ti.Fields
-	if colCount := types.BitCountUint(fields); colCount > 1 {
+	if colCount := FieldCount(fields); colCount > 1 {
 		names := make([]string, colCount)
 		var index uint
 		for i, l := uint(0), uint(len(fieldNames)); i < l; i++ {
@@ -254,6 +222,37 @@ func (ti *TypeInfo) colNames(fields uint, prefix string) Cols {
 		}
 	}
 	return nilCols
+}
+
+// it will first use field tag as column name, if no tag specified,
+// use field name's camel_case
+func parseTypeInfo(v Model) *TypeInfo {
+	typ := ref.IndirectType(v)
+	fieldNum := typ.NumField()
+	fields := make([]string, 0, fieldNum)
+	for i := 0; i < fieldNum; i++ {
+		field := typ.Field(i)
+		fieldName := field.Name
+		if goutil.IsExported(fieldName) &&
+			!strings.Contains(string(field.Tag), _FIELD_NOTCOL) &&
+			!(field.Anonymous &&
+				field.Type.Kind() == reflect.Struct) {
+			if tagName := field.Tag.Get(_FIELD_TAG); tagName != "" {
+				fieldName = tagName
+			}
+			fields = append(fields, types.SnakeString(fieldName))
+		}
+	}
+	ti := &TypeInfo{
+		NumField: uint(fieldNum),
+		Table:    v.Table(),
+		Fields:   fields,
+		Cacher:   make(Cacher, SQLTypeEnd),
+	}
+	for i := SQLType(0); i < SQLTypeEnd; i++ {
+		ti.Cacher[i] = make(SQLCache)
+	}
+	return ti
 }
 
 // String return columns string join with ",",

@@ -1,16 +1,18 @@
 package database
 
-import "database/sql"
+import (
+	"github.com/cosiner/gohper/lib/types"
+
+	"database/sql"
+)
 
 type (
 	// Model represent a database model
 	Model interface {
 		Table() string
-		// FieldValues return all values of the fields
-		// and also should reserve some space to store other parameter values
-		// it's recommand, not force
-		FieldValues(fields uint, reserveSize uint) []interface{}
-		FieldPtrs(uint) []interface{}
+		// Vals store values of fields to given slice
+		Vals(fields uint, vals []interface{})
+		Ptrs(fields uint, ptrs []interface{})
 		New() Model
 	}
 
@@ -19,9 +21,11 @@ type (
 		// driver string
 		*sql.DB
 		types map[string]*TypeInfo
-		CommonCacher
+		Cacher
 	}
 )
+
+var FieldCount = types.BitCountUint
 
 // Open create a database manager and connect to database server
 func Open(driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
@@ -33,8 +37,8 @@ func Open(driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
 // New create a new db
 func New() *DB {
 	return &DB{
-		types:        make(map[string]*TypeInfo),
-		CommonCacher: NewCommonCacher(0),
+		types:  make(map[string]*TypeInfo),
+		Cacher: NewCacher(0),
 	}
 }
 
@@ -63,7 +67,7 @@ func (db *DB) registerType(v Model, table string) *TypeInfo {
 }
 
 func (db *DB) SQLTypeEnd(typ SQLType) {
-	db.CommonCacher = db.CommonCacher.SQLTypeEnd(typ)
+	db.Cacher = db.Cacher.SQLTypeEnd(typ)
 }
 
 // TypeInfo return type information of given model
@@ -77,37 +81,47 @@ func (db *DB) TypeInfo(v Model) *TypeInfo {
 	return ti
 }
 
-// Insert execure insert operation for model
+func FieldVals(fields uint, v Model) []interface{} {
+	args := make([]interface{}, FieldCount(fields))
+	v.Vals(fields, args)
+	return args
+}
+
+func FieldPtrs(fields uint, v Model) []interface{} {
+	ptrs := make([]interface{}, FieldCount(fields))
+	v.Ptrs(fields, ptrs)
+	return ptrs
+}
+
 func (db *DB) Insert(v Model, fields uint, needId bool) (int64, error) {
 	ti := db.TypeInfo(v)
 	sql := ti.CacheGet(INSERT, fields, 0, ti.InsertSQL)
-	return db.ExecUpdate(sql, v.FieldValues(fields, 0), needId)
+	return db.ExecUpdate(sql, FieldVals(fields, v), needId)
 }
 
-// Insert execure update operation for model
 func (db *DB) Update(v Model, fields uint, whereFields uint) (int64, error) {
-	values := v.FieldValues(fields, 0)
-	values2 := v.FieldValues(whereFields, 0)
-	newValues := make([]interface{}, len(values)+len(values2))
-	copy(newValues, values)
-	copy(newValues[len(values):], values2)
+	c1, c2 := FieldCount(fields), FieldCount(whereFields)
+	args := make([]interface{}, c1+c2)
+	v.Vals(fields, args)
+	v.Vals(whereFields, args[c1:])
 	ti := db.TypeInfo(v)
 	sql := ti.CacheGet(UPDATE, fields, whereFields, ti.UpdateSQL)
-	return db.ExecUpdate(sql, newValues, false)
+	return db.ExecUpdate(sql, args, false)
 }
 
-// Insert execure delete operation for model
 func (db *DB) Delete(v Model, whereFields uint) (int64, error) {
-	values := v.FieldValues(whereFields, 0)
 	ti := db.TypeInfo(v)
 	sql := ti.CacheGet(DELETE, 0, whereFields, ti.DeleteSQL)
-	return db.ExecUpdate(sql, values, false)
+	return db.ExecUpdate(sql, FieldVals(whereFields, v), false)
 }
 
 func (db *DB) limitSelectRows(v Model, fields, whereFields uint, start, count int) (*sql.Rows, error) {
 	ti := db.TypeInfo(v)
 	sql := ti.CacheGet(LIMIT_SELECT, fields, whereFields, ti.LimitSelectSQL)
-	args := append(append(v.FieldValues(whereFields, 2), start), count)
+	c := FieldCount(whereFields)
+	args := make([]interface{}, c+1)
+	v.Vals(whereFields, args)
+	args[c], args[c+1] = start, count
 	return db.Query(sql, args...)
 }
 
@@ -116,7 +130,7 @@ func (db *DB) SelectOne(v Model, fields, whereFields uint) error {
 	rows, err := db.limitSelectRows(v, fields, whereFields, 0, 1)
 	if err == nil {
 		if rows.Next() {
-			err = rows.Scan(v.FieldPtrs(fields)...)
+			err = rows.Scan(FieldPtrs(fields, v)...)
 		} else {
 			err = sql.ErrNoRows
 		}
@@ -125,8 +139,9 @@ func (db *DB) SelectOne(v Model, fields, whereFields uint) error {
 	return err
 }
 
-// Select select multiple results from database
-func (db *DB) SelectLimit(v Model, fields, whereFields uint, start, count int) (models []Model, err error) {
+func (db *DB) SelectLimit(v Model, fields, whereFields uint, start, count int) (
+	models []Model, err error) {
+
 	rows, err := db.limitSelectRows(v, fields, whereFields, start, count)
 	if err == nil {
 		has := false
@@ -134,7 +149,7 @@ func (db *DB) SelectLimit(v Model, fields, whereFields uint, start, count int) (
 		for rows.Next() {
 			has = true
 			model := v.New()
-			if err = rows.Scan(model.FieldPtrs(fields)...); err != nil {
+			if err = rows.Scan(FieldPtrs(fields, model)...); err != nil {
 				models = nil
 				break
 			} else {
@@ -151,7 +166,7 @@ func (db *DB) SelectLimit(v Model, fields, whereFields uint, start, count int) (
 
 // Count return count of rows for model
 func (db *DB) Count(v Model, whereFields uint) (count uint, err error) {
-	return db.CountWithArgs(v, whereFields, v.FieldValues(whereFields, 0))
+	return db.CountWithArgs(v, whereFields, FieldVals(whereFields, v))
 }
 
 // CountWithArgs return count of rows for model use given arguments
@@ -167,34 +182,11 @@ func (db *DB) CountWithArgs(v Model, whereFields uint,
 	return
 }
 
-// Exec execute a update operation
+// ExecUpdate execute a update operation
 func (db *DB) ExecUpdate(s string, args []interface{}, needId bool) (ret int64, err error) {
 	res, err := db.Exec(s, args...)
 	if err == nil {
 		ret, err = ResolveResult(res, needId)
-	}
-	return
-}
-
-// TxOrNot return an statement, if need transaction, the deferFn will commit or
-// rollback transaction, caller should defer or call at last in function
-// else only return a normal statement
-func TxOrNot(db *sql.DB, needTx bool, s string) (stmt *sql.Stmt, err error, deferFn func()) {
-	if needTx {
-		var tx *sql.Tx
-		tx, err = db.Begin()
-		if err == nil {
-			stmt, err = tx.Prepare(s)
-			deferFn = func() {
-				if err == nil {
-					tx.Commit()
-				} else {
-					tx.Rollback()
-				}
-			}
-		}
-	} else {
-		stmt, err = db.Prepare(s)
 	}
 	return
 }
