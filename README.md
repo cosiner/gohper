@@ -13,7 +13,7 @@
 
 **others**
 * Zerver: a pure restful api framework with many wonderful features, it has been seperated to [cosiner/zerver](https://github.com/cosiner/zerver).
-* apidoc: a simple tool generate rest api documant from source code using http format, output as markdown.[cosiner/apidoc](http://github.com/cosiner/apidoc)
+* apidoc: a simple tool generate rest api document from source code using http format, output as markdown.[cosiner/apidoc](http://github.com/cosiner/apidoc)
 
 ###License
 MIT.
