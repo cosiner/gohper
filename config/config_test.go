@@ -140,7 +140,7 @@ func TestUnmarshakLine(t *testing.T) {
 		MaxOpen int
 	}{}
 	c := NewConfig(LINE)
-	tt.Nil(c.ParseString("driver=mysql&host=localhost&port=3306&maxOpen=10"))
+	tt.True(c.ParseString("driver=mysql&host=localhost&port=3306&maxOpen=10") == nil)
 	tt.Log(c.UnmarshalCurrSec(&v))
 	tt.Log(v)
 }

@@ -13,7 +13,7 @@ func TestTrieTree(t *testing.T) {
 	tree.AddPath("bcdef", 234)
 	tree.AddPath("efghi", 456)
 	tree.AddPath("fghij", 789)
-	tt.NNil(tree.Match("efghi"))
+	tt.True(tree.Match("efghi") != nil)
 	tt.Eq(tree.Match("abcde").(int), 123)
 	tt.Eq(tree.Match("bcdef").(int), 234)
 	tt.Eq(tree.Match("efghi").(int), 456)

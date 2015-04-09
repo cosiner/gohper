@@ -38,15 +38,15 @@ func (t Test) False(val bool) {
 	eq(t.TB, 1, false, val)
 }
 
-// Nil assert value is nil
-func (t Test) Nil(value interface{}) {
-	nil_(t, 1, value)
-}
+// // Nil assert value is nil
+// func (t Test) Nil(value interface{}) {
+// 	nil_(t, 1, value)
+// }
 
-// NNil assert value is nil
-func (t Test) NNil(value interface{}) {
-	nnil(t, 1, value)
-}
+// // NNil assert value is nil
+// func (t Test) NNil(value interface{}) {
+// 	nnil(t, 1, value)
+// }
 
 // Eq assert expect and got is equal, else print error message
 func Eq(t testing.TB, expect interface{}, got interface{}) {
@@ -58,14 +58,14 @@ func NE(t testing.TB, expect interface{}, got interface{}) {
 	ne(t, 1, expect, got)
 }
 
-// Nil assert value is nil
-func Nil(t testing.TB, value interface{}) {
-	nil_(t, 1, value)
-}
+// // Nil assert value is nil
+// func Nil(t testing.TB, value interface{}) {
+// 	nil_(t, 1, value)
+// }
 
-func NNil(t testing.TB, value interface{}) {
-	nnil(t, 1, value)
-}
+// func NNil(t testing.TB, value interface{}) {
+// 	nnil(t, 1, value)
+// }
 
 // True assert value is true
 func True(t testing.TB, val bool) {
@@ -93,16 +93,16 @@ func ne(t testing.TB, skip int, expect interface{}, got interface{}) {
 	}
 }
 
-// nil_ assert value is nil
-func nil_(t testing.TB, skip int, value interface{}) {
-	if value != nil {
-		t.Errorf("Error in %s: expect nil value, but got %s", runtime.CallerPosition(skip+1), fmt.Sprint(value))
-	}
-}
+// // nil_ assert value is nil
+// func nil_(t testing.TB, skip int, value interface{}) {
+// 	if s := fmt.Sprint(value); s != "<nil>" {
+// 		t.Errorf("Error in %s: expect nil value, but got %s", runtime.CallerPosition(skip+1), s)
+// 	}
+// }
 
-// nnil assert value is not nil
-func nnil(t testing.TB, skip int, value interface{}) {
-	if value == nil {
-		t.Errorf("Error in %s: expect non-nil value, but got nil", runtime.CallerPosition(skip+1))
-	}
-}
+// // nnil assert value is not nil
+// func nnil(t testing.TB, skip int, value interface{}) {
+// 	if s := fmt.Sprint(value); s == "<nil>" {
+// 		t.Errorf("Error in %s: expect non-nil value, but got nil", runtime.CallerPosition(skip+1))
+// 	}
+// }
