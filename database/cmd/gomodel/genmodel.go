@@ -48,7 +48,7 @@ var defTmplPath = filepath.Join(sys.HomeDir(), ".config", "go", TmplName)
 func main() {
 	cliArgs()
 	if copyTmpl {
-		sys.CopyFile(defTmplPath, TmplName)
+		OnErrExit(sys.CopyFile(defTmplPath, TmplName))
 		return
 	}
 	if infile == "" {
@@ -75,7 +75,7 @@ func main() {
 		if t, err = template.ParseFiles(tmpl); err == nil {
 			err = t.Execute(outfd, modelFields)
 		}
-		return nil
+		return err
 	}))
 }
 

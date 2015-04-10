@@ -8,6 +8,9 @@
 const (
     {{range $index, $field := $fields}}{{with $field}}{{.ConstName}}{{end}} {{if eq $index  0}} uint = 1 << iota {{end}}
     {{end}}{{$lowerModel}}FieldEnd = iota
+    {{$lowerModel}}FieldsAll = 1 << {{$lowerModel}}FieldEnd-1
+    {{range $index, $field := $fields}}{{with $field}}{{$lowerModel}}FieldsExcp{{.Name}} = {{$lowerModel}}FieldsAll &(^{{.ConstName}}){{end}}
+    {{end}}
 )
 
 func {{$recv}} Table() string {
@@ -16,22 +19,32 @@ func {{$recv}} Table() string {
 
 func {{$recv}} Vals(fields uint, vals []interface{}) {
     if fields != 0 {
-        index := 0
-        {{range $fields}} if fields&{{.ConstName}} != 0 {
-            vals[index] = {{$self}}.{{.Name}}
-            index++
+    if fields == {{$lowerModel}}FieldsAll {
+        {{range $index, $field:=$fields}}vals[{{$index}}]={{$self}}.{{$field.Name}}
+        {{end}}
+    } else {
+       index := 0
+    {{range $fields}} if fields&{{.ConstName}} != 0 {
+        vals[index] = {{$self}}.{{.Name}}
+        index++
         }
-    {{end}}}
+    {{end}}  }
+    }
 }
 
 func {{$recv}} Ptrs(fields uint, ptrs []interface{}) {
     if fields != 0 {
+        if fields == {{$lowerModel}}FieldsAll {
+        {{range $index, $field:=$fields}}ptrs[{{$index}}]=&({{$self}}.{{$field.Name}})
+        {{end}}
+         } else {
         index := 0
         {{range $fields}} if fields&{{.ConstName}} != 0 {
             ptrs[index] = &({{$self}}.{{.Name}})
             index++
         }
     {{end}}}
+    }
 }
 
 func {{$recv}} New() database.Model {
