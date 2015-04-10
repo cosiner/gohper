@@ -24,8 +24,8 @@ var defTermColor = [5]*termcolor.TermColor{
 	bgColor(termcolor.RED),    //fatal
 }
 
-// ConsoleLogWriter output log to console
-type ConsoleLogWriter struct {
+// ConsoleWriter output log to console
+type ConsoleWriter struct {
 	termColor [5]*termcolor.TermColor
 	out       io.Writer
 	err       io.Writer
@@ -34,7 +34,7 @@ type ConsoleLogWriter struct {
 // Config config console log writer
 // parameter conf can use to config color for each log level, such as
 // warn="black"&info="green"&error="red"...
-func (clw *ConsoleLogWriter) Config(conf string) error {
+func (clw *ConsoleWriter) Config(conf string) error {
 	clw.out = colorable.NewColorableStdout()
 	clw.err = colorable.NewColorableStderr()
 	clw.termColor = defTermColor
@@ -56,14 +56,14 @@ func (clw *ConsoleLogWriter) Config(conf string) error {
 }
 
 // DisableColor disable color output
-func (clw *ConsoleLogWriter) DisableColor() {
+func (clw *ConsoleWriter) DisableColor() {
 	for _, tc := range clw.termColor {
 		tc.Disable()
 	}
 }
 
 // Write write
-func (clw *ConsoleLogWriter) Write(log *Log) error {
+func (clw *ConsoleWriter) Write(log *Log) error {
 	out := clw.out
 	if log.Level >= LEVEL_ERROR {
 		out = clw.err
@@ -72,5 +72,5 @@ func (clw *ConsoleLogWriter) Write(log *Log) error {
 	return err
 }
 
-func (clw *ConsoleLogWriter) Flush() {}
-func (clw *ConsoleLogWriter) Close() {}
+func (clw *ConsoleWriter) Flush() {}
+func (clw *ConsoleWriter) Close() {}

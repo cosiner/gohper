@@ -33,7 +33,7 @@ const (
 	LEVEL_ERROR
 	LEVEL_FATAL
 	LEVEL_OFF
-	unknownLevel
+
 	LEVEL_ALL  = LEVEL_DEBUG
 	_LEVEL_MIN = LEVEL_DEBUG
 	_LEVEL_MAX = LEVEL_FATAL
@@ -43,11 +43,9 @@ const (
 	DEF_BACKLOG       = 100              // channel's back log count
 	DEF_FILESIZE      = 1024 * 1024 * 10 // max log file size
 	DEF_LEVEL         = LEVEL_INFO       // default log level
-)
 
-func UnknownLevelErr(str string) error {
-	return errors.Errorf("Unknown level:%s", str)
-}
+	ErrUnknownLevel = errors.Err("Unknown log level")
+)
 
 // String return level name, if level is no more than level_off, return actual name
 // else return UNKNOWN
@@ -55,23 +53,18 @@ func (l Level) String() string {
 	if l <= _LEVEL_MAX {
 		return levelName[l]
 	}
-	return "UNKNOWN"
+	panic(ErrUnknownLevel)
 }
 
 // ParseLevel parse level from string regardless of string case
-func ParseLevel(str string) (level Level, err error) {
+func ParseLevel(str string) Level {
 	levelStr := types.TrimUpper(str)
-	level = unknownLevel
-	for l := _LEVEL_MIN; l <= _LEVEL_MAX; l++ {
+	for l := _LEVEL_MIN; l <= LEVEL_OFF; l++ {
 		if levelStr == levelName[l] {
-			level = l
-			break
+			return l
 		}
 	}
-	if level == unknownLevel {
-		err = UnknownLevelErr(str)
-	}
-	return
+	panic(ErrUnknownLevel)
 }
 
 // String return a log as string with format "[level] time message"

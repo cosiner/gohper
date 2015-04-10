@@ -5,17 +5,13 @@ import (
 	"time"
 
 	"github.com/cosiner/gohper/lib/runtime"
-
-	"github.com/cosiner/gohper/lib/errors"
 )
 
 type (
 	Logger interface {
 		AddWriter(Writer)
 		AddConfWriter(Writer, string) error
-		Start()
 		Level() Level
-		SetLevel(Level) error
 		Flush()
 
 		Debugf(string, ...interface{})
@@ -67,17 +63,22 @@ const (
 // NewLogger return a logger, if params is wrong, use default value
 func New(flushInterval int, level Level) Logger {
 	if level < _LEVEL_MIN || level > LEVEL_OFF {
-		level = DEF_LEVEL
+		panic(ErrUnknownLevel)
 	}
 	if flushInterval <= 0 {
-		flushInterval = DEF_FLUSHINTERVAL
+		panic("Flush interval should not be negative or zero")
 	}
-	return &logger{
+	if level == LEVEL_OFF {
+		return &logger{}
+	}
+	l := &logger{
 		level:         level,
 		logs:          make(chan *Log, DEF_BACKLOG),
 		signal:        make(chan byte, 1),
 		flushInterval: time.Duration(flushInterval) * time.Second,
 	}
+	l.start()
+	return l
 }
 
 // AddWriter add a  log writer, nil writer will be auto-ignored
@@ -100,16 +101,8 @@ func (logger *logger) Level() (l Level) {
 	return logger.level
 }
 
-// SetLevel change logger's level, it will apply to all log writers
-func (logger *logger) SetLevel(level Level) (err error) {
-	errors.Assert(level >= _LEVEL_MIN && level <= _LEVEL_MAX,
-		UnknownLevelErr(level.String()).Error())
-	logger.level = level
-	return
-}
-
-// Start start logger
-func (logger *logger) Start() {
+// start start logger
+func (logger *logger) start() {
 	go func() {
 		ticker := time.Tick(logger.flushInterval)
 		for {

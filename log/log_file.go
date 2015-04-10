@@ -92,21 +92,25 @@ func (buf *logBuffer) write(msg string) (err error) {
 //                          File Log Writer
 //==============================================================================
 // logWrite is actuall log writer, output is local file
-type FileLogWriter struct {
+type FileWriter struct {
 	level Level
 	files []*logBuffer
 }
 
 // Config resolv config, format like bufsize=xxx&maxsize=xxx&logdir=xxx&level=info
-func (writer *FileLogWriter) Config(conf string) (err error) {
+func (writer *FileWriter) Config(conf string) (err error) {
 	c := config.NewConfig(config.LINE)
 	if err = c.ParseString(conf); err != nil {
 		return
 	}
+	writer.level = ParseLevel(c.ValDef("level", "info"))
+	if writer.level == LEVEL_OFF {
+		return
+	}
+
 	logdir := c.ValDef("logdir", filepath.Join(os.TempDir(), "gologs"))
-	bufsize, err := types.Str2Bytes(c.ValDef("bufsize", "10K"))
-	maxsize, err := types.Str2Bytes(c.ValDef("maxsize", "10M"))
-	writer.level, err = ParseLevel(c.ValDef("level", "info"))
+	bufsize, err := types.BytesCount(c.ValDef("bufsize", "10K"))
+	maxsize, err := types.BytesCount(c.ValDef("maxsize", "10M"))
 	err = os.MkdirAll(logdir, _LOGDIR_PERM)
 
 	writer.files = make([]*logBuffer, _LEVEL_MAX+1)
@@ -118,7 +122,7 @@ func (writer *FileLogWriter) Config(conf string) (err error) {
 
 // Write write log to log file, higher level log will simultaneously
 // output to all lower level log file
-func (writer *FileLogWriter) Write(log *Log) (err error) {
+func (writer *FileWriter) Write(log *Log) (err error) {
 	for l := writer.level; l <= log.Level; l++ {
 		if writer.files[l].write(log.String()) != nil {
 			return
@@ -128,14 +132,14 @@ func (writer *FileLogWriter) Write(log *Log) (err error) {
 }
 
 // Flush flush log writer
-func (writer *FileLogWriter) Flush() {
+func (writer *FileWriter) Flush() {
 	for l := writer.level; l <= _LEVEL_MAX; l++ {
 		writer.files[l].flush()
 	}
 }
 
 // Close close log writer
-func (writer *FileLogWriter) Close() {
+func (writer *FileWriter) Close() {
 	for l := writer.level; l <= _LEVEL_MAX; l++ {
 		writer.files[l].close()
 		writer.files[l] = nil

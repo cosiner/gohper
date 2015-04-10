@@ -17,9 +17,9 @@ const (
 	PBYTE_BASE = BYTE_BASE * TBYTE_BASE
 )
 
-// Str2Bytes convert byte count string to integer
+// BytesCount convert byte count string to integer
 // such as: 1K/k -> 1024, 1M/m -> 1024*1024
-func Str2Bytes(size string) (uint64, error) {
+func BytesCount(size string) (uint64, error) {
 	var base uint64 = 1
 	s := bytes.TrimSpace([]byte(size))
 	switch s[len(s)-1] {
@@ -44,18 +44,18 @@ func Str2Bytes(size string) (uint64, error) {
 	return uint64(bs) * base, nil
 }
 
-// Str2BytesDef is same as Str2Bytes, on error return default size
-func Str2BytesDef(size string, defSize uint64) (s uint64) {
+// BytesCountDef is same as BytesCount, on error return default size
+func BytesCountDef(size string, defSize uint64) (s uint64) {
 	var err error
-	if s, err = Str2Bytes(size); err != nil {
+	if s, err = BytesCount(size); err != nil {
 		return defSize
 	}
 	return s
 }
 
-// MustStr2Bytes is same as Str2Bytes, on error panic
-func MustStr2Bytes(size string) (s uint64) {
-	s, err := Str2Bytes(size)
+// MustBytesCount is same as BytesCount, on error panic
+func MustBytesCount(size string) (s uint64) {
+	s, err := BytesCount(size)
 	OnErrPanic(err)
 	return s
 }
