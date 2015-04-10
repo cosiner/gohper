@@ -29,16 +29,10 @@ type (
 		Table    string
 		Fields   []string
 		Cacher
+		prefix         string
+		colsCache      map[uint]Cols
+		typedColsCache map[uint]Cols
 	}
-
-	Cols interface {
-		String() string
-		Paramed() string
-		OnlyParam() string
-		Length() int
-	}
-	cols      []string
-	singleCol string
 )
 
 const (
@@ -59,7 +53,7 @@ var (
 	printSQL = func(_ bool, _ string) {}
 	// SQLTypeEnd used as all model's sql statement type count
 	SQLTypeEnd      = defaultTypeEnd
-	nilCols    Cols = make(cols, 0)
+	zeroColss  Cols = nilCols("")
 )
 
 // SQLPrint enable sql print for each operation
@@ -193,13 +187,23 @@ func (ti *TypeInfo) TypedWhere(fields uint) string {
 // if fields is only one, return single column
 // else return column slice
 func (ti *TypeInfo) Cols(fields uint) Cols {
-	return ti.colNames(fields, "")
+	cols := ti.colsCache[fields]
+	if cols == nil {
+		cols = ti.colNames(fields, "")
+		ti.colsCache[fields] = cols
+	}
+	return cols
 }
 
 // TypedCols return column names for given fields with type's table name as prefix
 // like table.column
 func (ti *TypeInfo) TypedCols(fields uint) Cols {
-	return ti.colNames(fields, ti.Table+".")
+	cols := ti.typedColsCache[fields]
+	if cols == nil {
+		cols = ti.colNames(fields, ti.prefix)
+		ti.typedColsCache[fields] = cols
+	}
+	return cols
 }
 
 func (ti *TypeInfo) colNames(fields uint, prefix string) Cols {
@@ -209,11 +213,11 @@ func (ti *TypeInfo) colNames(fields uint, prefix string) Cols {
 		var index uint
 		for i, l := uint(0), uint(len(fieldNames)); i < l; i++ {
 			if (1<<i)&fields != 0 {
-				names[index] = prefix + fieldNames[i]
+				names[index] = ti.Table + "." + fieldNames[i]
 				index++
 			}
 		}
-		return cols(names[:index])
+		return cols{cols: names[:index]}
 	} else if colCount == 1 {
 		for i, l := uint(0), uint(len(fieldNames)); i < l; i++ {
 			if (1<<i)&fields != 0 {
@@ -221,7 +225,7 @@ func (ti *TypeInfo) colNames(fields uint, prefix string) Cols {
 			}
 		}
 	}
-	return nilCols
+	return zeroColss
 }
 
 // it will first use field tag as column name, if no tag specified,
@@ -244,57 +248,16 @@ func parseTypeInfo(v Model) *TypeInfo {
 		}
 	}
 	ti := &TypeInfo{
-		NumField: uint(fieldNum),
-		Table:    v.Table(),
-		Fields:   fields,
-		Cacher:   make(Cacher, SQLTypeEnd),
+		NumField:       uint(fieldNum),
+		Table:          v.Table(),
+		Fields:         fields,
+		Cacher:         make(Cacher, SQLTypeEnd),
+		prefix:         v.Table() + ".",
+		colsCache:      make(map[uint]Cols),
+		typedColsCache: make(map[uint]Cols),
 	}
 	for i := SQLType(0); i < SQLTypeEnd; i++ {
 		ti.Cacher[i] = make(SQLCache)
 	}
 	return ti
-}
-
-// String return columns string join with ",",
-// result like "foo, bar"
-func (c cols) String() string {
-	return types.SuffixJoin(c, "", _FIELD_SEP)
-}
-
-// Paramed return columns string joind with "=?,", last "," was trimed,
-// result like "foo=?, bar=?"
-func (c cols) Paramed() string {
-	return types.SuffixJoin(c, "=?", _FIELD_SEP)
-}
-
-// OnlyParam return columns placeholdered string, each column was replaced with "?"
-// result like "?, ?, ?, ?", count of "?" is colums length
-func (c cols) OnlyParam() string {
-	return types.RepeatJoin("?", ",", len(c))
-}
-
-func (c cols) Length() int {
-	return len(c)
-}
-
-// String return columns string join with ",",
-// result like "foo, bar"
-func (c singleCol) String() string {
-	return string(c)
-}
-
-// Paramed return columns string joind with "=?,", last "," was trimed,
-// result like "foo=?, bar=?"
-func (c singleCol) Paramed() string {
-	return string(c) + "=?"
-}
-
-// OnlyParam return columns placeholdered string, each column was replaced with "?"
-// result like "?, ?, ?, ?", count of "?" is colums length
-func (c singleCol) OnlyParam() string {
-	return "?"
-}
-
-func (c singleCol) Length() int {
-	return 1
 }
