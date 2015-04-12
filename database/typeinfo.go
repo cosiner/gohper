@@ -13,13 +13,15 @@ import (
 )
 
 type (
-	// SQLCreator is type of sql creator
+	// SQLCreator create sql for model using fields and where fields
 	SQLCreator func(fields, whereFields uint) string
-
-	SQLType int
 
 	// TypeInfo represent information of type
 	// contains field count, table name, field names, field offsets
+	//
+	// because count sql and limit select sql is both stored in the same cache,
+	// you should not use a empty fields for limit select, that will conflict with
+	// count sql and get the wrong sql statement.
 	TypeInfo struct {
 		NumField uint
 		Table    string
@@ -32,21 +34,10 @@ type (
 )
 
 const (
-	INSERT SQLType = iota
-	DELETE
-	UPDATE
-	LIMIT_SELECT
-	defaultTypeEnd
-
-	// _FIELD_SEP is seperator of columns
-	_FIELD_SEP = ","
 	// _FIELD_TAG is tag name of database column
 	_FIELD_TAG    = "column"
 	_FIELD_NOTCOL = "notcol"
 )
-
-// SQLTypeEnd used as all model's sql statement type count
-var SQLTypeEnd = defaultTypeEnd
 
 // FieldsExcp create fieldset except given fields
 func FieldsExcp(numField uint, fields uint) uint {
@@ -58,18 +49,44 @@ func FieldsIdentity(numField uint, fields, whereFields uint) uint {
 	return fields<<numField | whereFields
 }
 
-// CacheGet get sql from cache container, if cache not exist, then create new
-func (ti *TypeInfo) CacheGet(typ SQLType, fields, whereFields uint, create SQLCreator) *sql.Stmt {
+// Stmt get sql from cache container, if cache not exist, then create new
+func (ti *TypeInfo) Stmt(typ, fields, whereFields uint, create SQLCreator) (*sql.Stmt, error) {
 	id := FieldsIdentity(ti.NumField, fields, whereFields)
-	sql_, stmt := ti.Cacher.CacheGet(typ, id)
+	sql_, stmt := ti.Cacher.GetStmt(typ, id)
 	if stmt == nil {
 		sql_ = create(fields, whereFields)
-		stmt = ti.Cacher.CacheSet(typ, id, sql_)
-		printSQL(false, sql_)
-	} else {
-		printSQL(true, sql_)
+		stmt, err := ti.Cacher.SetStmt(typ, id, sql_)
+		if err == nil {
+			printSQL(false, sql_)
+		}
+		return stmt, err
 	}
-	return stmt
+	printSQL(true, sql_)
+	return stmt, nil
+}
+
+func (ti *TypeInfo) InsertStmt(fields uint) (*sql.Stmt, error) {
+	return ti.Stmt(LIMIT_SELECT, fields, 0, ti.InsertSQL)
+}
+
+func (ti *TypeInfo) UpdateStmt(fields, whereFields uint) (*sql.Stmt, error) {
+	return ti.Stmt(UPDATE, fields, whereFields, ti.UpdateSQL)
+}
+
+func (ti *TypeInfo) DeleteStmt(whereFields uint) (*sql.Stmt, error) {
+	return ti.Stmt(DELETE, 0, whereFields, ti.DeleteSQL)
+}
+
+func (ti *TypeInfo) LimitSelectStmt(fields, whereFields uint) (*sql.Stmt, error) {
+	return ti.Stmt(LIMIT_SELECT, fields, whereFields, ti.LimitSelectSQL)
+}
+
+func (ti *TypeInfo) SelectOneStmt(fields, whereFields uint) (*sql.Stmt, error) {
+	return ti.Stmt(SELECT_ONE, fields, whereFields, ti.SelectOneSQL)
+}
+
+func (ti *TypeInfo) CountStmt(whereFields uint) (*sql.Stmt, error) {
+	return ti.Stmt(LIMIT_SELECT, 0, whereFields, ti.CountSQL)
 }
 
 // InsertSQL create insert sql for given fields
@@ -97,6 +114,14 @@ func (ti *TypeInfo) DeleteSQL(_, whereFields uint) string {
 // LimitSelectSQL create select sql for given fields
 func (ti *TypeInfo) LimitSelectSQL(fields, whereFields uint) string {
 	return fmt.Sprintf("SELECT %s FROM %s %s LIMIT ?, ?",
+		ti.Cols(fields),
+		ti.Table,
+		ti.Where(whereFields))
+}
+
+// LimitSelectSQL create select sql for given fields
+func (ti *TypeInfo) SelectOneSQL(fields, whereFields uint) string {
+	return fmt.Sprintf("SELECT %s FROM %s %s LIMIT 1",
 		ti.Cols(fields),
 		ti.Table,
 		ti.Where(whereFields))
@@ -165,11 +190,12 @@ func (ti *TypeInfo) colNames(fields uint, prefix string) Cols {
 			}
 		}
 	}
-	return zeroColss
+	return zeroCols
 }
 
-// it will first use field tag as column name, if no tag specified,
-// use field name's camel_case
+// parseTypeInfo will first use field tag as column name, the tag key is 'column',
+// if no tag specified, use field name's camel_case, disable a field by put 'notcol'
+// in field tag
 func parseTypeInfo(v Model, db *DB) *TypeInfo {
 	typ := ref.IndirectType(v)
 	fieldNum := typ.NumField()
@@ -191,7 +217,7 @@ func parseTypeInfo(v Model, db *DB) *TypeInfo {
 		NumField:       uint(fieldNum),
 		Table:          v.Table(),
 		Fields:         fields,
-		Cacher:         NewCacher(SQLTypeEnd, db),
+		Cacher:         NewCacher(SQLTypes, db),
 		prefix:         v.Table() + ".",
 		colsCache:      make(map[uint]Cols),
 		typedColsCache: make(map[uint]Cols),

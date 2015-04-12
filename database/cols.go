@@ -19,13 +19,13 @@ type (
 	nilCols   string
 )
 
-var zeroColss Cols = nilCols("")
+var zeroCols Cols = nilCols("")
 
 // String return columns string join with ",",
 // result like "foo, bar"
 func (c *cols) String() string {
 	if c.str == "" {
-		c.str = types.SuffixJoin(c.cols, "", _FIELD_SEP)
+		c.str = types.SuffixJoin(c.cols, "", ",")
 	}
 	return c.str
 }
@@ -34,7 +34,7 @@ func (c *cols) String() string {
 // result like "foo=?, bar=?"
 func (c *cols) Paramed() string {
 	if c.paramed == "" {
-		c.paramed = types.SuffixJoin(c.cols, "=?", _FIELD_SEP)
+		c.paramed = types.SuffixJoin(c.cols, "=?", ",")
 	}
 	return c.paramed
 }

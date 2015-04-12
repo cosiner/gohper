@@ -1,3 +1,5 @@
+// Package database is a library help for interact with database by model
+//
 package database
 
 import (
@@ -48,7 +50,7 @@ func (db *DB) Connect(driver, dsn string, maxIdle, maxOpen int) error {
 		db_.SetMaxIdleConns(maxIdle)
 		db_.SetMaxOpenConns(maxOpen)
 		db.DB = db_
-		db.Cacher = NewCacher(SQLTypeEnd, db)
+		db.Cacher = NewCacher(SQLTypes, db)
 	}
 	return err
 }
@@ -89,9 +91,12 @@ func FieldPtrs(fields uint, v Model) []interface{} {
 }
 
 func (db *DB) Insert(v Model, fields uint, needId bool) (int64, error) {
-	ti := db.TypeInfo(v)
-	stmt := ti.CacheGet(INSERT, fields, 0, ti.InsertSQL)
-	return StmtExec(stmt, FieldVals(fields, v), needId)
+	return db.InsertWith(v, fields, needId, FieldVals(fields, v))
+}
+
+func (db *DB) InsertWith(v Model, fields uint, needId bool, args []interface{}) (int64, error) {
+	stmt, err := db.TypeInfo(v).InsertStmt(fields)
+	return StmtExec(stmt, err, args, needId)
 }
 
 func (db *DB) Update(v Model, fields uint, whereFields uint) (int64, error) {
@@ -99,45 +104,53 @@ func (db *DB) Update(v Model, fields uint, whereFields uint) (int64, error) {
 	args := make([]interface{}, c1+c2)
 	v.Vals(fields, args)
 	v.Vals(whereFields, args[c1:])
-	ti := db.TypeInfo(v)
-	stmt := ti.CacheGet(UPDATE, fields, whereFields, ti.UpdateSQL)
-	return StmtExec(stmt, args, false)
+	return db.UpdateWith(v, fields, whereFields, args)
+}
+
+func (db *DB) UpdateWith(v Model, fields uint, whereFields uint, args []interface{}) (int64, error) {
+	stmt, err := db.TypeInfo(v).UpdateStmt(fields, whereFields)
+	return StmtExec(stmt, err, args, false)
 }
 
 func (db *DB) Delete(v Model, whereFields uint) (int64, error) {
-	ti := db.TypeInfo(v)
-	stmt := ti.CacheGet(DELETE, 0, whereFields, ti.DeleteSQL)
-	return StmtExec(stmt, FieldVals(whereFields, v), false)
+	return db.DeleteWith(v, whereFields, FieldVals(whereFields, v))
 }
 
-func (db *DB) limitSelectRows(v Model, fields, whereFields uint, start, count int) (*sql.Rows, error) {
-	ti := db.TypeInfo(v)
-	stmt := ti.CacheGet(LIMIT_SELECT, fields, whereFields, ti.LimitSelectSQL)
+func (db *DB) DeleteWith(v Model, whereFields uint, args []interface{}) (int64, error) {
+	stmt, err := db.TypeInfo(v).DeleteStmt(whereFields)
+	return StmtExec(stmt, err, args, false)
+}
+
+func (db *DB) rows(v Model, fields, whereFields uint, start, count int) (*sql.Rows, error) {
 	c := FieldCount(whereFields)
-	args := make([]interface{}, c+1)
+	args := make([]interface{}, c+2)
 	v.Vals(whereFields, args)
 	args[c], args[c+1] = start, count
-	return stmt.Query(args...)
+	stmt, err := db.TypeInfo(v).LimitSelectStmt(fields, whereFields)
+	if err == nil {
+		return stmt.Query(args...)
+	}
+	return nil, err
+}
+
+func (db *DB) row(v Model, fields, whereFields uint) (*sql.Rows, error) {
+	stmt, err := db.TypeInfo(v).SelectOneStmt(fields, whereFields)
+	if err == nil {
+		return stmt.Query(FieldVals(fields, v)...)
+	}
+	return nil, err
 }
 
 // SelectOne select one row from database
 func (db *DB) SelectOne(v Model, fields, whereFields uint) error {
-	rows, err := db.limitSelectRows(v, fields, whereFields, 0, 1)
-	if err == nil {
-		if rows.Next() {
-			err = rows.Scan(FieldPtrs(fields, v)...)
-		} else {
-			err = sql.ErrNoRows
-		}
-	}
-	rows.Close()
-	return err
+	rows, err := db.row(v, fields, whereFields)
+	return ScanOnce(rows, err, FieldPtrs(fields, v))
 }
 
 func (db *DB) SelectLimit(v Model, fields, whereFields uint, start, count int) (
 	models []Model, err error) {
 
-	rows, err := db.limitSelectRows(v, fields, whereFields, start, count)
+	rows, err := db.rows(v, fields, whereFields, start, count)
 	if err == nil {
 		has := false
 		for rows.Next() {
@@ -162,27 +175,23 @@ func (db *DB) SelectLimit(v Model, fields, whereFields uint, start, count int) (
 }
 
 func (db *DB) ScanLimit(v Model, s Scanner, fields, whereFields uint, start, count int) error {
-	rows, err := db.limitSelectRows(v, fields, whereFields, start, count)
-	if err == nil {
-		err = Scan(rows, s, count)
-	}
-	return err
+	rows, err := db.rows(v, fields, whereFields, start, count)
+	return ScanLimit(rows, err, s, count)
 }
 
 // Count return count of rows for model
 func (db *DB) Count(v Model, whereFields uint) (count uint, err error) {
-	return db.CountWithArgs(v, whereFields, FieldVals(whereFields, v))
+	return db.CountWith(v, whereFields, FieldVals(whereFields, v))
 }
 
-// CountWithArgs return count of rows for model use given arguments
-func (db *DB) CountWithArgs(v Model, whereFields uint,
+// CountWith return count of rows for model use given arguments
+func (db *DB) CountWith(v Model, whereFields uint,
 	args []interface{}) (count uint, err error) {
 	ti := db.TypeInfo(v)
-	stmt := ti.CacheGet(LIMIT_SELECT, 0, whereFields, ti.CountSQL)
-	rows, err := stmt.Query(args...)
+	stmt, err := ti.CountStmt(whereFields)
 	if err == nil {
-		rows.Next()
-		err = rows.Scan(&count)
+		rows, e := stmt.Query(args...)
+		err = ScanOnce(rows, e, &count)
 	}
 	return
 }
@@ -190,26 +199,26 @@ func (db *DB) CountWithArgs(v Model, whereFields uint,
 // ExecUpdate execute a update operation
 func (db *DB) ExecUpdate(s string, args []interface{}, needId bool) (ret int64, err error) {
 	res, err := db.Exec(s, args...)
-	if err == nil {
-		ret, err = ResolveResult(res, needId)
-	}
-	return
+	return ResolveResult(res, err, needId)
 }
 
-func StmtExec(stmt *sql.Stmt, args []interface{}, needId bool) (ret int64, err error) {
-	res, err := stmt.Exec(args...)
+func StmtExec(stmt *sql.Stmt, err error, args []interface{}, needId bool) (int64, error) {
 	if err == nil {
-		ret, err = ResolveResult(res, needId)
+		res, err := stmt.Exec(args...)
+		return ResolveResult(res, err, needId)
 	}
-	return
+	return 0, err
 }
 
 // ResolveResult resolve sql result, if need id, return last insert id
 // else return affected row count
-func ResolveResult(res sql.Result, needId bool) (int64, error) {
-	if needId {
-		return res.LastInsertId()
-	} else {
-		return res.RowsAffected()
+func ResolveResult(res sql.Result, err error, needId bool) (int64, error) {
+	if err == nil {
+		if needId {
+			return res.LastInsertId()
+		} else {
+			return res.RowsAffected()
+		}
 	}
+	return 0, err
 }
