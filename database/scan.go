@@ -18,6 +18,8 @@ import "database/sql"
 // }
 
 type Scanner interface {
+	// Make will be called twice, first to allocate data space, second to specified
+	// the row count
 	Make(size int)
 	Ptrs(index int, ptrs []interface{})
 }
@@ -51,5 +53,6 @@ func Scan(rows *sql.Rows, s Scanner, rowCount int) error {
 	if index < 0 {
 		return sql.ErrNoRows
 	}
+	s.Make(index + 1)
 	return nil
 }
