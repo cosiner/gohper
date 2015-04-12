@@ -19,9 +19,11 @@ type (
 	nilCols   string
 )
 
+var zeroColss Cols = nilCols("")
+
 // String return columns string join with ",",
 // result like "foo, bar"
-func (c cols) String() string {
+func (c *cols) String() string {
 	if c.str == "" {
 		c.str = types.SuffixJoin(c.cols, "", _FIELD_SEP)
 	}
@@ -30,7 +32,7 @@ func (c cols) String() string {
 
 // Paramed return columns string joind with "=?,", last "," was trimed,
 // result like "foo=?, bar=?"
-func (c cols) Paramed() string {
+func (c *cols) Paramed() string {
 	if c.paramed == "" {
 		c.paramed = types.SuffixJoin(c.cols, "=?", _FIELD_SEP)
 	}
@@ -39,14 +41,14 @@ func (c cols) Paramed() string {
 
 // OnlyParam return columns placeholdered string, each column was replaced with "?"
 // result like "?, ?, ?, ?", count of "?" is colums length
-func (c cols) OnlyParam() string {
+func (c *cols) OnlyParam() string {
 	if c.onlyParamed == "" {
 		c.onlyParamed = types.RepeatJoin("?", ",", len(c.cols))
 	}
 	return c.onlyParamed
 }
 
-func (c cols) Length() int {
+func (c *cols) Length() int {
 	return len(c.cols)
 }
 

@@ -19,6 +19,7 @@ func (length Length) Validate(s string) error {
 }
 
 type Chars struct {
+	// Chars should be sorted in ascending
 	Chars string
 	Err   error
 }

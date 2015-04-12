@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
 	"reflect"
 	"strings"
@@ -17,18 +18,13 @@ type (
 
 	SQLType int
 
-	// SQLCache is container of cached sql
-	SQLCache map[uint]string
-
-	Cacher []SQLCache
-
 	// TypeInfo represent information of type
 	// contains field count, table name, field names, field offsets
 	TypeInfo struct {
 		NumField uint
 		Table    string
 		Fields   []string
-		Cacher
+		*Cacher
 		prefix         string
 		colsCache      map[uint]Cols
 		typedColsCache map[uint]Cols
@@ -49,26 +45,8 @@ const (
 	_FIELD_NOTCOL = "notcol"
 )
 
-var (
-	printSQL = func(_ bool, _ string) {}
-	// SQLTypeEnd used as all model's sql statement type count
-	SQLTypeEnd      = defaultTypeEnd
-	zeroColss  Cols = nilCols("")
-)
-
-// SQLPrint enable sql print for each operation
-func SQLPrint(enable bool, formatter func(formart string, v ...interface{})) {
-	if enable {
-		if formatter == nil {
-			formatter = func(format string, v ...interface{}) {
-				fmt.Printf(format, v...)
-			}
-		}
-		printSQL = func(fromcache bool, sql string) {
-			formatter("[SQL]CachedSQL:%t, sql:%s\n", fromcache, sql)
-		}
-	}
-}
+// SQLTypeEnd used as all model's sql statement type count
+var SQLTypeEnd = defaultTypeEnd
 
 // FieldsExcp create fieldset except given fields
 func FieldsExcp(numField uint, fields uint) uint {
@@ -80,56 +58,18 @@ func FieldsIdentity(numField uint, fields, whereFields uint) uint {
 	return fields<<numField | whereFields
 }
 
-// NewCacher create a common sql cacher with given type end,
-// if type end is 0, use global type end
-func NewCacher(typEnd SQLType) Cacher {
-	if typEnd == 0 {
-		typEnd = SQLTypeEnd
-	}
-	return make(Cacher, typEnd)
-}
-
-func (c Cacher) CacheGet(typ SQLType, id uint, create func() string) string {
-	sql, has := c[typ][id]
-	if has {
-		printSQL(true, sql)
-	} else {
-		sql = create()
-		c[typ][id] = sql
-		printSQL(false, sql)
-	}
-	return sql
-}
-
-func (c Cacher) SQLTypeEnd(typ SQLType) Cacher {
-	if int(typ) == len(c) {
-		return c
-	}
-	cache := make([]SQLCache, typ)
-	copy(cache, c)
-	return cache
-}
-
-func (ti *TypeInfo) SQLTypeEnd(typ SQLType) {
-	if int(typ) != len(ti.Cacher) {
-		cache := make([]SQLCache, typ)
-		copy(cache, ti.Cacher)
-		ti.Cacher = cache
-	}
-}
-
 // CacheGet get sql from cache container, if cache not exist, then create new
-func (ti *TypeInfo) CacheGet(typ SQLType, fields, whereFields uint, create SQLCreator) (sql string) {
-	cache := ti.Cacher[typ]
+func (ti *TypeInfo) CacheGet(typ SQLType, fields, whereFields uint, create SQLCreator) *sql.Stmt {
 	id := FieldsIdentity(ti.NumField, fields, whereFields)
-	if sql = cache[id]; sql == "" {
-		sql = create(fields, whereFields)
-		cache[id] = sql
-		printSQL(false, sql)
+	sql_, stmt := ti.Cacher.CacheGet(typ, id)
+	if stmt == nil {
+		sql_ = create(fields, whereFields)
+		stmt = ti.Cacher.CacheSet(typ, id, sql_)
+		printSQL(false, sql_)
 	} else {
-		printSQL(true, sql)
+		printSQL(true, sql_)
 	}
-	return
+	return stmt
 }
 
 // InsertSQL create insert sql for given fields
@@ -137,7 +77,7 @@ func (ti *TypeInfo) InsertSQL(fields, _ uint) string {
 	cols := ti.Cols(fields)
 	return fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)",
 		ti.Table,
-		cols,
+		cols.String(),
 		cols.OnlyParam())
 }
 
@@ -217,7 +157,7 @@ func (ti *TypeInfo) colNames(fields uint, prefix string) Cols {
 				index++
 			}
 		}
-		return cols{cols: names[:index]}
+		return &cols{cols: names[:index]}
 	} else if colCount == 1 {
 		for i, l := uint(0), uint(len(fieldNames)); i < l; i++ {
 			if (1<<i)&fields != 0 {
@@ -230,7 +170,7 @@ func (ti *TypeInfo) colNames(fields uint, prefix string) Cols {
 
 // it will first use field tag as column name, if no tag specified,
 // use field name's camel_case
-func parseTypeInfo(v Model) *TypeInfo {
+func parseTypeInfo(v Model, db *DB) *TypeInfo {
 	typ := ref.IndirectType(v)
 	fieldNum := typ.NumField()
 	fields := make([]string, 0, fieldNum)
@@ -247,17 +187,13 @@ func parseTypeInfo(v Model) *TypeInfo {
 			fields = append(fields, types.SnakeString(fieldName))
 		}
 	}
-	ti := &TypeInfo{
+	return &TypeInfo{
 		NumField:       uint(fieldNum),
 		Table:          v.Table(),
 		Fields:         fields,
-		Cacher:         make(Cacher, SQLTypeEnd),
+		Cacher:         NewCacher(SQLTypeEnd, db),
 		prefix:         v.Table() + ".",
 		colsCache:      make(map[uint]Cols),
 		typedColsCache: make(map[uint]Cols),
 	}
-	for i := SQLType(0); i < SQLTypeEnd; i++ {
-		ti.Cacher[i] = make(SQLCache)
-	}
-	return ti
 }

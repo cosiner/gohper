@@ -21,7 +21,7 @@ type (
 		// driver string
 		*sql.DB
 		types map[string]*TypeInfo
-		Cacher
+		*Cacher
 	}
 )
 
@@ -37,8 +37,7 @@ func Open(driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
 // New create a new db
 func New() *DB {
 	return &DB{
-		types:  make(map[string]*TypeInfo),
-		Cacher: NewCacher(0),
+		types: make(map[string]*TypeInfo),
 	}
 }
 
@@ -49,6 +48,7 @@ func (db *DB) Connect(driver, dsn string, maxIdle, maxOpen int) error {
 		db_.SetMaxIdleConns(maxIdle)
 		db_.SetMaxOpenConns(maxOpen)
 		db.DB = db_
+		db.Cacher = NewCacher(SQLTypeEnd, db)
 	}
 	return err
 }
@@ -61,24 +61,19 @@ func (db *DB) RegisterType(v Model) {
 
 // registerType save type info of model
 func (db *DB) registerType(v Model, table string) *TypeInfo {
-	ti := parseTypeInfo(v)
+	ti := parseTypeInfo(v, db)
 	db.types[table] = ti
 	return ti
-}
-
-func (db *DB) SQLTypeEnd(typ SQLType) {
-	db.Cacher = db.Cacher.SQLTypeEnd(typ)
 }
 
 // TypeInfo return type information of given model
 // if type info not exist, it will parseTypeInfo it and save type info
 func (db *DB) TypeInfo(v Model) *TypeInfo {
 	table := v.Table()
-	ti := db.types[table]
-	if ti == nil {
-		ti = db.registerType(v, table)
+	if ti, has := db.types[table]; has {
+		return ti
 	}
-	return ti
+	return db.registerType(v, table)
 }
 
 func FieldVals(fields uint, v Model) []interface{} {
@@ -95,8 +90,8 @@ func FieldPtrs(fields uint, v Model) []interface{} {
 
 func (db *DB) Insert(v Model, fields uint, needId bool) (int64, error) {
 	ti := db.TypeInfo(v)
-	sql := ti.CacheGet(INSERT, fields, 0, ti.InsertSQL)
-	return db.ExecUpdate(sql, FieldVals(fields, v), needId)
+	stmt := ti.CacheGet(INSERT, fields, 0, ti.InsertSQL)
+	return StmtExec(stmt, FieldVals(fields, v), needId)
 }
 
 func (db *DB) Update(v Model, fields uint, whereFields uint) (int64, error) {
@@ -105,24 +100,24 @@ func (db *DB) Update(v Model, fields uint, whereFields uint) (int64, error) {
 	v.Vals(fields, args)
 	v.Vals(whereFields, args[c1:])
 	ti := db.TypeInfo(v)
-	sql := ti.CacheGet(UPDATE, fields, whereFields, ti.UpdateSQL)
-	return db.ExecUpdate(sql, args, false)
+	stmt := ti.CacheGet(UPDATE, fields, whereFields, ti.UpdateSQL)
+	return StmtExec(stmt, args, false)
 }
 
 func (db *DB) Delete(v Model, whereFields uint) (int64, error) {
 	ti := db.TypeInfo(v)
-	sql := ti.CacheGet(DELETE, 0, whereFields, ti.DeleteSQL)
-	return db.ExecUpdate(sql, FieldVals(whereFields, v), false)
+	stmt := ti.CacheGet(DELETE, 0, whereFields, ti.DeleteSQL)
+	return StmtExec(stmt, FieldVals(whereFields, v), false)
 }
 
 func (db *DB) limitSelectRows(v Model, fields, whereFields uint, start, count int) (*sql.Rows, error) {
 	ti := db.TypeInfo(v)
-	sql := ti.CacheGet(LIMIT_SELECT, fields, whereFields, ti.LimitSelectSQL)
+	stmt := ti.CacheGet(LIMIT_SELECT, fields, whereFields, ti.LimitSelectSQL)
 	c := FieldCount(whereFields)
 	args := make([]interface{}, c+1)
 	v.Vals(whereFields, args)
 	args[c], args[c+1] = start, count
-	return db.Query(sql, args...)
+	return stmt.Query(args...)
 }
 
 // SelectOne select one row from database
@@ -145,9 +140,11 @@ func (db *DB) SelectLimit(v Model, fields, whereFields uint, start, count int) (
 	rows, err := db.limitSelectRows(v, fields, whereFields, start, count)
 	if err == nil {
 		has := false
-		models = make([]Model, 0, count)
 		for rows.Next() {
-			has = true
+			if !has {
+				models = make([]Model, 0, count)
+				has = true
+			}
 			model := v.New()
 			if err = rows.Scan(FieldPtrs(fields, model)...); err != nil {
 				models = nil
@@ -164,6 +161,14 @@ func (db *DB) SelectLimit(v Model, fields, whereFields uint, start, count int) (
 	return models, err
 }
 
+func (db *DB) ScanLimit(v Model, s Scanner, fields, whereFields uint, start, count int) error {
+	rows, err := db.limitSelectRows(v, fields, whereFields, start, count)
+	if err == nil {
+		err = Scan(rows, s, count)
+	}
+	return err
+}
+
 // Count return count of rows for model
 func (db *DB) Count(v Model, whereFields uint) (count uint, err error) {
 	return db.CountWithArgs(v, whereFields, FieldVals(whereFields, v))
@@ -173,8 +178,8 @@ func (db *DB) Count(v Model, whereFields uint) (count uint, err error) {
 func (db *DB) CountWithArgs(v Model, whereFields uint,
 	args []interface{}) (count uint, err error) {
 	ti := db.TypeInfo(v)
-	sql := ti.CacheGet(LIMIT_SELECT, 0, whereFields, ti.CountSQL)
-	rows, err := db.Query(sql, args...)
+	stmt := ti.CacheGet(LIMIT_SELECT, 0, whereFields, ti.CountSQL)
+	rows, err := stmt.Query(args...)
 	if err == nil {
 		rows.Next()
 		err = rows.Scan(&count)
@@ -185,6 +190,14 @@ func (db *DB) CountWithArgs(v Model, whereFields uint,
 // ExecUpdate execute a update operation
 func (db *DB) ExecUpdate(s string, args []interface{}, needId bool) (ret int64, err error) {
 	res, err := db.Exec(s, args...)
+	if err == nil {
+		ret, err = ResolveResult(res, needId)
+	}
+	return
+}
+
+func StmtExec(stmt *sql.Stmt, args []interface{}, needId bool) (ret int64, err error) {
+	res, err := stmt.Exec(args...)
 	if err == nil {
 		ret, err = ResolveResult(res, needId)
 	}

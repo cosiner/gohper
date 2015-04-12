@@ -23,7 +23,7 @@ var (
 	infile       string
 	outfile      string
 	models       string
-	tmpl         string
+	tmplfile     string
 	copyTmpl     bool
 	useCamelCase bool
 )
@@ -32,7 +32,7 @@ func cliArgs() {
 	flag.StringVar(&infile, "i", "", "input file")
 	flag.StringVar(&outfile, "o", "", "output file")
 	flag.StringVar(&models, "m", "", "models to parse, seperate by comma")
-	flag.StringVar(&tmpl, "t", "", "template file")
+	flag.StringVar(&tmplfile, "t", "", "template file, first find in current directory, else use default file")
 
 	// make it true to enable default CamelCase
 	flag.BoolVar(&useCamelCase, "cc", false, "use CamelCase of constants")
@@ -54,6 +54,7 @@ func main() {
 	if infile == "" {
 		ExitErrorln("No input file specified.")
 	}
+
 	models := types.TrimSplit(models, ",")
 	tree, err := parser.ParseFile(token.NewFileSet(), infile, nil, 0)
 	OnErrDo(err, ExitErrln)
@@ -66,13 +67,16 @@ func main() {
 	if outfile == "" {
 		outfile = infile
 	}
+	if tmplfile == "" {
+		tmplfile = TmplName
+		if !sys.IsExist(tmplfile) {
+			tmplfile = defTmplPath
+		}
+	}
 	OnErrExit(sys.OpenOrCreateFor(outfile, false, func(outfd *os.File) error {
 		modelFields := buildModelFields(mv.models)
-		if tmpl == "" {
-			tmpl = defTmplPath
-		}
 		var t *template.Template
-		if t, err = template.ParseFiles(tmpl); err == nil {
+		if t, err = template.ParseFiles(tmplfile); err == nil {
 			err = t.Execute(outfd, modelFields)
 		}
 		return err
