@@ -171,18 +171,22 @@ func (ti *TypeInfo) TypedCols(fields uint) Cols {
 	return cols
 }
 
+// colNames get fields names, each field prepend a prefix string
+// if fields count is 0, type nilCols was returned
+// if fields count is 1, type singleCols was returned
+// otherwise, type cols was returned
 func (ti *TypeInfo) colNames(fields uint, prefix string) Cols {
 	fieldNames := ti.Fields
 	if colCount := FieldCount(fields); colCount > 1 {
 		names := make([]string, colCount)
-		var index uint
+		var index int
 		for i, l := uint(0), uint(len(fieldNames)); i < l; i++ {
 			if (1<<i)&fields != 0 {
 				names[index] = ti.Table + "." + fieldNames[i]
 				index++
 			}
 		}
-		return &cols{cols: names[:index]}
+		return &cols{cols: names}
 	} else if colCount == 1 {
 		for i, l := uint(0), uint(len(fieldNames)); i < l; i++ {
 			if (1<<i)&fields != 0 {
@@ -203,10 +207,12 @@ func parseTypeInfo(v Model, db *DB) *TypeInfo {
 	for i := 0; i < fieldNum; i++ {
 		field := typ.Field(i)
 		fieldName := field.Name
+		// Exported + !notcol + !(anonymous && structure)
 		if goutil.IsExported(fieldName) &&
 			!strings.Contains(string(field.Tag), _FIELD_NOTCOL) &&
 			!(field.Anonymous &&
 				field.Type.Kind() == reflect.Struct) {
+
 			if tagName := field.Tag.Get(_FIELD_TAG); tagName != "" {
 				fieldName = tagName
 			}

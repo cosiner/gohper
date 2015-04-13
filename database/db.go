@@ -2,11 +2,7 @@
 //
 package database
 
-import (
-	"github.com/cosiner/gohper/lib/types"
-
-	"database/sql"
-)
+import "database/sql"
 
 type (
 	// Model represent a database model
@@ -26,8 +22,6 @@ type (
 		*Cacher
 	}
 )
-
-var FieldCount = types.BitCountUint
 
 // Open create a database manager and connect to database server
 func Open(driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
@@ -136,7 +130,7 @@ func (db *DB) rows(v Model, fields, whereFields uint, start, count int) (*sql.Ro
 func (db *DB) row(v Model, fields, whereFields uint) (*sql.Rows, error) {
 	stmt, err := db.TypeInfo(v).SelectOneStmt(fields, whereFields)
 	if err == nil {
-		return stmt.Query(FieldVals(fields, v)...)
+		return stmt.Query(FieldVals(whereFields, v)...)
 	}
 	return nil, err
 }
@@ -160,17 +154,16 @@ func (db *DB) SelectLimit(v Model, fields, whereFields uint, start, count int) (
 			}
 			model := v.New()
 			if err = rows.Scan(FieldPtrs(fields, model)...); err != nil {
-				models = nil
-				break
-			} else {
-				models = append(models, model)
+				rows.Close()
+				return nil, err
 			}
+			models = append(models, model)
 		}
 		if !has {
 			err = sql.ErrNoRows
 		}
+		rows.Close()
 	}
-	rows.Close()
 	return models, err
 }
 

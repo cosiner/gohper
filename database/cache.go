@@ -22,7 +22,7 @@ type (
 	// FieldIdentity(fields, whereFields) if possible
 	Cacher struct {
 		cache []map[uint]cacheItem // [typeCount]map[id]{sql, stmt}
-		db    *sql.DB
+		db    *DB
 	}
 )
 
@@ -64,31 +64,31 @@ func SQLPrint(enable bool, formatter func(formart string, v ...interface{})) {
 // the DB instance and each TypeInfo already embed a Cacher, typically, it's not
 // necessary to call this
 func NewCacher(types uint, db *DB) *Cacher {
-	return &Cacher{
+	c := &Cacher{
 		cache: make([]map[uint]cacheItem, types),
-		db:    db.DB,
+		db:    db,
 	}
+	for i := uint(0); i < types; i++ {
+		c.cache[i] = make(map[uint]cacheItem)
+	}
+	return c
 }
 
 // StmtById search a prepared statement for given sql type by id, if not found,
 // create with the creator, and prepared the sql to a statement, cache it, then
 // return
-func (c *Cacher) StmtById(typ, id uint, create func() string) *sql.Stmt {
-	item, has := c.cache[typ][id]
-	if has {
+func (c *Cacher) StmtById(typ, id uint, create func() string) (*sql.Stmt, error) {
+	if item, has := c.cache[typ][id]; has {
 		printSQL(true, item.sql)
-		return item.stmt
-	} else {
-		sql_ := create()
-		stmt, err := c.db.Prepare(sql_)
-		if err != nil {
-			panic(err)
-		}
-		item = cacheItem{sql: sql_, stmt: stmt}
-		c.cache[typ][id] = item
-		printSQL(false, sql_)
-		return stmt
+		return item.stmt, nil
 	}
+	sql_ := create()
+	stmt, err := c.db.Prepare(sql_)
+	if err == nil {
+		c.cache[typ][id] = cacheItem{sql: sql_, stmt: stmt}
+		printSQL(false, sql_)
+	}
+	return stmt, err
 }
 
 // SQLTypes return the sql types count of current Cacher
@@ -105,9 +105,12 @@ func (c *Cacher) SQLTypes() uint {
 // //b.go
 // newType2 := c.ExtendSQLType(c.SQLTypes()+1)
 func (c *Cacher) ExtendSQLType(typ uint) uint {
-	if int(typ) > len(c.cache) {
+	if l := uint(len(c.cache)); typ > l {
 		cache := make([]map[uint]cacheItem, typ)
 		copy(cache, c.cache)
+		for ; l < typ; l++ {
+			cache[l] = make(map[uint]cacheItem)
+		}
 		c.cache = cache
 	} else {
 		c.cache = c.cache[:typ]
@@ -117,8 +120,7 @@ func (c *Cacher) ExtendSQLType(typ uint) uint {
 
 // GetStmt get sql and statement from cacher, if not found, "" and nil was returned
 func (c *Cacher) GetStmt(typ, id uint) (string, *sql.Stmt) {
-	item, has := c.cache[typ][id]
-	if has {
+	if item, has := c.cache[typ][id]; has {
 		return item.sql, item.stmt
 	}
 	return "", nil

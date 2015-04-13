@@ -18,7 +18,7 @@ func ErrForDuplicateKey(err error, newErrFunc func(key string) error) error {
 			if index = strings.Index(s, forKey) + len(forKey); index >= 0 {
 				s, _ = types.TrimQuote(s[index:])
 				if e := newErrFunc(s); e != nil {
-					return e
+					err = e
 				}
 			}
 		}
@@ -28,7 +28,7 @@ func ErrForDuplicateKey(err error, newErrFunc func(key string) error) error {
 
 func ErrForNoRows(err, newErr error) error {
 	if err == sql.ErrNoRows {
-		return newErr
+		err = newErr
 	}
 	return err
 }

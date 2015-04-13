@@ -53,8 +53,8 @@ func ScanLimit(rows *sql.Rows, err error, s Scanner, rowCount int) error {
 		} else {
 			s.Make(index + 1)
 		}
+		rows.Close()
 	}
-	rows.Close()
 	return err
 }
 
@@ -66,7 +66,7 @@ func ScanOnce(rows *sql.Rows, err error, ptrs ...interface{}) error {
 		} else {
 			err = sql.ErrNoRows
 		}
+		rows.Close()
 	}
-	rows.Close()
 	return err
 }

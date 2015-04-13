@@ -19,6 +19,7 @@ type (
 	nilCols   string
 )
 
+var FieldCount = types.BitCountUint
 var zeroCols Cols = nilCols("")
 
 // String return columns string join with ",",
