@@ -93,7 +93,7 @@ func (c *Cacher) ExtendSQLType(typ uint) uint {
 	} else {
 		c.cache = c.cache[:typ]
 	}
-	return typ
+	return typ - 1
 }
 
 // StmtById search a prepared statement for given sql type by id, if not found,

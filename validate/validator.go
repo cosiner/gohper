@@ -2,6 +2,7 @@ package validate
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/cosiner/gohper/lib/types"
 )
@@ -41,4 +42,21 @@ func (r Regexp) Validate(s string) error {
 		return nil
 	}
 	return r.Err
+}
+
+// SimpleEmail only check '@'' and '.' character
+type SimpleEmail struct {
+	Err error
+}
+
+func (e SimpleEmail) Validate(s string) error {
+	at := strings.IndexByte(s, '@')
+	if at > 0 && at < len(s)-1 {
+		s = s[at+1:]
+		dot := strings.IndexByte(s, '.')
+		if dot > 0 && dot < len(s)-1 {
+			return nil
+		}
+	}
+	return e.Err
 }

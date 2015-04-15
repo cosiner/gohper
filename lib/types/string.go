@@ -356,3 +356,19 @@ func AllCharsIn(s, encoding string) bool {
 	}
 	return true
 }
+
+func Seperate(s string, sep byte) (string, string) {
+	index := strings.IndexByte(s, sep)
+	if index > 0 && index < len(s)-1 {
+		return s[:index], s[index+1:]
+	}
+	return "", ""
+}
+
+func MidIndex(s string, sep byte) int {
+	index := strings.IndexByte(s, sep)
+	if index > 0 && index < len(s)-1 {
+		return index
+	}
+	return -1
+}

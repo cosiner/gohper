@@ -57,17 +57,6 @@ func Max(a, b int) int {
 	return b
 }
 
-// MidIn return mid of three, min must smaller than max
-func MidIn(min, max, val int) int {
-	if val >= max {
-		return max
-	} else if val >= min {
-		return val
-	} else {
-		return min
-	}
-}
-
 // Mid return mid of three
 func Mid(a, b, c int) int {
 	if a >= b {
