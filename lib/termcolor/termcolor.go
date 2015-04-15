@@ -45,6 +45,7 @@ type TermColor struct {
 	inverse       bool
 	hidden        bool
 	settingsCount int
+	settings      string
 }
 
 // NewColor create a new terminal color render
@@ -66,29 +67,40 @@ func (tc *TermColor) Render(str string) string {
 	if str == "" || !tc.enable {
 		return str
 	}
-	color := make([]int, 0, tc.settingsCount)
-	if tc.fg != -1 {
-		color = append(color, tc.fg+40)
+	if tc.settings == "" {
+		color := make([]int, tc.settingsCount)
+		index := 0
+		if tc.fg != -1 {
+			color[index] = tc.fg + 40
+			index++
+		}
+		if tc.bg != -1 {
+			color[index] = tc.bg + 30
+			index++
+		}
+		if tc.highlight {
+			color[index] = 1
+			index++
+		}
+		if tc.underline {
+			color[index] = 4
+			index++
+		}
+		if tc.blink {
+			color[index] = 5
+			index++
+		}
+		if tc.inverse {
+			color[index] = 7
+			index++
+		}
+		if tc.hidden {
+			color[index] = 8
+			index++
+		}
+		tc.settings = types.JoinInt(color, ";")
 	}
-	if tc.bg != -1 {
-		color = append(color, tc.bg+30)
-	}
-	if tc.highlight {
-		color = append(color, 1)
-	}
-	if tc.underline {
-		color = append(color, 4)
-	}
-	if tc.blink {
-		color = append(color, 5)
-	}
-	if tc.inverse {
-		color = append(color, 7)
-	}
-	if tc.hidden {
-		color = append(color, 8)
-	}
-	return fmt.Sprintf("\033[%sm%s\033[0m", types.JoinInt(color, ";"), str)
+	return fmt.Sprintf("\033[%sm%s\033[0m", tc.settings, str)
 }
 
 // RenderTo render string to writer
