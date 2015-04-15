@@ -74,28 +74,6 @@ func NewCacher(types uint, db *DB) *Cacher {
 	return c
 }
 
-// StmtById search a prepared statement for given sql type by id, if not found,
-// create with the creator, and prepared the sql to a statement, cache it, then
-// return
-func (c *Cacher) StmtById(typ, id uint, create func() string) (*sql.Stmt, error) {
-	if item, has := c.cache[typ][id]; has {
-		printSQL(true, item.sql)
-		return item.stmt, nil
-	}
-	sql_ := create()
-	stmt, err := c.db.Prepare(sql_)
-	if err == nil {
-		c.cache[typ][id] = cacheItem{sql: sql_, stmt: stmt}
-		printSQL(false, sql_)
-	}
-	return stmt, err
-}
-
-// SQLTypes return the sql types count of current Cacher
-func (c *Cacher) SQLTypes() uint {
-	return uint(len(c.cache))
-}
-
 // ExtendSQLType typically used to extend types of Cacher, but it also can be used
 // to shrink the cacher, return value will be the new types count you passed in
 //
@@ -116,6 +94,28 @@ func (c *Cacher) ExtendSQLType(typ uint) uint {
 		c.cache = c.cache[:typ]
 	}
 	return typ
+}
+
+// StmtById search a prepared statement for given sql type by id, if not found,
+// create with the creator, and prepared the sql to a statement, cache it, then
+// return
+func (c *Cacher) StmtById(typ, id uint, create func() string) (*sql.Stmt, error) {
+	if item, has := c.cache[typ][id]; has {
+		printSQL(true, item.sql)
+		return item.stmt, nil
+	}
+	sql_ := create()
+	stmt, err := c.db.Prepare(sql_)
+	if err == nil {
+		c.cache[typ][id] = cacheItem{sql: sql_, stmt: stmt}
+		printSQL(false, sql_)
+	}
+	return stmt, err
+}
+
+// SQLTypes return the sql types count of current Cacher
+func (c *Cacher) SQLTypes() uint {
+	return uint(len(c.cache))
 }
 
 // GetStmt get sql and statement from cacher, if not found, "" and nil was returned

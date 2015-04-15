@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"reflect"
-	"strings"
 
 	ref "github.com/cosiner/gohper/lib/reflect"
 
@@ -35,8 +34,7 @@ type (
 
 const (
 	// _FIELD_TAG is tag name of database column
-	_FIELD_TAG    = "column"
-	_FIELD_NOTCOL = "notcol"
+	_FIELD_TAG = "column"
 )
 
 // FieldsExcp create fieldset except given fields
@@ -207,13 +205,16 @@ func parseTypeInfo(v Model, db *DB) *TypeInfo {
 	for i := 0; i < fieldNum; i++ {
 		field := typ.Field(i)
 		fieldName := field.Name
-		// Exported + !notcol + !(anonymous && structure)
+		// Exported + !(anonymous && structure)
 		if goutil.IsExported(fieldName) &&
-			!strings.Contains(string(field.Tag), _FIELD_NOTCOL) &&
 			!(field.Anonymous &&
 				field.Type.Kind() == reflect.Struct) {
 
-			if tagName := field.Tag.Get(_FIELD_TAG); tagName != "" {
+			tagName := field.Tag.Get(_FIELD_TAG)
+			if tagName == "-" {
+				continue
+			}
+			if tagName != "" {
 				fieldName = tagName
 			}
 			fields = append(fields, types.SnakeString(fieldName))

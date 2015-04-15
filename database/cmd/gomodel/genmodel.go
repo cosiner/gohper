@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"text/template"
 
@@ -174,11 +175,14 @@ func (mv *modelVisitor) walk(tree *ast.File) {
 							continue
 						}
 						for _, f := range t.Fields.List { // model field
-							if f.Tag == nil || !strings.Contains(f.Tag.Value, "notcol") {
+							tag := reflect.StructTag(f.Tag.Value)
+							if tag.Get("table") == "-" {
+								break
+							}
+							if f.Tag == nil || tag.Get("column") != "-" {
 								for _, ident := range f.Names {
-									name := ident.Name
-									if goutil.IsExported(name) {
-										mv.add(model, name)
+									if ident.IsExported() {
+										mv.add(model, ident.Name)
 									}
 								}
 							}
