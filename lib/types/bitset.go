@@ -1,7 +1,5 @@
 // Package types implements some type relevant tools
 // bitset, string, bytes
-// M/N  = M >> n : N= 2 ** n
-// M%N = M & (N-1):N = 2 ** n
 package types
 
 // u_1 is uint 1
