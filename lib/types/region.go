@@ -1,10 +1,11 @@
-// Inspired by limetext's region code, but add an direction for a region
 package types
 
 // NOTICE: ALL untestd!!!
 import (
 	"fmt"
 )
+
+// Inspired by limetext's region code, but add an direction for a region
 
 // Region from point From to To.
 // From must be less than To, real direction is decide by the Dir field
