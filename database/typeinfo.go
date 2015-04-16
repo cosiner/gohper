@@ -180,7 +180,7 @@ func (ti *TypeInfo) colNames(fields uint, prefix string) Cols {
 		var index int
 		for i, l := uint(0), uint(len(fieldNames)); i < l; i++ {
 			if (1<<i)&fields != 0 {
-				names[index] = ti.Table + "." + fieldNames[i]
+				names[index] = prefix + fieldNames[i]
 				index++
 			}
 		}

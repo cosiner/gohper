@@ -138,7 +138,7 @@ func (db *DB) row(v Model, fields, whereFields uint) (*sql.Rows, error) {
 // SelectOne select one row from database
 func (db *DB) SelectOne(v Model, fields, whereFields uint) error {
 	rows, err := db.row(v, fields, whereFields)
-	return ScanOnce(rows, err, FieldPtrs(fields, v))
+	return ScanOnce(rows, err, FieldPtrs(fields, v)...)
 }
 
 func (db *DB) SelectLimit(v Model, fields, whereFields uint, start, count int) (
