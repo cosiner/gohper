@@ -3,7 +3,7 @@ package redis
 import (
 	"time"
 
-	. "github.com/cosiner/gohper/lib/errors"
+	"github.com/cosiner/gohper/lib/errors"
 
 	"github.com/cosiner/gohper/config"
 
@@ -23,8 +23,8 @@ var (
 )
 
 const (
-	ErrWrongIdleSetting = Err("Wrong idle settings for redis")
-	ErrRedisAddr        = Err("Not specified redis server address")
+	ErrWrongIdleSetting = errors.Err("Wrong idle settings for redis")
+	ErrRedisAddr        = errors.Err("Not specified redis server address")
 )
 
 // RedisStore is a wrapper for "github.com/garyburd/redigo/redis"

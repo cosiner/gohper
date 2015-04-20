@@ -4,8 +4,7 @@ import (
 	"io"
 	"os"
 
-	. "github.com/cosiner/gohper/lib/errors"
-
+	"github.com/cosiner/gohper/lib/errors"
 	"github.com/cosiner/gohper/lib/sys"
 	"github.com/cosiner/gohper/lib/types"
 )
@@ -14,7 +13,7 @@ import (
 // all key-value pairs will be placed under this section
 const (
 	GLOBAL_OPTION = "global"
-	ErrNoContent  = Err("No Content")
+	ErrNoContent  = errors.Err("No Content")
 )
 
 // iniConfig implements a ini format parser
@@ -128,7 +127,7 @@ func (ic *iniConfig) parse(reader io.Reader) (err error) {
 		case _KV:
 			ic.bind(pair.Key, pair.Value)
 		case _ERRFORMAT:
-			return Errorf("Wrong format of line %d: %s", linenum, string(line))
+			return errors.Errorf("Wrong format of line %d: %s", linenum, string(line))
 		}
 		return nil
 	})

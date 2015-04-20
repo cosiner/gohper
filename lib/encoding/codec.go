@@ -10,7 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 
-	. "github.com/cosiner/gohper/lib/errors"
+	"github.com/cosiner/gohper/lib/errors"
 
 	"github.com/cosiner/gohper/lib/types"
 )
@@ -268,7 +268,7 @@ func ReadGZIP(rd io.Reader, v interface{}) error {
 	r, err := gzip.NewReader(rd)
 	if err == nil {
 		if s, is := v.(*string); !is {
-			err = Err("value must be pointer to string")
+			err = errors.Err("value must be pointer to string")
 		} else {
 			var bs []byte
 			if bs, err = ioutil.ReadAll(r); err == nil {
@@ -287,7 +287,7 @@ func WriteGZIP(wr io.Writer, v interface{}) error {
 	case []byte:
 		w.Write(v)
 	default:
-		return Err("Only support string and []byte")
+		return errors.Err("Only support string and []byte")
 	}
 	return nil
 }

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unicode"
 
-	. "github.com/cosiner/gohper/lib/errors"
+	"github.com/cosiner/gohper/lib/errors"
 )
 
 // IsLower check letter is lower case or not
@@ -60,7 +60,7 @@ func TrimQuote(str string) (s string, err error) {
 			if s[l-1] == c {
 				s = s[1 : l-1]
 			} else {
-				err = Errorf("Quote don't match:%s", s)
+				err = errors.Errorf("Quote don't match:%s", s)
 			}
 		}
 	}

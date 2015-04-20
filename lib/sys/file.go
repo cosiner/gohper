@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	. "github.com/cosiner/gohper/lib/errors"
+	"github.com/cosiner/gohper/lib/errors"
 )
 
 const (
@@ -139,7 +139,7 @@ func TruncateAndSeek(fd *os.File) {
 // CopyFile copy src file to dest file
 func CopyFile(dst, src string) error {
 	if IsDir(dst) || IsDir(src) {
-		return Errorf("dest path %s or src path %s is directory", dst, src)
+		return errors.Errorf("dest path %s or src path %s is directory", dst, src)
 	}
 	return OpenOrCreateTruncFor(dst, func(dstFd *os.File) error {
 		return OpenForRead(src, func(srcFd *os.File) error {

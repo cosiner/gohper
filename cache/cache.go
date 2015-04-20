@@ -6,7 +6,7 @@
 package cache
 
 import (
-	. "github.com/cosiner/gohper/lib/errors"
+	"github.com/cosiner/gohper/lib/errors"
 	"github.com/cosiner/gohper/lib/types"
 )
 
@@ -33,8 +33,8 @@ const (
 	// REDIS is redis cacher
 	REDIS
 
-	ErrUnsupportedType = Err("Not supported cache type")
-	ErrWrongFormat     = Err("Wrong format of config")
+	ErrUnsupportedType = errors.Err("Not supported cache type")
+	ErrWrongFormat     = errors.Err("Wrong format of config")
 )
 
 // Cache is cache interface

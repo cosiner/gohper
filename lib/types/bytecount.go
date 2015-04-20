@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"strconv"
 
-	. "github.com/cosiner/gohper/lib/errors"
+	"github.com/cosiner/gohper/lib/errors"
 )
 
 const (
@@ -56,7 +56,7 @@ func BytesCountDef(size string, defSize uint64) (s uint64) {
 // MustBytesCount is same as BytesCount, on error panic
 func MustBytesCount(size string) (s uint64) {
 	s, err := BytesCount(size)
-	OnErrPanic(err)
+	errors.OnErrPanic(err)
 	return s
 }
 

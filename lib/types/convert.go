@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"unsafe"
 
-	. "github.com/cosiner/gohper/lib/errors"
+	"github.com/cosiner/gohper/lib/errors"
 )
 
 // UnsafeString bring a no copy convert from byte slice to string
@@ -38,7 +38,7 @@ func Str2Bool(s string) (val bool, err error) {
 	} else if s == "false" {
 		val = false
 	} else {
-		err = Errorf("%s is not an bool string", s)
+		err = errors.Errorf("%s is not an bool string", s)
 	}
 	return
 }
@@ -69,7 +69,7 @@ func Str2Int(s string) (int, error) {
 // MustStr2Int convert string to int, on error panic
 func MustStr2Int(s string) (val int) {
 	val, err := Str2Int(s)
-	OnErrPanic(err)
+	errors.OnErrPanic(err)
 	return
 }
 
@@ -106,7 +106,7 @@ func Uint2LowerHex(u uint64) []byte {
 // HexStr2Uint convert a hexadecimal string to uint
 // if string is invalid, return an error
 func HexStr2Uint(str string) (n uint, err error) {
-	err = Errorf("Invalid hexadecimal string %s", str)
+	err = errors.Errorf("Invalid hexadecimal string %s", str)
 	if len(str) <= 2 {
 		return
 	}

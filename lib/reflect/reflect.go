@@ -6,7 +6,7 @@ import (
 
 	"github.com/cosiner/gohper/lib/goutil"
 
-	. "github.com/cosiner/gohper/lib/errors"
+	"github.com/cosiner/gohper/lib/errors"
 )
 
 // IsSlice check whether or not param is slice
@@ -33,7 +33,7 @@ func UnmarshalPrimitive(str string, v reflect.Value) (err error) {
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	} else if !v.CanSet() {
-		return Err("Value can't be set")
+		return errors.Err("Value can't be set")
 	}
 	switch k := v.Kind(); k {
 	case reflect.Bool:
@@ -59,7 +59,7 @@ func UnmarshalPrimitive(str string, v reflect.Value) (err error) {
 			err = e
 		}
 	default:
-		err = Errorf("Unsupported type:%s", k.String())
+		err = errors.Errorf("Unsupported type:%s", k.String())
 	}
 	return
 }
@@ -69,12 +69,12 @@ func UnmarshalToStruct(values map[string]string, v interface{}) error {
 	value := reflect.ValueOf(v)
 	kind := value.Kind()
 	if kind != reflect.Ptr {
-		return Errorf("Non-pointer type: %s", kind.String())
+		return errors.Errorf("Non-pointer type: %s", kind.String())
 	}
 	value = value.Elem()
 	kind = value.Kind()
 	if kind != reflect.Struct {
-		return Errorf("Non-struct type:%s", kind.String())
+		return errors.Errorf("Non-struct type:%s", kind.String())
 	}
 	for k, v := range values {
 		if k == "" {

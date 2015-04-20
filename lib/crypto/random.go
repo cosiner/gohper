@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"math/big"
 
-	. "github.com/cosiner/gohper/lib/errors"
+	"github.com/cosiner/gohper/lib/errors"
 )
 
 // Charset of characters to use for generating random strings
@@ -14,8 +14,8 @@ const (
 	ALPHANUMERIC = ALPHABET + NUMERALS
 	ASCII        = ALPHANUMERIC + "~!@#$%^&*()-_+={}[]\\|<,>.?/\"';:`"
 
-	numNegativeError  = Err("Number cannot be negative")
-	charsetEmptyError = Err("Charset cannot be empty")
+	numNegativeError  = errors.Err("Number cannot be negative")
+	charsetEmptyError = errors.Err("Charset cannot be empty")
 )
 
 // RandBytesInCharset generate a random bytes in gived charset

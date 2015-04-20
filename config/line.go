@@ -3,9 +3,8 @@ package config
 import (
 	"strings"
 
+	"github.com/cosiner/gohper/lib/errors"
 	"github.com/cosiner/gohper/lib/sys"
-
-	. "github.com/cosiner/gohper/lib/errors"
 
 	"github.com/cosiner/gohper/lib/types"
 )
@@ -31,7 +30,7 @@ func (lc *lineConfig) ParseString(str string) (err error) {
 		if err = pair.TrimQuote(); err == nil {
 			if pair.NoKey() {
 				if pair.HasValue() {
-					err = Errorf("Wrong Format:%s", f)
+					err = errors.Errorf("Wrong Format:%s", f)
 					break
 				}
 			} else {
