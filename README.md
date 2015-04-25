@@ -1,4 +1,4 @@
-#Gohper
+#Gohper [![wercker status](https://app.wercker.com/status/7736d0f7ea77997f830cb7aee6b3ea5a/s "wercker status")](https://app.wercker.com/project/bykey/7736d0f7ea77997f830cb7aee6b3ea5a)
 
 **gohper** is goh(el)per, not gopher, but it's gophers' friend.
 

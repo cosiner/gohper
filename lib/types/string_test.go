@@ -64,3 +64,10 @@ func TestValid(t *testing.T) {
 	tt.True(AllCharsIn("abc", "abcdefghijklmn"))
 	tt.False(AllCharsIn("ao", "abcdefghijklmn"))
 }
+
+func TestRemoveSpace(t *testing.T) {
+	tt := test.Wrap(t)
+	tt.Eq("abcdefg", RemoveSpace(`a b
+    	c d 	e
+    	 	f g`))
+}

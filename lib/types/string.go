@@ -179,37 +179,37 @@ func StringReader(s string) *strings.Reader {
 	return strings.NewReader(s)
 }
 
-// TrimBefore trim string and remove the section before delimiter and delimiter itself
-func TrimBefore(s string, delimiter string) string {
+// TrimAfter trim string and remove the section after delimiter and delimiter itself
+func TrimAfter(s string, delimiter string) string {
 	if idx := strings.Index(s, delimiter); idx >= 0 {
 		s = s[:idx]
 	}
 	return strings.TrimSpace(s)
 }
 
-// TrimBytesBefore trim bytes and remove the section before delimiter and delimiter itself
-func TrimBytesBefore(s []byte, delimiter []byte) []byte {
+// TrimBytesAfter trim bytes and remove the section after delimiter and delimiter itself
+func TrimBytesAfter(s []byte, delimiter []byte) []byte {
 	if idx := bytes.Index(s, delimiter); idx >= 0 {
 		s = s[:idx]
 	}
 	return bytes.TrimSpace(s)
 }
 
-// TrimAfter trim string and remove the section after delimiter and delimiter itself
-func TrimAfter(s string, delimiter string) (ret string) {
-	if idx := strings.Index(s, delimiter); idx >= 0 {
-		ret = TrimSpace(s[idx:])
-	}
-	return
-}
+// // TrimBefore trim string and remove the section before delimiter and delimiter itself
+// func TrimBefore(s string, delimiter string) (ret string) {
+// 	if idx := strings.Index(s, delimiter); idx >= 0 {
+// 		ret = TrimSpace(s[idx:])
+// 	}
+// 	return
+// }
 
-// TrimBytesAfter trim bytes and remove the section after delimiter and delimiter itself
-func TrimBytesAfter(s []byte, delimiter []byte) (ret []byte) {
-	if idx := bytes.Index(s, delimiter); idx >= 0 {
-		ret = bytes.TrimSpace(s[idx:])
-	}
-	return
-}
+// // TrimBytesBefore trim bytes and remove the section before delimiter and delimiter itself
+// func TrimBytesBefore(s []byte, delimiter []byte) (ret []byte) {
+// 	if idx := bytes.Index(s, delimiter); idx >= 0 {
+// 		ret = bytes.TrimSpace(s[idx:])
+// 	}
+// 	return
+// }
 
 // StrIndexN find index of n-th sep string
 func StrIndexN(str, sep string, n int) (index int) {
@@ -371,4 +371,16 @@ func MidIndex(s string, sep byte) int {
 		return index
 	}
 	return -1
+}
+
+func RemoveSpace(s string) string {
+	index, end := 0, len(s)
+	bs := make([]byte, end)
+	for i := 0; i < end; i++ {
+		if !IsSpace(s[i]) {
+			bs[index] = s[i]
+			index++
+		}
+	}
+	return string(bs[:index])
 }

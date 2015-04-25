@@ -11,6 +11,6 @@ func TestUnmarshalPrimitive(t *testing.T) {
 	tt := test.Wrap(t)
 	bs := "true"
 	var b bool
-	tt.Nil(UnmarshalPrimitive(bs, reflect.ValueOf(&b)))
+	tt.True(UnmarshalPrimitive(bs, reflect.ValueOf(&b)) == nil)
 	tt.True(b)
 }
