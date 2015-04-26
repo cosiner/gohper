@@ -384,3 +384,12 @@ func RemoveSpace(s string) string {
 	}
 	return string(bs[:index])
 }
+
+func LastIndexByte(s string, b byte) int {
+	for l := len(s) - 1; l >= 0; l-- {
+		if s[l] == b {
+			return l
+		}
+	}
+	return -1
+}
