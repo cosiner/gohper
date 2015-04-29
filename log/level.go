@@ -9,6 +9,28 @@ import (
 	"github.com/cosiner/gohper/lib/types"
 )
 
+const (
+	LEVEL_DEBUG Level = iota
+	LEVEL_INFO
+	LEVEL_WARN
+	LEVEL_ERROR
+	LEVEL_FATAL
+	LEVEL_OFF
+
+	LEVEL_ALL  = LEVEL_DEBUG
+	_LEVEL_MIN = LEVEL_DEBUG
+	_LEVEL_MAX = LEVEL_FATAL
+
+	ErrUnknownLevel = errors.Err("Unknown log level")
+)
+
+var (
+	// levelName specified the all log level name
+	levelName  = [...]string{"DEBUG", "INFO", "WARN", "ERROR", "FATAL", "OFF"}
+	timeFormat = time.FormatLayout("yyyymmdd-HHMMSS")
+)
+
+
 type (
 	// Level is log level,
 	// DEBUG, INFO, WARN, ERROR, FATAL,
@@ -25,29 +47,8 @@ type (
 	}
 )
 
-var (
-	// levelName specified the all log level name
-	levelName  = [...]string{"DEBUG", "INFO", "WARN", "ERROR", "FATAL", "OFF"}
-	timeFormat = time.FormatLayout("yyyymmdd-HHMMSS")
-)
-
-const (
-	LEVEL_DEBUG Level = iota
-	LEVEL_INFO
-	LEVEL_WARN
-	LEVEL_ERROR
-	LEVEL_FATAL
-	LEVEL_OFF
-
-	LEVEL_ALL  = LEVEL_DEBUG
-	_LEVEL_MIN = LEVEL_DEBUG
-	_LEVEL_MAX = LEVEL_FATAL
-
-	ErrUnknownLevel = errors.Err("Unknown log level")
-)
-
 // String return level name, if level is no more than level_off, return actual name
-// else return UNKNOWN
+// else panic
 func (l Level) String() string {
 	if l >= _LEVEL_MIN && l <= LEVEL_OFF {
 		return levelName[l]
@@ -66,7 +67,6 @@ func ParseLevel(str string) Level {
 	panic(ErrUnknownLevel)
 }
 
-// String return a log as string with format "[level] time message"
 func (l *Log) WriteTo(w io.Writer) error {
 	_, err := fmt.Fprintf(w, "[%5s] %s ", l.Level, l.Time)
 	if l.depth != "" {

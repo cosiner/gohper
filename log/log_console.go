@@ -8,11 +8,6 @@ import (
 	"github.com/mattn/go-colorable"
 )
 
-// bgColor create color render use given background color, default highlight
-func bgColor(bg string) *termcolor.TermColor {
-	return termcolor.New().Highlight().Bg(bg).Finish()
-}
-
 // defTermColor define default color for each log level
 var defTermColor = [5]*termcolor.TermColor{
 	bgColor(termcolor.GREEN),  //debug
@@ -22,16 +17,23 @@ var defTermColor = [5]*termcolor.TermColor{
 	bgColor(termcolor.RED),    //fatal
 }
 
-type ConsoleWriterOption struct {
-	DisableColor bool
-	Colors       map[string]string
-}
+type (
+	ConsoleWriterOption struct {
+		DisableColor bool
+		Colors       map[string]string
+	}
 
-// ConsoleWriter output log to console
-type ConsoleWriter struct {
-	termColor [5]*termcolor.TermColor
-	out       io.Writer
-	err       io.Writer
+	// ConsoleWriter output log to console
+	ConsoleWriter struct {
+		termColor [5]*termcolor.TermColor
+		out       io.Writer
+		err       io.Writer
+	}
+)
+
+// bgColor create color render use given background color, default highlight
+func bgColor(bg string) *termcolor.TermColor {
+	return termcolor.New().Highlight().Bg(bg).Finish()
 }
 
 // Config config console log writer

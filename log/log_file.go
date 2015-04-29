@@ -20,16 +20,33 @@ const (
 	_LOGDIR_PERM = 0755
 )
 
-// logBuffer represent a log w for a special level
-type logBuffer struct {
-	file *os.File
-	*bufio.Writer
-	nbytes  uint64
-	logdir  string
-	level   string
-	bufsize uint64
-	maxsize uint64
-}
+type (
+	// logBuffer represent a log w for a special level
+	logBuffer struct {
+		file *os.File
+		*bufio.Writer
+		nbytes  uint64
+		logdir  string
+		level   string
+		bufsize uint64
+		maxsize uint64
+	}
+
+	FileWriterOption struct {
+		Bufsize string
+		Maxsize string
+		Daily   bool
+		Logdir  string
+	}
+
+	// logWrite is actuall log w, output is local file
+	FileWriter struct {
+		level Level
+		files []*logBuffer
+		lock  int32
+		quit  chan struct{}
+	}
+)
 
 // newLogBuffer create a new log buffer
 func newLogBuffer(logdir, level string, bufsize, maxsize uint64) (*logBuffer, error) {
@@ -86,25 +103,10 @@ func (buf *logBuffer) write(msg string) (err error) {
 	return
 }
 
-type FileWriterOption struct {
-	Bufsize string
-	Maxsize string
-	Daily   bool
-	Logdir  string
-}
-
 func (o *FileWriterOption) init() {
 	defval.String(&o.Bufsize, "10K")
 	defval.String(&o.Maxsize, "20M")
 	defval.String(&o.Logdir, "logs")
-}
-
-// logWrite is actuall log w, output is local file
-type FileWriter struct {
-	level Level
-	files []*logBuffer
-	lock  int32
-	quit  chan struct{}
 }
 
 // Config resolv config, format like bufsize=xxx&maxsize=xxx&logdir=xxx&level=info
