@@ -83,6 +83,15 @@ func (opt *LoggerOption) init() {
 	defval.Int(&opt.Backlog, 100)
 }
 
+// Default create a logger with console writer, use debug level
+func Default() Logger {
+	l := New(&LoggerOption{
+		Level: LEVEL_DEBUG,
+	})
+	l.AddWriter(new(ConsoleWriter), nil)
+	return l
+}
+
 // NewLogger return a logger, if params is wrong, use default value
 func New(opt *LoggerOption) Logger {
 	if opt == nil {
