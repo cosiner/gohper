@@ -1,7 +1,7 @@
-// Inspired by google glog
 package log
 
 import (
+	"github.com/cosiner/gohper/lib/runtime"
 	"os"
 	"time"
 
@@ -16,6 +16,7 @@ const (
 type (
 	Logger interface {
 		AddWriter(Writer, interface{}) error
+		Depth(func(depth int) string)
 		Level() Level
 		Flush()
 		Close()
@@ -72,6 +73,8 @@ type (
 		flushInterval time.Duration
 		logs          chan *Log
 		flush, exit   chan struct{}
+
+		depthFunc 	  func(int)string
 	}
 )
 
@@ -95,6 +98,7 @@ func New(opt *LoggerOption) Logger {
 		flush:         make(chan struct{}, 1),
 		exit:          make(chan struct{}, 1),
 		flushInterval: time.Duration(opt.Flush) * time.Second,
+		depthFunc:	runtime.CallerPosition,
 	}
 	l.start()
 	return l
@@ -111,6 +115,10 @@ func (logger *logger) AddWriter(w Writer, conf interface{}) error {
 		logger.writers = append(logger.writers, w)
 	}
 	return err
+}
+
+func (logger *logger) Depth(d func(int)string) {
+	logger.depthFunc = d
 }
 
 // Level return logger's level
@@ -194,7 +202,7 @@ func (logger *logger) print(level Level, args ...interface{}) {
 
 func (logger *logger) printDepth(level Level, depth int, args ...interface{}) {
 	if level >= logger.level {
-		logger.logs <- logDepth(level, depth+1, args...)
+		logger.logs <- logDepth(level, logger.depthFunc(depth + 1), args...)
 	}
 }
 

@@ -1,7 +1,8 @@
 package log
 
 //TODO: error handling
-
+//
+// Inspired by google glog
 import (
 	"bufio"
 	"fmt"

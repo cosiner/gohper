@@ -5,7 +5,6 @@ import (
 	"io"
 
 	"github.com/cosiner/gohper/lib/errors"
-	"github.com/cosiner/gohper/lib/runtime"
 	"github.com/cosiner/gohper/lib/time"
 	"github.com/cosiner/gohper/lib/types"
 )
@@ -110,12 +109,12 @@ func logln(level Level, args ...interface{}) *Log {
 	}
 }
 
-func logDepth(level Level, depth int, args ...interface{}) *Log {
+func logDepth(level Level, depth string, args ...interface{}) *Log {
 	return &Log{
 		Level:   level,
 		Time:    time.DateTime(),
 		newline: true,
-		depth:   runtime.CallerPosition(depth + 1),
+		depth:   depth,
 		args:    args,
 	}
 }
