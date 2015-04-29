@@ -21,28 +21,28 @@ type (
 		Flush()
 		Close()
 
-		Debug(...interface{})
+		Trace(...interface{})
 		Info(...interface{})
 		Warn(...interface{})
-		Error(...interface{}) // panic goroutine
+		Panic(...interface{}) // panic goroutine
 		Fatal(...interface{}) // exit process
 
-		Debugf(string, ...interface{})
+		Tracef(string, ...interface{})
 		Infof(string, ...interface{})
 		Warnf(string, ...interface{})
-		Errorf(string, ...interface{})
+		Panicf(string, ...interface{})
 		Fatalf(string, ...interface{})
 
-		Debugln(...interface{})
+		Traceln(...interface{})
 		Infoln(...interface{})
 		Warnln(...interface{})
-		Errorln(...interface{})
+		Panicln(...interface{})
 		Fatalln(...interface{})
 
-		DebugDepth(int, ...interface{})
+		TraceDepth(int, ...interface{})
 		InfoDepth(int, ...interface{})
 		WarnDepth(int, ...interface{})
-		ErrorDepth(int, ...interface{})
+		PanicDepth(int, ...interface{})
 		FatalDepth(int, ...interface{})
 	}
 
@@ -86,7 +86,7 @@ func (opt *LoggerOption) init() {
 // Default create a logger with console writer, use debug level
 func Default() Logger {
 	l := New(&LoggerOption{
-		Level: LEVEL_DEBUG,
+		Level: _LEVEL_MIN,
 	})
 	l.AddWriter(new(ConsoleWriter), nil)
 	return l
@@ -215,9 +215,9 @@ func (l *logger) printDepth(level Level, depth int, args ...interface{}) {
 	}
 }
 
-// Debugf log for debug message
-func (l *logger) Debugf(format string, args ...interface{}) {
-	l.printf(LEVEL_DEBUG, format, args...)
+// Tracef log for debug message
+func (l *logger) Tracef(format string, args ...interface{}) {
+	l.printf(LEVEL_TRACE, format, args...)
 }
 
 // Infof log for info message
@@ -230,10 +230,10 @@ func (l *logger) Warnf(format string, args ...interface{}) {
 	l.printf(LEVEL_WARN, format, args...)
 }
 
-// Errorf log for error message
-func (l *logger) Errorf(format string, args ...interface{}) {
-	l.printf(LEVEL_ERROR, format, args)
-	panic(log)
+// Panicf log for error message
+func (l *logger) Panicf(format string, args ...interface{}) {
+	l.printf(LEVEL_PANIC, format, args)
+	panic(l.depthFunc(1))
 }
 
 // Fatalf log for fatal message
@@ -241,9 +241,9 @@ func (l *logger) Fatalf(format string, args ...interface{}) {
 	l.printf(LEVEL_FATAL, format, args)
 }
 
-// Debugln log for debug message
-func (l *logger) Debugln(args ...interface{}) {
-	l.println(LEVEL_DEBUG, args...)
+// Traceln log for debug message
+func (l *logger) Traceln(args ...interface{}) {
+	l.println(LEVEL_TRACE, args...)
 }
 
 // Infoln log for info message
@@ -256,10 +256,10 @@ func (l *logger) Warnln(args ...interface{}) {
 	l.println(LEVEL_WARN, args...)
 }
 
-// Errorln log for error message
-func (l *logger) Errorln(args ...interface{}) {
-	l.println(LEVEL_ERROR, args...)
-	panic(log)
+// Panicln log for error message
+func (l *logger) Panicln(args ...interface{}) {
+	l.println(LEVEL_PANIC, args...)
+	panic(l.depthFunc(1))
 }
 
 // Fatalln log for fatal message
@@ -267,9 +267,9 @@ func (l *logger) Fatalln(args ...interface{}) {
 	l.println(LEVEL_FATAL, args...)
 }
 
-// Debug log for debug message
-func (l *logger) Debug(args ...interface{}) {
-	l.print(LEVEL_DEBUG, args...)
+// Trace log for debug message
+func (l *logger) Trace(args ...interface{}) {
+	l.print(LEVEL_TRACE, args...)
 }
 
 // Info log for info message
@@ -282,10 +282,10 @@ func (l *logger) Warn(args ...interface{}) {
 	l.print(LEVEL_WARN, args...)
 }
 
-// Error log for error message
-func (l *logger) Error(args ...interface{}) {
-	l.print(LEVEL_ERROR, args...)
-	panic(log)
+// Panic log for error message
+func (l *logger) Panic(args ...interface{}) {
+	l.print(LEVEL_PANIC, args...)
+	panic(l.depthFunc(1))
 }
 
 // Fatal log for error message
@@ -293,9 +293,9 @@ func (l *logger) Fatal(args ...interface{}) {
 	l.print(LEVEL_FATAL, args...)
 }
 
-// Debug log for debug message
-func (l *logger) DebugDepth(depth int, args ...interface{}) {
-	l.printDepth(LEVEL_DEBUG, depth+1, args...)
+// Trace log for debug message
+func (l *logger) TraceDepth(depth int, args ...interface{}) {
+	l.printDepth(LEVEL_TRACE, depth+1, args...)
 }
 
 // Info log for info message
@@ -308,10 +308,10 @@ func (l *logger) WarnDepth(depth int, args ...interface{}) {
 	l.printDepth(LEVEL_WARN, depth+1, args...)
 }
 
-// Error log for error message
-func (l *logger) ErrorDepth(depth int, args ...interface{}) {
-	l.printDepth(LEVEL_ERROR, depth+1, args...)
-	panic(log)
+// Panic log for error message
+func (l *logger) PanicDepth(depth int, args ...interface{}) {
+	l.printDepth(LEVEL_PANIC, depth+1, args...)
+	panic(l.depthFunc(1))
 }
 
 // Fatal log for error message

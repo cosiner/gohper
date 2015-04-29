@@ -83,7 +83,7 @@ func (w *ConsoleWriter) DisableColor() {
 // Write write
 func (w *ConsoleWriter) Write(log *Log) error {
 	out := w.out
-	if log.Level >= LEVEL_ERROR {
+	if log.Level >= LEVEL_PANIC {
 		out = w.err
 	}
 	tc := w.termColor[log.Level]

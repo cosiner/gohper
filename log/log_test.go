@@ -1,8 +1,8 @@
 package log
 
 import (
-	"time"
 	"testing"
+	"time"
 
 	"github.com/cosiner/gohper/lib/errors"
 )
@@ -13,7 +13,7 @@ func TestConsoleLog(t *testing.T) {
 		Colors: map[string]string{},
 	}))
 	logger.Infoln("aaa1")
-	logger.Debugln("aaa2")
+	logger.Traceln("aaa2")
 	logger.Infoln("aaa3")
 	logger.Infoln("aaa4")
 	logger.Warnln("aaa4")
@@ -22,7 +22,7 @@ func TestConsoleLog(t *testing.T) {
 
 func TestFileLog(t *testing.T) {
 	logger := New(&LoggerOption{
-		Level: LEVEL_DEBUG,
+		Level: LEVEL_TRACE,
 	})
 	logger.AddWriter(new(ConsoleWriter), nil)
 	errors.OnErrExit(logger.AddWriter(new(FileWriter), &FileWriterOption{
@@ -33,7 +33,7 @@ func TestFileLog(t *testing.T) {
 	}))
 	logger.Warnln("DDDDDDDDDDDDDDDD")
 	logger.Infoln("DDDDDDDDDDDDDDDD")
-	logger.Debugln("DDDDDDDDDDDDDDDD")
+	logger.Traceln("DDDDDDDDDDDDDDDD")
 	logger.Close()
 	time.Sleep(100 * time.Millisecond)
 }
