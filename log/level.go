@@ -10,15 +10,15 @@ import (
 )
 
 const (
-	LEVEL_DEBUG Level = iota
+	LEVEL_TRACE Level = iota
 	LEVEL_INFO
 	LEVEL_WARN
-	LEVEL_ERROR
+	LEVEL_PANIC
 	LEVEL_FATAL
 	LEVEL_OFF
 
-	LEVEL_ALL  = LEVEL_DEBUG
-	_LEVEL_MIN = LEVEL_DEBUG
+	LEVEL_ALL  = LEVEL_TRACE
+	_LEVEL_MIN = LEVEL_TRACE
 	_LEVEL_MAX = LEVEL_FATAL
 
 	ErrUnknownLevel = errors.Err("Unknown log level")
@@ -26,14 +26,13 @@ const (
 
 var (
 	// levelName specified the all log level name
-	levelName  = [...]string{"DEBUG", "INFO", "WARN", "ERROR", "FATAL", "OFF"}
+	levelName  = [...]string{"TRACE", "INFO", "WARN", "PANIC", "FATAL", "OFF"}
 	timeFormat = time.FormatLayout("yyyymmdd-HHMMSS")
 )
 
-
 type (
 	// Level is log level,
-	// DEBUG, INFO, WARN, ERROR, FATAL,
+	// TRACE, INFO, WARN, PANIC, FATAL,
 	Level uint8
 	// Log represend a log with level and log message
 	Log struct {
