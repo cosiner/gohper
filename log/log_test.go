@@ -1,39 +1,39 @@
 package log
 
 import (
-	e "github.com/cosiner/gohper/lib/errors"
-
+	"time"
 	"testing"
+
+	"github.com/cosiner/gohper/lib/errors"
 )
 
 func TestConsoleLog(t *testing.T) {
-	logger := New(DEF_FLUSHINTERVAL, LEVEL_INFO)
-	logger.AddConfWriter(new(ConsoleWriter), "info=green")
-	logger.Errorln("aaa1")
+	logger := New(nil)
+	errors.OnErrExit(logger.AddWriter(new(ConsoleWriter), &ConsoleWriterOption{
+		Colors: map[string]string{},
+	}))
+	logger.Infoln("aaa1")
 	logger.Debugln("aaa2")
-	logger.Errorln("aaa3")
+	logger.Infoln("aaa3")
 	logger.Infoln("aaa4")
 	logger.Warnln("aaa4")
-	logger.Errorln("aaa4")
-	// Fatalln("dddddddddd")
-	// Fatalln("ddddddddddddddddddaaaaaaaaaaaa")
+	logger.Infoln("aaa4")
 }
 
 func TestFileLog(t *testing.T) {
-	logger := New(DEF_FLUSHINTERVAL, LEVEL_INFO)
-	e.OnErrExit(logger.AddConfWriter(new(FileWriter), "bufsize=10240&maxsize=10240&logdir=/tmp/logs&level=info"))
+	logger := New(&LoggerOption{
+		Level: LEVEL_DEBUG,
+	})
+	logger.AddWriter(new(ConsoleWriter), nil)
+	errors.OnErrExit(logger.AddWriter(new(FileWriter), &FileWriterOption{
+		Bufsize: "10K",
+		Maxsize: "10M",
+		Logdir:  "logss",
+		Daily:   true,
+	}))
 	logger.Warnln("DDDDDDDDDDDDDDDD")
-	logger.Warnln("DDDDDDDDDDDDDDDD")
-	logger.Warnln("DDDDDDDDDDDDDDDD")
-	logger.Warnln("DDDDDDDDDDDDDDDD")
-	logger.Warnln("DDDDDDDDDDDDDDDD")
-	logger.Warnln("DDDDDDDDDDDDDDDD")
-	logger.Warnln("DDDDDDDDDDDDDDDD")
-	logger.Warnln("DDDDDDDDDDDDDDDD")
-	logger.Warnln("DDDDDDDDDDDDDDDD")
-	logger.Warnln("DDDDDDDDDDDDDDDD")
-	logger.Warnln("DDDDDDDDDDDDDDDD")
-	logger.Warnln("DDDDDDDDDDDDDDDD")
-	logger.Warnln("DDDDDDDDDDDDDDDD")
-	logger.Flush()
+	logger.Infoln("DDDDDDDDDDDDDDDD")
+	logger.Debugln("DDDDDDDDDDDDDDDD")
+	logger.Close()
+	time.Sleep(100 * time.Millisecond)
 }

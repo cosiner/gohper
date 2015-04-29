@@ -1,43 +1,56 @@
+// Inspired by google glog
 package log
 
 import (
-	"fmt"
+	"os"
 	"time"
 
-	"github.com/cosiner/gohper/lib/runtime"
+	"github.com/cosiner/gohper/lib/defval"
+	"github.com/cosiner/gohper/lib/errors"
+)
+
+const (
+	ErrInvalidConfig = errors.Err("invalid config parameters or type")
 )
 
 type (
 	Logger interface {
-		AddWriter(Writer)
-		AddConfWriter(Writer, string) error
+		AddWriter(Writer, interface{}) error
 		Level() Level
 		Flush()
+		Close()
+
+		Debug(...interface{})
+		Info(...interface{})
+		Warn(...interface{})
+		Error(...interface{}) // panic goroutine
+		Fatal(...interface{}) // exit process
 
 		Debugf(string, ...interface{})
-		PosDebugf(int, string, ...interface{})
 		Infof(string, ...interface{})
 		Warnf(string, ...interface{})
 		Errorf(string, ...interface{})
 		Fatalf(string, ...interface{})
+
 		Debugln(...interface{})
-		PosDebugln(int, ...interface{})
 		Infoln(...interface{})
 		Warnln(...interface{})
 		Errorln(...interface{})
 		Fatalln(...interface{})
-		Debug(...interface{})
-		PosDebug(int, ...interface{})
-		Info(...interface{})
-		Warn(...interface{})
-		Error(...interface{})
-		Fatal(...interface{})
+
+		DebugDepth(int, ...interface{})
+		InfoDepth(int, ...interface{})
+		WarnDepth(int, ...interface{})
+		ErrorDepth(int, ...interface{})
+		FatalDepth(int, ...interface{})
 	}
 
 	// Writer is actual log writer
 	Writer interface {
+		// SetLevel will be called before Config
+		SetLevel(Level)
 		// Config config writer
-		Config(conf string) error
+		Config(interface{}) error
 		// Writer output log
 		Write(log *Log) error
 		// Flush flush output
@@ -46,52 +59,56 @@ type (
 		Close()
 	}
 
+	LoggerOption struct {
+		Level
+		Flush   int // by seconds
+		Backlog int
+	}
+
 	// Logger
 	logger struct {
 		level         Level
 		writers       []Writer
 		flushInterval time.Duration
 		logs          chan *Log
-		signal        chan byte
+		flush, exit   chan struct{}
 	}
 )
 
-const (
-	_SIGNAL_FLUSH byte = iota // flush all writer
-)
+func (opt *LoggerOption) init() {
+	defval.Int(&opt.Flush, 30)
+	defval.Int(&opt.Backlog, 100)
+}
 
 // NewLogger return a logger, if params is wrong, use default value
-func New(flushInterval int, level Level) Logger {
-	if level < _LEVEL_MIN || level > LEVEL_OFF {
-		panic(ErrUnknownLevel)
+func New(opt *LoggerOption) Logger {
+	if opt == nil {
+		opt = &LoggerOption{}
 	}
-	if flushInterval <= 0 {
-		panic("Flush interval should not be negative or zero")
-	}
-	if level == LEVEL_OFF {
-		return &logger{}
+	opt.init()
+	if opt.Level == LEVEL_OFF {
+		return &logger{level: LEVEL_OFF}
 	}
 	l := &logger{
-		level:         level,
-		logs:          make(chan *Log, DEF_BACKLOG),
-		signal:        make(chan byte, 1),
-		flushInterval: time.Duration(flushInterval) * time.Second,
+		level:         opt.Level,
+		logs:          make(chan *Log, opt.Backlog),
+		flush:         make(chan struct{}, 1),
+		exit:          make(chan struct{}, 1),
+		flushInterval: time.Duration(opt.Flush) * time.Second,
 	}
 	l.start()
 	return l
 }
 
-// AddWriter add a  log writer, nil writer will be auto-ignored
-func (logger *logger) AddWriter(writer Writer) {
-	if logger.level < LEVEL_OFF {
-		logger.writers = append(logger.writers, writer)
+func (logger *logger) AddWriter(w Writer, conf interface{}) error {
+	if logger.level == LEVEL_OFF {
+		return nil
 	}
-}
 
-func (logger *logger) AddConfWriter(writer Writer, conf string) error {
-	err := writer.Config(conf)
+	w.SetLevel(logger.level)
+	err := w.Config(conf)
 	if err == nil {
-		logger.AddWriter(writer)
+		logger.writers = append(logger.writers, w)
 	}
 	return err
 }
@@ -102,161 +119,185 @@ func (logger *logger) Level() (l Level) {
 }
 
 // start start logger
-func (logger *logger) start() {
-	go func() {
-		ticker := time.Tick(logger.flushInterval)
+func (l *logger) start() {
+	go func(l *logger) {
+		ticker := time.Tick(l.flushInterval)
 		for {
 			select {
-			case log := <-logger.logs:
-				for _, writer := range logger.writers {
-					writer.Write(log)
-				}
+			case log := <-l.logs:
+				l.processLogs(log)
 			case <-ticker:
-				for _, writer := range logger.writers {
-					writer.Flush()
-				}
-			case <-logger.signal:
-				for _, writer := range logger.writers {
-					writer.Flush()
-				}
+				l.processFlush()
+			case <-l.flush:
+				l.processFlush()
+			case <-l.exit:
+				l.processClose()
 			}
 		}
-	}()
+	}(l)
+}
+
+func (logger *logger) processFlush() {
+	for _, writer := range logger.writers {
+		writer.Flush()
+	}
+}
+
+func (logger *logger) processLogs(log *Log) {
+	for _, writer := range logger.writers {
+		writer.Write(log)
+	}
+	if log.Level == LEVEL_FATAL {
+		for _, w := range logger.writers {
+			w.Close()
+		}
+		os.Exit(-1)
+	}
+}
+
+func (logger *logger) processClose() {
+	for len(logger.logs) > 0 {
+		logger.processLogs(<-logger.logs)
+	}
+	for _, w := range logger.writers {
+		w.Close()
+	}
 }
 
 // Flush flush logger
 func (logger *logger) Flush() {
-	logger.signal <- _SIGNAL_FLUSH
+	logger.flush <- struct{}{}
 }
 
-func (logger *logger) logf(level Level, format string, v ...interface{}) *Log {
+func (logger *logger) Close() {
+	logger.level = LEVEL_OFF
+	logger.exit <- struct{}{}
+}
+
+func (logger *logger) printf(level Level, format string, args ...interface{}) {
 	if level >= logger.level {
-		log := NewLogf(level, format, v...)
-		logger.logs <- log
-		return log
+		logger.logs <- logf(level, format, args...)
 	}
-	return nil
 }
 
-func (logger *logger) logln(level Level, v ...interface{}) *Log {
+func (logger *logger) println(level Level, args ...interface{}) {
 	if level >= logger.level {
-		log := NewLogln(level, v...)
-		logger.logs <- log
-		return log
+		logger.logs <- logln(level, args...)
 	}
-	return nil
 }
 
-func (logger *logger) log(level Level, v ...interface{}) *Log {
+func (logger *logger) print(level Level, args ...interface{}) {
 	if level >= logger.level {
-		log := NewLog(level, v...)
-		logger.logs <- log
-		return log
+		logger.logs <- log(level, args...)
 	}
-	return nil
 }
 
-func (logger *logger) PosDebugf(skip int, format string, v ...interface{}) {
-	if logger.level == LEVEL_DEBUG {
-		format = fmt.Sprintf("%s %s", runtime.CallerPosition(skip+1), format)
-		logger.logf(LEVEL_DEBUG, format, v...)
+func (logger *logger) printDepth(level Level, depth int, args ...interface{}) {
+	if level >= logger.level {
+		logger.logs <- logDepth(level, depth+1, args...)
 	}
 }
 
 // Debugf log for debug message
-func (logger *logger) Debugf(format string, v ...interface{}) {
-	logger.logf(LEVEL_DEBUG, format, v...)
+func (logger *logger) Debugf(format string, args ...interface{}) {
+	logger.printf(LEVEL_DEBUG, format, args...)
 }
 
 // Infof log for info message
-func (logger *logger) Infof(format string, v ...interface{}) {
-	logger.logf(LEVEL_INFO, format, v...)
+func (logger *logger) Infof(format string, args ...interface{}) {
+	logger.printf(LEVEL_INFO, format, args...)
 }
 
 // Warnf log for warning message
-func (logger *logger) Warnf(format string, v ...interface{}) {
-	logger.logf(LEVEL_WARN, format, v...)
+func (logger *logger) Warnf(format string, args ...interface{}) {
+	logger.printf(LEVEL_WARN, format, args...)
 }
 
 // Errorf log for error message
-func (logger *logger) Errorf(format string, v ...interface{}) {
-	if log := logger.logf(LEVEL_ERROR, format, v...); logger.level == LEVEL_DEBUG {
-		panic(log)
-	}
+func (logger *logger) Errorf(format string, args ...interface{}) {
+	logger.printf(LEVEL_ERROR, format, args)
+	panic(log)
 }
 
 // Fatalf log for fatal message
-func (logger *logger) Fatalf(format string, v ...interface{}) {
-	panic(logger.logf(LEVEL_FATAL, format, v...))
-}
-
-func (logger *logger) PosDebugln(skip int, v ...interface{}) {
-	if logger.level == LEVEL_DEBUG {
-		logger.logln(LEVEL_DEBUG, append([]interface{}{runtime.CallerPosition(skip + 1)}, v...)...)
-	}
+func (logger *logger) Fatalf(format string, args ...interface{}) {
+	logger.printf(LEVEL_FATAL, format, args)
 }
 
 // Debugln log for debug message
-func (logger *logger) Debugln(v ...interface{}) {
-	logger.logln(LEVEL_DEBUG, v...)
+func (logger *logger) Debugln(args ...interface{}) {
+	logger.println(LEVEL_DEBUG, args...)
 }
 
 // Infoln log for info message
-func (logger *logger) Infoln(v ...interface{}) {
-	logger.logln(LEVEL_INFO, v...)
+func (logger *logger) Infoln(args ...interface{}) {
+	logger.println(LEVEL_INFO, args...)
 }
 
 // Warnln log for warning message
-func (logger *logger) Warnln(v ...interface{}) {
-	logger.logln(LEVEL_WARN, v...)
+func (logger *logger) Warnln(args ...interface{}) {
+	logger.println(LEVEL_WARN, args...)
 }
 
 // Errorln log for error message
-func (logger *logger) Errorln(v ...interface{}) {
-	if log := logger.logln(LEVEL_ERROR, v...); logger.level == LEVEL_DEBUG {
-		panic(log)
-	}
+func (logger *logger) Errorln(args ...interface{}) {
+	logger.println(LEVEL_ERROR, args...)
+	panic(log)
 }
 
 // Fatalln log for fatal message
-func (logger *logger) Fatalln(v ...interface{}) {
-	if log := logger.logln(LEVEL_FATAL, v...); log != nil {
-		panic(log)
-	}
+func (logger *logger) Fatalln(args ...interface{}) {
+	logger.println(LEVEL_FATAL, args...)
 }
 
 // Debug log for debug message
-func (logger *logger) Debug(v ...interface{}) {
-	logger.log(LEVEL_DEBUG, v...)
-}
-
-// Debug log for debug message
-func (logger *logger) PosDebug(skip int, v ...interface{}) {
-	if logger.level == LEVEL_DEBUG {
-		logger.log(LEVEL_DEBUG, append([]interface{}{runtime.CallerPosition(skip + 1)}, v...)...)
-	}
+func (logger *logger) Debug(args ...interface{}) {
+	logger.print(LEVEL_DEBUG, args...)
 }
 
 // Info log for info message
-func (logger *logger) Info(v ...interface{}) {
-	logger.log(LEVEL_INFO, v...)
+func (logger *logger) Info(args ...interface{}) {
+	logger.print(LEVEL_INFO, args...)
 }
 
 // Warn log for warning message
-func (logger *logger) Warn(v ...interface{}) {
-	logger.log(LEVEL_WARN, v...)
+func (logger *logger) Warn(args ...interface{}) {
+	logger.print(LEVEL_WARN, args...)
 }
 
 // Error log for error message
-func (logger *logger) Error(v ...interface{}) {
-	if log := logger.log(LEVEL_ERROR, v...); logger.level == LEVEL_DEBUG {
-		panic(log)
-	}
+func (logger *logger) Error(args ...interface{}) {
+	logger.print(LEVEL_ERROR, args...)
+	panic(log)
 }
 
 // Fatal log for error message
-func (logger *logger) Fatal(v ...interface{}) {
-	if log := logger.log(LEVEL_FATAL, v...); log != nil {
-		panic(log)
-	}
+func (logger *logger) Fatal(args ...interface{}) {
+	logger.print(LEVEL_FATAL, args...)
+}
+
+// Debug log for debug message
+func (logger *logger) DebugDepth(depth int, args ...interface{}) {
+	logger.printDepth(LEVEL_DEBUG, depth+1, args...)
+}
+
+// Info log for info message
+func (logger *logger) InfoDepth(depth int, args ...interface{}) {
+	logger.printDepth(LEVEL_INFO, depth+1, args...)
+}
+
+// Warn log for warning message
+func (logger *logger) WarnDepth(depth int, args ...interface{}) {
+	logger.printDepth(LEVEL_WARN, depth+1, args...)
+}
+
+// Error log for error message
+func (logger *logger) ErrorDepth(depth int, args ...interface{}) {
+	logger.printDepth(LEVEL_ERROR, depth+1, args...)
+	panic(log)
+}
+
+// Fatal log for error message
+func (logger *logger) FatalDepth(depth int, args ...interface{}) {
+	logger.printDepth(LEVEL_FATAL, depth+1, args...)
 }

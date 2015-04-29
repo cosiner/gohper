@@ -1,16 +1,16 @@
 package log
 
+//TODO: error handling
+
 import (
 	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"time"
 
-	t "github.com/cosiner/gohper/lib/time"
-
-	"github.com/cosiner/gohper/config"
-
+	"github.com/cosiner/gohper/lib/defval"
 	"github.com/cosiner/gohper/lib/types"
 )
 
@@ -19,12 +19,7 @@ const (
 	_LOGDIR_PERM = 0755
 )
 
-var timeFormat = t.FormatLayout("yyyymmdd-HHMMSS")
-
-//==============================================================================
-//                           Log Buffer
-//==============================================================================
-// logBuffer represent a log writer for a special level
+// logBuffer represent a log w for a special level
 type logBuffer struct {
 	file *os.File
 	*bufio.Writer
@@ -43,18 +38,19 @@ func newLogBuffer(logdir, level string, bufsize, maxsize uint64) (*logBuffer, er
 		bufsize: bufsize,
 		maxsize: maxsize,
 	}
-	return buf, buf.newLogFile()
+	now := time.Now()
+	return buf, buf.newLogFile(&now)
 }
 
 // newLogFile create a new log file
-func (buf *logBuffer) newLogFile() (err error) {
+func (buf *logBuffer) newLogFile(now *time.Time) (err error) {
 	if buf.file != nil {
 		buf.Flush()
 		buf.file.Close()
 	}
-	filename := fmt.Sprintf("%s.log.%s.%d",
-		buf.level, time.Now().Format(timeFormat), os.Getpid())
-	if buf.file, err = os.Create(filepath.Join(buf.logdir, filename)); err == nil {
+	file := fmt.Sprintf("%s.log.%s.%d",
+		buf.level, now.Format(timeFormat), os.Getpid())
+	if buf.file, err = os.Create(filepath.Join(buf.logdir, file)); err == nil {
 		buf.nbytes = 0
 		buf.Writer = bufio.NewWriterSize(buf.file, int(buf.bufsize))
 	}
@@ -79,7 +75,8 @@ func (buf *logBuffer) close() {
 // write write log message to log file
 func (buf *logBuffer) write(msg string) (err error) {
 	if buf.nbytes+uint64(len(msg)) >= buf.maxsize {
-		if err = buf.newLogFile(); err != nil {
+		now := time.Now()
+		if err = buf.newLogFile(&now); err != nil {
 			return
 		}
 	}
@@ -88,60 +85,152 @@ func (buf *logBuffer) write(msg string) (err error) {
 	return
 }
 
-//==============================================================================
-//                          File Log Writer
-//==============================================================================
-// logWrite is actuall log writer, output is local file
+type FileWriterOption struct {
+	Bufsize string
+	Maxsize string
+	Daily   bool
+	Logdir  string
+}
+
+func (o *FileWriterOption) init() {
+	defval.String(&o.Bufsize, "10K")
+	defval.String(&o.Maxsize, "20M")
+	defval.String(&o.Logdir, "logs")
+}
+
+// logWrite is actuall log w, output is local file
 type FileWriter struct {
 	level Level
 	files []*logBuffer
+	lock  int32
+	quit  chan struct{}
 }
 
 // Config resolv config, format like bufsize=xxx&maxsize=xxx&logdir=xxx&level=info
-func (writer *FileWriter) Config(conf string) (err error) {
-	c := config.NewConfig(config.LINE)
-	if err = c.ParseString(conf); err != nil {
-		return
+func (w *FileWriter) Config(conf interface{}) (err error) {
+	var opt *FileWriterOption
+	if conf == nil {
+		opt = &FileWriterOption{}
+	} else {
+		switch c := conf.(type) {
+		case *FileWriterOption:
+			opt = c
+		case FileWriterOption:
+			opt = &c
+		default:
+			return ErrInvalidConfig
+		}
 	}
-	writer.level = ParseLevel(c.ValDef("level", "info"))
-	if writer.level == LEVEL_OFF {
+	opt.init()
+	w.lock = _UNLOCKED
+	w.quit = make(chan struct{})
+	if w.level == LEVEL_OFF {
 		return
 	}
 
-	logdir := c.ValDef("logdir", filepath.Join(os.TempDir(), "gologs"))
-	bufsize, err := types.BytesCount(c.ValDef("bufsize", "10K"))
-	maxsize, err := types.BytesCount(c.ValDef("maxsize", "10M"))
-	err = os.MkdirAll(logdir, _LOGDIR_PERM)
+	err = os.MkdirAll(opt.Logdir, _LOGDIR_PERM)
+	if err != nil {
+		return
+	}
+	bufsize, err := types.BytesCount(opt.Bufsize)
+	if err != nil {
+		return
+	}
+	maxsize, err := types.BytesCount(opt.Maxsize)
+	if err != nil {
+		return
+	}
 
-	writer.files = make([]*logBuffer, _LEVEL_MAX+1)
-	for l := writer.level; l <= _LEVEL_MAX && err == nil; l++ {
-		writer.files[l], err = newLogBuffer(logdir, l.String(), bufsize, maxsize)
+	w.files = make([]*logBuffer, _LEVEL_MAX+1)
+	for l := w.level; l <= _LEVEL_MAX && err == nil; l++ {
+		w.files[l], err = newLogBuffer(opt.Logdir, l.String(), bufsize, maxsize)
+	}
+
+	if opt.Daily {
+		go w.enableDaily()
 	}
 	return
+}
+
+func (w *FileWriter) SetLevel(l Level) {
+	w.level = l
 }
 
 // Write write log to log file, higher level log will simultaneously
 // output to all lower level log file
-func (writer *FileWriter) Write(log *Log) (err error) {
-	for l := writer.level; l <= log.Level; l++ {
-		if writer.files[l].write(log.String()) != nil {
-			return
-		}
+func (w *FileWriter) Write(log *Log) (err error) {
+	w.Lock()
+	for l := w.level; l <= log.Level && err == nil; l++ {
+		err = log.WriteTo(w.files[l])
 	}
+	w.Unlock()
 	return
 }
 
-// Flush flush log writer
-func (writer *FileWriter) Flush() {
-	for l := writer.level; l <= _LEVEL_MAX; l++ {
-		writer.files[l].flush()
+// Flush flush log w
+func (w *FileWriter) Flush() {
+	for l := w.level; l <= _LEVEL_MAX; l++ {
+		w.files[l].flush()
 	}
 }
 
-// Close close log writer
-func (writer *FileWriter) Close() {
-	for l := writer.level; l <= _LEVEL_MAX; l++ {
-		writer.files[l].close()
-		writer.files[l] = nil
+func (w *FileWriter) enableDaily() {
+	go func(w *FileWriter) {
+		h, m, s := time.Now().Clock()
+		sec := 24*3600 - (h*3600 + m*60 + s)
+
+		if sec != 0 {
+			select {
+			case t := <-time.After(time.Duration(sec) * time.Second):
+				w.changeLogFile(&t)
+			case <-w.quit:
+				return
+			}
+		}
+
+		ticker := time.NewTicker(24 * time.Hour).C
+		for {
+			select {
+			case t := <-ticker:
+				w.changeLogFile(&t)
+			case <-w.quit:
+				return
+			}
+		}
+	}(w)
+}
+
+func (w *FileWriter) changeLogFile(t *time.Time) {
+	w.Lock()
+	for l := w.level; l <= _LEVEL_MAX; l++ {
+		w.files[l].newLogFile(t)
+	}
+	w.Unlock()
+}
+
+// Close close log w
+func (w *FileWriter) Close() {
+	w.quit <- struct{}{}
+	w.Lock()
+	for l := w.level; l <= _LEVEL_MAX; l++ {
+		w.files[l].close()
+		w.files[l] = nil
+	}
+	w.Unlock()
+}
+
+const (
+	_UNLOCKED = 0
+	_LOCKED   = 1
+)
+
+// Spinlock
+func (w *FileWriter) Lock() {
+	for !atomic.CompareAndSwapInt32(&w.lock, _UNLOCKED, _LOCKED) {
+	}
+}
+
+func (w *FileWriter) Unlock() {
+	for !atomic.CompareAndSwapInt32(&w.lock, _LOCKED, _UNLOCKED) {
 	}
 }

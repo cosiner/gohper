@@ -1,18 +1,16 @@
 package log
 
 import (
-	"fmt"
 	"io"
 	"strings"
 
-	"github.com/cosiner/gohper/config"
 	"github.com/cosiner/gohper/lib/termcolor"
 	"github.com/mattn/go-colorable"
 )
 
 // bgColor create color render use given background color, default highlight
 func bgColor(bg string) *termcolor.TermColor {
-	return termcolor.NewColor().Highlight().Bg(bg)
+	return termcolor.New().Highlight().Bg(bg).Finish()
 }
 
 // defTermColor define default color for each log level
@@ -22,6 +20,11 @@ var defTermColor = [5]*termcolor.TermColor{
 	bgColor(termcolor.YELLOW), //warn
 	bgColor(termcolor.BLUE),   //error
 	bgColor(termcolor.RED),    //fatal
+}
+
+type ConsoleWriterOption struct {
+	DisableColor bool
+	Colors       map[string]string
 }
 
 // ConsoleWriter output log to console
@@ -34,43 +37,58 @@ type ConsoleWriter struct {
 // Config config console log writer
 // parameter conf can use to config color for each log level, such as
 // warn="black"&info="green"&error="red"...
-func (clw *ConsoleWriter) Config(conf string) error {
-	clw.out = colorable.NewColorableStdout()
-	clw.err = colorable.NewColorableStderr()
-	clw.termColor = defTermColor
-	if conf != "" {
-		c := config.NewConfig(config.LINE)
-		c.ParseString(conf)
-		if _, has := c.Val("disableColor"); has {
-			clw.DisableColor()
-		} else {
-			for l := _LEVEL_MIN; l < _LEVEL_MAX; l++ {
-				s := strings.ToLower(l.String())
-				if color := c.ValDef(s, ""); color != "" {
-					clw.termColor[l] = bgColor(color)
-				}
+func (w *ConsoleWriter) Config(conf interface{}) error {
+	var opt *ConsoleWriterOption
+	if conf == nil {
+		opt = &ConsoleWriterOption{}
+	} else {
+		switch c := conf.(type) {
+		case *ConsoleWriterOption:
+			opt = c
+		case ConsoleWriterOption:
+			opt = &c
+		default:
+			return ErrInvalidConfig
+		}
+	}
+
+	w.out = colorable.NewColorableStdout()
+	w.err = colorable.NewColorableStderr()
+
+	w.termColor = defTermColor
+	if opt.DisableColor {
+		w.DisableColor()
+	} else if len(opt.Colors) != 0 {
+		for l := _LEVEL_MIN; l < _LEVEL_MAX; l++ {
+			s := strings.ToLower(l.String())
+			if color := opt.Colors[s]; color != "" {
+				w.termColor[l] = bgColor(color)
 			}
 		}
 	}
 	return nil
 }
 
+func (w *ConsoleWriter) SetLevel(l Level) {}
+
 // DisableColor disable color output
-func (clw *ConsoleWriter) DisableColor() {
-	for _, tc := range clw.termColor {
+func (w *ConsoleWriter) DisableColor() {
+	for _, tc := range w.termColor {
 		tc.Disable()
 	}
 }
 
 // Write write
-func (clw *ConsoleWriter) Write(log *Log) error {
-	out := clw.out
+func (w *ConsoleWriter) Write(log *Log) error {
+	out := w.out
 	if log.Level >= LEVEL_ERROR {
-		out = clw.err
+		out = w.err
 	}
-	_, err := fmt.Fprint(out, clw.termColor[log.Level].Render(log.String()))
-	return err
+	tc := w.termColor[log.Level]
+	tc.Begin(out)
+	log.WriteTo(out)
+	return tc.End(out)
 }
 
-func (clw *ConsoleWriter) Flush() {}
-func (clw *ConsoleWriter) Close() {}
+func (w *ConsoleWriter) Flush() {}
+func (w *ConsoleWriter) Close() {}

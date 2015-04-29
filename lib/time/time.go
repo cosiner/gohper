@@ -13,7 +13,7 @@ var formatReplacer = strings.NewReplacer([]string{
 	"yyyy", "2006",
 	"yy", "06",
 	"mm", "01",
-	"dd", "02",
+	"dd", "02",  
 	"HH", "15",
 	"MM", "04",
 	"SS", "05",

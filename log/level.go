@@ -2,10 +2,11 @@ package log
 
 import (
 	"fmt"
-
-	"github.com/cosiner/gohper/lib/time"
+	"io"
 
 	"github.com/cosiner/gohper/lib/errors"
+	"github.com/cosiner/gohper/lib/runtime"
+	"github.com/cosiner/gohper/lib/time"
 	"github.com/cosiner/gohper/lib/types"
 )
 
@@ -15,15 +16,20 @@ type (
 	Level uint8
 	// Log represend a log with level and log message
 	Log struct {
-		Level   Level
-		Message string
-		Time    string
+		Level Level
+		Time  string
+
+		format  string
+		newline bool
+		depth   string
+		args    []interface{}
 	}
 )
 
 var (
 	// levelName specified the all log level name
-	levelName = [...]string{"DEBUG", "INFO", "WARN", "ERROR", "FATAL", "OFF"}
+	levelName  = [...]string{"DEBUG", "INFO", "WARN", "ERROR", "FATAL", "OFF"}
+	timeFormat = time.FormatLayout("yyyymmdd-HHMMSS")
 )
 
 const (
@@ -38,19 +44,13 @@ const (
 	_LEVEL_MIN = LEVEL_DEBUG
 	_LEVEL_MAX = LEVEL_FATAL
 
-	DEF_FLUSHINTERVAL = 30               // flush interval for a flush timer
-	DEF_BUFSIZE       = 1024 * 10        // bufsize for log buffer
-	DEF_BACKLOG       = 100              // channel's back log count
-	DEF_FILESIZE      = 1024 * 1024 * 10 // max log file size
-	DEF_LEVEL         = LEVEL_INFO       // default log level
-
 	ErrUnknownLevel = errors.Err("Unknown log level")
 )
 
 // String return level name, if level is no more than level_off, return actual name
 // else return UNKNOWN
 func (l Level) String() string {
-	if l <= _LEVEL_MAX {
+	if l >= _LEVEL_MIN && l <= LEVEL_OFF {
 		return levelName[l]
 	}
 	panic(ErrUnknownLevel)
@@ -58,9 +58,9 @@ func (l Level) String() string {
 
 // ParseLevel parse level from string regardless of string case
 func ParseLevel(str string) Level {
-	levelStr := types.TrimUpper(str)
+	s := types.TrimUpper(str)
 	for l := _LEVEL_MIN; l <= LEVEL_OFF; l++ {
-		if levelStr == levelName[l] {
+		if s == levelName[l] {
 			return l
 		}
 	}
@@ -68,31 +68,54 @@ func ParseLevel(str string) Level {
 }
 
 // String return a log as string with format "[level] time message"
-func (l *Log) String() string {
-	return fmt.Sprintf("[%5s] %s %s", l.Level.String(), l.Time, l.Message)
+func (l *Log) WriteTo(w io.Writer) error {
+	_, err := fmt.Fprintf(w, "[%5s] %s ", l.Level, l.Time)
+	if l.depth != "" {
+		_, err = w.Write(types.UnsafeBytes(l.depth))
+		_, err = w.Write(types.UnsafeBytes(":"))
+	}
+	if l.format != "" {
+		_, err = fmt.Fprintf(w, l.format, l.args...)
+	} else if l.newline {
+		_, err = fmt.Fprintln(w, l.args...)
+	} else {
+		_, err = fmt.Fprint(w, l.args...)
+	}
+	return err
 }
 
-// buildLog format log
-func NewLogf(level Level, format string, v ...interface{}) *Log {
+func logf(level Level, format string, args ...interface{}) *Log {
 	return &Log{
-		Level:   level,
-		Message: fmt.Sprintf(format, v...),
-		Time:    time.DateTime(),
+		Level:  level,
+		Time:   time.DateTime(),
+		format: format,
+		args:   args,
 	}
 }
 
-func NewLog(level Level, v ...interface{}) *Log {
+func log(level Level, args ...interface{}) *Log {
 	return &Log{
-		Level:   level,
-		Message: fmt.Sprint(v...),
-		Time:    time.DateTime(),
+		Level: level,
+		Time:  time.DateTime(),
+		args:  args,
 	}
 }
 
-func NewLogln(level Level, v ...interface{}) *Log {
+func logln(level Level, args ...interface{}) *Log {
 	return &Log{
 		Level:   level,
-		Message: fmt.Sprintln(v...),
 		Time:    time.DateTime(),
+		newline: true,
+		args:    args,
+	}
+}
+
+func logDepth(level Level, depth int, args ...interface{}) *Log {
+	return &Log{
+		Level:   level,
+		Time:    time.DateTime(),
+		newline: true,
+		depth:   runtime.CallerPosition(depth + 1),
+		args:    args,
 	}
 }

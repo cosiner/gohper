@@ -1,8 +1,12 @@
 // Package termcolor enable color output for terminal use ansi escape code
+//
+// Usage:
+// Create a instance by New(), configure through Bg, Fg, ..., finally Finish() configuration.
+//
+// Then Render a string or RenderTo a writer, or Begin, operations..., End.
 package termcolor
 
 import (
-	"fmt"
 	"io"
 	"strings"
 
@@ -48,8 +52,8 @@ type TermColor struct {
 	settings      string
 }
 
-// NewColor create a new terminal color render
-func NewColor() *TermColor {
+// New create a new terminal color render
+func New() *TermColor {
 	return &TermColor{
 		fg:     -1,
 		bg:     -1,
@@ -67,45 +71,32 @@ func (tc *TermColor) Render(str string) string {
 	if str == "" || !tc.enable {
 		return str
 	}
-	if tc.settings == "" {
-		color := make([]int, tc.settingsCount)
-		index := 0
-		if tc.fg != -1 {
-			color[index] = tc.fg + 40
-			index++
-		}
-		if tc.bg != -1 {
-			color[index] = tc.bg + 30
-			index++
-		}
-		if tc.highlight {
-			color[index] = 1
-			index++
-		}
-		if tc.underline {
-			color[index] = 4
-			index++
-		}
-		if tc.blink {
-			color[index] = 5
-			index++
-		}
-		if tc.inverse {
-			color[index] = 7
-			index++
-		}
-		if tc.hidden {
-			color[index] = 8
-			index++
-		}
-		tc.settings = types.JoinInt(color, ";")
-	}
-	return fmt.Sprintf("\033[%sm%s\033[0m", tc.settings, str)
+	return "\033[" + tc.settings + "m" + str + "\033[0m"
+	// return fmt.Sprintf("\033[%sm%s\033[0m", tc.settings, str)
 }
 
 // RenderTo render string to writer
-func (tc *TermColor) RenderTo(w io.Writer, str string) {
-	w.Write(types.UnsafeBytes(tc.Render(str)))
+func (tc *TermColor) RenderTo(w io.Writer, str string) error {
+	var err error
+	if str == "" || !tc.enable {
+		_, err = w.Write(types.UnsafeBytes(str))
+	} else {
+		if err = tc.Begin(w); err == nil {
+			_, err = w.Write(types.UnsafeBytes(str))
+			tc.End(w)
+		}
+	}
+	return err
+}
+
+func (tc *TermColor) Begin(w io.Writer) error {
+	_, err := w.Write(types.UnsafeBytes("\033[" + tc.settings + "m"))
+	return err
+}
+
+func (tc *TermColor) End(w io.Writer) error {
+	_, err := w.Write(types.UnsafeBytes("\033[0m"))
+	return err
 }
 
 // Bg set render's background color
@@ -154,5 +145,41 @@ func (tc *TermColor) Inverse() *TermColor {
 func (tc *TermColor) Hidden() *TermColor {
 	tc.settingsCount++
 	tc.hidden = true
+	return tc
+}
+
+// Finish complete color settings
+func (tc *TermColor) Finish() *TermColor {
+	color := make([]int, tc.settingsCount)
+	index := 0
+	if tc.fg != -1 {
+		color[index] = tc.fg + 40
+		index++
+	}
+	if tc.bg != -1 {
+		color[index] = tc.bg + 30
+		index++
+	}
+	if tc.highlight {
+		color[index] = 1
+		index++
+	}
+	if tc.underline {
+		color[index] = 4
+		index++
+	}
+	if tc.blink {
+		color[index] = 5
+		index++
+	}
+	if tc.inverse {
+		color[index] = 7
+		index++
+	}
+	if tc.hidden {
+		color[index] = 8
+		index++
+	}
+	tc.settings = types.JoinInt(color, ";")
 	return tc
 }
