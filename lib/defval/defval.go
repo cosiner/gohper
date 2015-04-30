@@ -71,9 +71,41 @@ func String(s *string, d string) {
 
 // Nil check whether *i is nil, if true, set *i to v,
 // i must be a pointer
+//
+// It's not recommend to use if v is get from a function call.
 func Nil(i, v interface{}) {
 	ele := reflect.ValueOf(i).Elem()
 	if ele.IsNil() {
 		ele.Set(reflect.ValueOf(v))
+	}
+}
+
+// NilFunc check whether *i is nil, if true set *i to f(),
+// i must be a pointer, and f must be a function accept no parameters and return
+// a value
+//
+// This function is not recommend to use.
+func NilFunc(i, f interface{}) {
+	ele := reflect.ValueOf(i).Elem()
+	if ele.IsNil() {
+		ele.Set(reflect.ValueOf(f).Call(nil)[0])
+	}
+}
+
+// BoolStr check b, set *s to "true" or "false"
+func BoolStr(b bool, s *string) {
+	if b {
+		*s = "true"
+	} else {
+		*s = "false"
+	}
+}
+
+// BoolInt check b, set *i to 1 or 0
+func BoolInt(b bool, i *int) {
+	if b {
+		*i = 1
+	} else {
+		*i = 0
 	}
 }

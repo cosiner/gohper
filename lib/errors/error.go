@@ -172,7 +172,7 @@ func FprintErrorf(w io.Writer, format string, v ...interface{}) {
 
 const (
 	// ErrorExitCode is the default exit code on error
-	ErrorExitCode = 1
+	ErrorExitCode = -1
 	// NormalExitCode is the default exit code on normal
 	NormalExitCode = 0
 )

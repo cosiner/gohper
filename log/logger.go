@@ -109,7 +109,6 @@ func New(opt *LoggerOption) Logger {
 		flushInterval: time.Duration(opt.Flush) * time.Second,
 		depthFunc:     runtime.CallerPosition,
 	}
-	l.start()
 	return l
 }
 
@@ -122,6 +121,9 @@ func (l *logger) AddWriter(w Writer, conf interface{}) error {
 	err := w.Config(conf)
 	if err == nil {
 		l.writers = append(l.writers, w)
+		if len(l.writers) == 1 {
+			l.start()
+		}
 	}
 	return err
 }
