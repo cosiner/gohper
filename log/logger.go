@@ -311,7 +311,7 @@ func (l *logger) WarnDepth(depth int, args ...interface{}) {
 // Panic log for error message
 func (l *logger) PanicDepth(depth int, args ...interface{}) {
 	l.printDepth(LEVEL_PANIC, depth+1, args...)
-	panic(l.depthFunc(1))
+	panic(l.depthFunc(depth + 1))
 }
 
 // Fatal log for error message
