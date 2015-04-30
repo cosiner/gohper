@@ -1,6 +1,8 @@
 // Package defval help for setup default value for primitive types
 package defval
 
+import "reflect"
+
 func Int(v *int, d int) {
 	if *v == 0 {
 		*v = d
@@ -64,5 +66,14 @@ func Uint64(v *uint64, d uint64) {
 func String(s *string, d string) {
 	if *s == "" {
 		*s = d
+	}
+}
+
+// Nil check whether *i is nil, if true, set *i to v,
+// i must be a pointer
+func Nil(i, v interface{}) {
+	ele := reflect.ValueOf(i).Elem()
+	if ele.IsNil() {
+		ele.Set(reflect.ValueOf(v))
 	}
 }

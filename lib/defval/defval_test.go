@@ -19,3 +19,13 @@ func TestString(t *testing.T) {
 	String(&val, "abc")
 	tt.Eq(val, "abc")
 }
+
+func TestNil(t *testing.T) {
+	var f func()
+	var v bool
+	Nil(&f, func() {
+		v = true
+	})
+	f()
+	test.True(t, true)
+}
