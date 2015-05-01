@@ -38,6 +38,13 @@ func (t Test) False(val bool) {
 	eq(t.TB, 1, false, val)
 }
 
+// Recover catch a panic and log it
+func (t Test) Recover() {
+	if e := recover(); e != nil {
+		t.Log("Recover:", e)
+	}
+}
+
 // // Nil assert value is nil
 // func (t Test) Nil(value interface{}) {
 // 	nil_(t, 1, value)
@@ -106,3 +113,11 @@ func ne(t testing.TB, skip int, expect interface{}, got interface{}) {
 // 		t.Errorf("Error in %s: expect non-nil value, but got nil", runtime.CallerPosition(skip+1))
 // 	}
 // }
+//
+
+// Recover catch a panic and log it
+func Recover(t testing.TB) {
+	if e := recover(); e != nil {
+		t.Log("Recover:", e)
+	}
+}

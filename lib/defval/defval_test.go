@@ -29,3 +29,9 @@ func TestNil(t *testing.T) {
 	f()
 	test.True(t, true)
 }
+
+func TestCond(t *testing.T) {
+	tt := test.Wrap(t)
+
+	tt.Eq(Cond(true).String("a", "b"), "a")
+}

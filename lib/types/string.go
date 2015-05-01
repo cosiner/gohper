@@ -2,7 +2,6 @@ package types
 
 import (
 	"bytes"
-	"fmt"
 	"strconv"
 	"strings"
 	"unicode"
@@ -162,16 +161,31 @@ func SuffixJoin(s []string, suffix, sep string) string {
 }
 
 // JoinInt join int slice as string
-func JoinInt(v []int, sep string) (str string) {
+func JoinInt(v []int, sep string) string {
 	if len(v) > 0 {
 		buf := bytes.NewBuffer([]byte{})
 		buf.WriteString(strconv.Itoa(v[0]))
 		for _, s := range v[1:] {
-			buf.WriteString(fmt.Sprintf("%s%d", sep, s))
+			buf.WriteString(sep)
+			buf.WriteString(strconv.Itoa(s))
 		}
-		str = buf.String()
+		return buf.String()
 	}
-	return
+	return ""
+}
+
+// JoinInt join int slice as string
+func JoinUint(v []uint, sep string) string {
+	if len(v) > 0 {
+		buf := bytes.NewBuffer([]byte{})
+		buf.WriteString(strconv.FormatUint(uint64(v[0]), 10))
+		for _, s := range v[1:] {
+			buf.WriteString(sep)
+			buf.WriteString(strconv.FormatUint(uint64(s), 10))
+		}
+		return buf.String()
+	}
+	return ""
 }
 
 // StringReader is a wrapper of strings.NewReader
