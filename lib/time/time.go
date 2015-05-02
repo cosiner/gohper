@@ -13,7 +13,7 @@ var formatReplacer = strings.NewReplacer([]string{
 	"yyyy", "2006",
 	"yy", "06",
 	"mm", "01",
-	"dd", "02",  
+	"dd", "02",
 	"HH", "15",
 	"MM", "04",
 	"SS", "05",
@@ -62,4 +62,11 @@ func Date() string {
 // ParseTime parse gived time string in format: yyyy/mm/dd HH:MM:SS
 func ParseTime(t string) (time.Time, error) {
 	return time.Parse(DATETIME_FMT, t)
+}
+
+// Calc calculate function call's time cose, unix nano was returned
+func Calc(f func()) int64 {
+	now := time.Now().UnixNano()
+	f()
+	return time.Now().UnixNano() - now
 }

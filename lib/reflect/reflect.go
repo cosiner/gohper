@@ -1,12 +1,16 @@
 package reflect
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
-
-	"github.com/cosiner/gohper/lib/goutil"
+	"strings"
 
 	"github.com/cosiner/gohper/lib/errors"
+)
+
+const (
+	ErrNonPrimitive = errors.Err("not primitive type")
 )
 
 // IsSlice check whether or not param is slice
@@ -32,8 +36,6 @@ func IndirectType(v interface{}) reflect.Type {
 func UnmarshalPrimitive(str string, v reflect.Value) (err error) {
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
-	} else if !v.CanSet() {
-		return errors.Err("Value can't be set")
 	}
 	switch k := v.Kind(); k {
 	case reflect.Bool:
@@ -59,33 +61,63 @@ func UnmarshalPrimitive(str string, v reflect.Value) (err error) {
 			err = e
 		}
 	default:
-		err = errors.Errorf("Unsupported type:%s", k.String())
+		return ErrNonPrimitive
 	}
 	return
 }
 
-// UnmarshalToStruct unmarshal map to struct, only primitive type will be unmarshaled
-func UnmarshalToStruct(values map[string]string, v interface{}) error {
+func MarshalPrimitive(v reflect.Value) string {
+	return fmt.Sprint(v.Interface())
+}
+
+func MarshalStruct(v interface{}, values map[string]string, tag string) {
 	value := reflect.ValueOf(v)
-	kind := value.Kind()
-	if kind != reflect.Ptr {
-		return errors.Errorf("Non-pointer type: %s", kind.String())
+	if value.Kind() == reflect.Ptr {
+		value = value.Elem()
 	}
-	value = value.Elem()
-	kind = value.Kind()
-	if kind != reflect.Struct {
-		return errors.Errorf("Non-struct type:%s", kind.String())
-	}
-	for k, v := range values {
-		if k == "" {
+	typ := value.Type()
+	for i := 0; i < typ.NumField(); i++ {
+		vfield := value.Field(i)
+		if !vfield.CanInterface() {
 			continue
 		}
-		field := value.FieldByName(goutil.ExportedCase(k))
-		if field.CanSet() {
-			if err := UnmarshalPrimitive(v, field); err != nil {
-				return err
-			}
+		tfield := typ.Field(i)
+		name := tfield.Name
+		if n := tfield.Tag.Get(tag); n == "-" {
+			continue
+		} else if n != "" {
+			name = n
+		} else {
+			name = strings.ToLower(name)
 		}
+		values[name] = MarshalPrimitive(vfield)
 	}
-	return nil
+	return
+}
+
+func UnmarshalStruct(v interface{}, values map[string]string, tag string) {
+	value := reflect.ValueOf(v)
+	if value.Kind() == reflect.Ptr {
+		value = value.Elem()
+	} else {
+		panic("non-pointer type")
+	}
+	typ := value.Type()
+	for i := 0; i < typ.NumField(); i++ {
+		vfield := value.Field(i)
+		if !vfield.CanSet() {
+			continue
+		}
+		tfield := typ.Field(i)
+		name := tfield.Name
+		if n := tfield.Tag.Get(tag); n == "-" {
+			continue
+		} else if n != "" {
+			name = n
+		} else {
+			name = strings.ToLower(name)
+		}
+		UnmarshalPrimitive(values[name], vfield)
+	}
+	return
 }

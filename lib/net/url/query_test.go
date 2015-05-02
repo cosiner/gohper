@@ -13,8 +13,9 @@ func TestQueryEscape(t *testing.T) {
 		"A": "DD",
 		"Z": "DD",
 	}
-	q := QueryEscape(qs, nil)
-	tt.NE(url.QueryEscape("A=DD&Z=DD") == q, url.QueryEscape("Z=DD&A=DD") == q)
+	q, _ := EscapeEncode(qs, nil)
+	s := string(q)
+	tt.NE(url.QueryEscape("A=DD&Z=DD") == s, url.QueryEscape("Z=DD&A=DD") == s)
 }
 
 func TestParamString(t *testing.T) {

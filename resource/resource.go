@@ -6,17 +6,25 @@ import (
 )
 
 const (
-	RES_JSON  = "json"
-	RES_XML   = "xml"
-	RES_HTML  = "html"
-	RES_PLAIN = "plain"
+	RES_JSON      = "json"
+	RES_XML       = "xml"
+	RES_HTML      = "html"
+	RES_PLAIN     = "plain"
+	RES_URLENCODE = "urlencoded"
+
+	// Content Type
+	CONTENTTYPE_PLAIN     = "text/plain;charset=utf-8"
+	CONTENTTYPE_HTML      = "text/html;charset=utf-8"
+	CONTENTTYPE_XML       = "text/xml;charset=utf-8"
+	CONTENTTYPE_JSON      = "application/json;charset=utf-8"
+	CONTENTTYPE_URLENCODE = "application/x-www-form-urlencoded;charset=utf-8"
 )
 
 type (
 	Master struct {
 		Resources map[string]Resource
 		Default   string
-		TypeOf    func(typ string) string // Defaultault use 'TypeOf'
+		TypeOf    func(typ string) string // default use 'ResourceType'
 	}
 
 	Resource interface {
@@ -28,7 +36,7 @@ type (
 	}
 )
 
-func TypeOf(typ string) string {
+func ResourceType(typ string) string {
 	if typ != "" {
 		switch {
 		case strings.Contains(typ, RES_JSON):
@@ -39,7 +47,25 @@ func TypeOf(typ string) string {
 			return RES_HTML
 		case strings.Contains(typ, RES_PLAIN):
 			return RES_PLAIN
+		case strings.Contains(typ, RES_URLENCODE):
+			return RES_URLENCODE
 		}
+	}
+	return ""
+}
+
+func ContentType(typ string) string {
+	switch typ {
+	case RES_JSON:
+		return CONTENTTYPE_JSON
+	case RES_XML:
+		return CONTENTTYPE_XML
+	case RES_HTML:
+		return CONTENTTYPE_HTML
+	case RES_PLAIN:
+		return CONTENTTYPE_PLAIN
+	case RES_URLENCODE:
+		return CONTENTTYPE_URLENCODE
 	}
 	return ""
 }
@@ -48,7 +74,7 @@ func NewMaster() Master {
 	return Master{
 		Resources: make(map[string]Resource),
 		Default:   RES_JSON,
-		TypeOf:    TypeOf,
+		TypeOf:    ResourceType,
 	}
 }
 

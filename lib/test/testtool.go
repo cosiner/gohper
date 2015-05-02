@@ -3,6 +3,7 @@ package test
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/cosiner/gohper/lib/runtime"
@@ -21,6 +22,11 @@ func Wrap(t testing.TB) Test {
 // Eq assert expect and got is equal, else print error message
 func (t Test) Eq(expect interface{}, got interface{}) {
 	eq(t.TB, 1, expect, got)
+}
+
+// DeepEq assert expect and got is deep-equal, else print error message
+func (t Test) DeepEq(expect interface{}, got interface{}) {
+	deepEq(t.TB, 1, expect, got)
 }
 
 // NE assert expect and got is not equal, else print error message
@@ -60,6 +66,11 @@ func Eq(t testing.TB, expect interface{}, got interface{}) {
 	eq(t, 1, expect, got)
 }
 
+// DeepEq assert expect and got is deep-equal, else print error message
+func DeepEq(t testing.TB, expect interface{}, got interface{}) {
+	deepEq(t, 1, expect, got)
+}
+
 // NE assert expect and got is not equal, else print error message
 func NE(t testing.TB, expect interface{}, got interface{}) {
 	ne(t, 1, expect, got)
@@ -87,6 +98,14 @@ func False(t testing.TB, val bool) {
 // eq assert expect and got is equal, else print error message
 func eq(t testing.TB, skip int, expect interface{}, got interface{}) {
 	if expect != got {
+		t.Errorf("Error in %s : expect %s, but got %s\n",
+			runtime.CallerPosition(skip+1), fmt.Sprint(expect), fmt.Sprint(got))
+	}
+}
+
+// deepEq assert expect and got is deep-equal, else print error message
+func deepEq(t testing.TB, skip int, expect interface{}, got interface{}) {
+	if !reflect.DeepEqual(expect, got) {
 		t.Errorf("Error in %s : expect %s, but got %s\n",
 			runtime.CallerPosition(skip+1), fmt.Sprint(expect), fmt.Sprint(got))
 	}

@@ -106,5 +106,7 @@ func (c *Config) IntValDef(key string, defaultval int) int {
 }
 
 func (c *Config) UnmarshalCurrSec(v interface{}) error {
-	return reflect.UnmarshalToStruct(c.SectionVals(c.CurrSec()), v)
+	values := c.SectionVals(c.CurrSec())
+	reflect.UnmarshalStruct(v, values, "")
+	return nil
 }

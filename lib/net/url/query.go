@@ -1,34 +1,31 @@
 package url
 
 import (
+	"bytes"
 	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/cosiner/gohper/lib/types"
-
-	"bytes"
 )
 
 var Bufsize = 128
+var emptyBytes = []byte("")
 
-// Query encode parameters to url query string without escape,
+// Encode parameters to url query string without escape,
 // if buf is not nil, and there is more than one parameter, the allocated buffer
 // will stored to *buf
-func Query(params map[string]string, buf **bytes.Buffer) string {
+func Encode(params map[string]string, buf *bytes.Buffer) ([]byte, bool) {
 	if l := len(params); l == 0 {
-		return ""
+		return emptyBytes, false
 	} else if l == 1 {
 		for k, v := range params {
-			return k + "=" + v
+			return []byte(k + "=" + v), false
 		}
 	}
-	var nbuf *bytes.Buffer
+	var nbuf = buf
 	if buf == nil {
 		nbuf = bytes.NewBuffer(make([]byte, 0, Bufsize))
-	} else if *buf == nil {
-		*buf = bytes.NewBuffer(make([]byte, 0, Bufsize))
-		nbuf = *buf
 	}
 	var i int
 	for k, v := range params {
@@ -40,16 +37,16 @@ func Query(params map[string]string, buf **bytes.Buffer) string {
 		nbuf.WriteByte('=')
 		nbuf.WriteString(v)
 	}
-	return nbuf.String()
+	return nbuf.Bytes(), buf != nil
 }
 
-// QueryEscape is same as Query, but escape the query string
-func QueryEscape(params map[string]string, buf **bytes.Buffer) string {
-	s := Query(params, buf)
-	if s != "" {
-		s = url.QueryEscape(s)
+// EscapeEncode is same as Encode, but escape the query string
+func EscapeEncode(params map[string]string, buf *bytes.Buffer) ([]byte, bool) {
+	s, b := Encode(params, buf)
+	if len(s) != 0 {
+		return []byte(url.QueryEscape(string(s))), false // TODO: remove bytes convert
 	}
-	return s
+	return s, b
 }
 
 // ParamString convert i to params string, join with ",",
