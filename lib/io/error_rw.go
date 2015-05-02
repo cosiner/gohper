@@ -11,44 +11,72 @@ var (
 	String = types.UnsafeString
 )
 
-func ErrWrite(err error, w io.Writer, data []byte) (int, error) {
-	if err != nil {
-		return 0, err
-	}
-	return w.Write(data)
+type ErrorReader struct {
+	io.Reader
+	Error error
 }
 
-func ErrWriteString(err error, w io.Writer, data string) (int, error) {
-	if err != nil {
-		return 0, err
+func NewErrorReader(r io.Reader) *ErrorReader {
+	if er, is := r.(*ErrorReader); is {
+		return er
 	}
-	return w.Write(Bytes(data))
+	return &ErrorReader{
+		Reader: r,
+	}
 }
 
-func ErrRead(err error, r io.Reader, data []byte) (int, error) {
-	if err != nil {
-		return 0, err
-	}
-	return r.Read(data)
+func (r *ErrorReader) Read(data []byte) (int, error) {
+	return r.ReadDo(data, nil)
 }
 
-func ErrPtrWrite(err *error, w io.Writer, data []byte) (count int) {
-	if err != nil && *err == nil {
-		count, *err = w.Write(data)
+func (r *ErrorReader) ReadDo(data []byte, f func([]byte)) (int, error) {
+	var i int
+	if r.Error == nil {
+		i, r.Error = r.Reader.Read(data)
+		if f != nil {
+			f(data)
+		}
 	}
-	return
+	return i, r.Error
 }
 
-func ErrPtrWriteString(err *error, w io.Writer, data string) (count int) {
-	if err != nil && *err == nil {
-		count, *err = w.Write(Bytes(data))
-	}
-	return
+func (r *ErrorReader) ClearError() {
+	r.Error = nil
 }
 
-func ErrPtrRead(err *error, r io.Reader, data []byte) (count int) {
-	if err != nil && *err == nil {
-		count, *err = r.Read(data)
+type ErrorWriter struct {
+	io.Writer
+	Error error
+}
+
+func NewErrorWriter(w io.Writer) *ErrorWriter {
+	if ew, is := w.(*ErrorWriter); is {
+		return ew
 	}
-	return
+	return &ErrorWriter{
+		Writer: w,
+	}
+}
+
+func (w *ErrorWriter) Write(data []byte) (int, error) {
+	return w.WriteDo(data, nil)
+}
+
+func (w *ErrorWriter) WriteString(s string) (int, error) {
+	return w.WriteDo(Bytes(s), nil)
+}
+
+func (w *ErrorWriter) WriteDo(data []byte, f func([]byte)) (int, error) {
+	var i int
+	if w.Error == nil {
+		i, w.Error = w.Writer.Write(data)
+		if f != nil {
+			f(data)
+		}
+	}
+	return i, w.Error
+}
+
+func (w *ErrorWriter) ClearError() {
+	w.Error = nil
 }

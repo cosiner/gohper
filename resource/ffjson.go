@@ -2,9 +2,8 @@ package resource
 
 import (
 	"io"
-	"io/ioutil"
 
-	eio "github.com/cosiner/gohper/lib/io"
+	io2 "github.com/cosiner/gohper/lib/io"
 	"github.com/pquerna/ffjson/ffjson"
 )
 
@@ -19,37 +18,30 @@ func (FFJSON) Pool(data []byte) {
 }
 
 func (FFJSON) Send(w io.Writer, key string, value interface{}) error {
-	var (
-		data []byte
-		err  error
-	)
-	if key == "" { // send value only
-		// alwayse use json marshal, simple string use Response.WriteString
-		data, err = ffjson.Marshal(value)
-		if err == nil {
-			eio.ErrPtrWrite(&err, w, data)
-			ffjson.Pool(data)
-		}
-		return err
+	ew := io2.NewErrorWriter(w)
+	var data []byte
+
+	if key == "" {
+		data, ew.Error = ffjson.Marshal(value)
+		ew.WriteDo(data, ffjson.Pool)
+		return ew.Error
 	}
 
-	eio.ErrPtrWrite(&err, w, JSONObjStart) // send key
-	eio.ErrPtrWrite(&err, w, eio.Bytes(key))
-	if err == nil {
+	ew.Write(JSONObjStart)
+	ew.WriteString(key)
+	if ew.Error == nil {
 		if s, is := value.(string); is { // send string value
-			eio.ErrPtrWrite(&err, w, JSONQuoteMid)
-			eio.ErrPtrWrite(&err, w, eio.Bytes(s))
-			eio.ErrPtrWrite(&err, w, JSONQuoteEnd)
+			ew.Write(JSONQuoteMid)
+			ew.WriteString(s)
+			ew.Write(JSONQuoteEnd)
 		} else { // send other value
-			if data, err = ffjson.Marshal(value); err == nil {
-				eio.ErrPtrWrite(&err, w, JSONObjMid)
-				eio.ErrPtrWrite(&err, w, data)
-				eio.ErrPtrWrite(&err, w, JSONObjEnd)
-				ffjson.Pool(data)
-			}
+			data, ew.Error = ffjson.Marshal(value)
+			ew.Write(JSONObjMid)
+			ew.WriteDo(data, ffjson.Pool)
+			ew.Write(JSONObjEnd)
 		}
 	}
-	return err
+	return ew.Error
 }
 
 func (FFJSON) Unmarshal(data []byte, v interface{}) error {
@@ -57,9 +49,5 @@ func (FFJSON) Unmarshal(data []byte, v interface{}) error {
 }
 
 func (FFJSON) Receive(r io.Reader, v interface{}) error {
-	data, err := ioutil.ReadAll(r)
-	if err == nil {
-		err = ffjson.Unmarshal(data, v)
-	}
-	return err
+	return ffjson.NewDecoder().DecodeReader(r, v)
 }

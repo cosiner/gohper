@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	bytes2 "github.com/cosiner/gohper/lib/bytes"
-	eio "github.com/cosiner/gohper/lib/io"
+	io2 "github.com/cosiner/gohper/lib/io"
 	url2 "github.com/cosiner/gohper/lib/net/url"
 	"github.com/cosiner/gohper/lib/reflect"
 )
@@ -35,8 +35,8 @@ func (u URLEncode) Marshal(v interface{}) ([]byte, error) {
 		return []byte(escape(val)), nil
 	case map[string]string:
 		buffer := bytes.NewBuffer(u.pool.Get(0, false))
-		buf, use := url2.EscapeEncode(val, buffer)
-		if !use {
+		buf, used := url2.EscapeEncode(val, buffer)
+		if !used {
 			u.pool.Put(buffer.Bytes())
 		}
 		return buf, nil
@@ -47,8 +47,8 @@ func (u URLEncode) Marshal(v interface{}) ([]byte, error) {
 		reflect.MarshalStruct(val, mp, TAG_URLENCODE)
 
 		buffer := bytes.NewBuffer(u.pool.Get(0, false))
-		buf, use := url2.EscapeEncode(mp, buffer)
-		if !use {
+		buf, used := url2.EscapeEncode(mp, buffer)
+		if !used {
 			u.pool.Put(buffer.Bytes())
 		}
 		return buf, nil
@@ -56,7 +56,7 @@ func (u URLEncode) Marshal(v interface{}) ([]byte, error) {
 }
 
 func (URLEncode) Unmarshal(data []byte, v interface{}) error {
-	s, err := url.QueryUnescape(eio.String(data))
+	s, err := url.QueryUnescape(io2.String(data))
 	if err != nil {
 		return err
 	}
@@ -96,25 +96,26 @@ func (u URLEncode) Pool(buf []byte) {
 }
 
 func (u URLEncode) Send(w io.Writer, key string, v interface{}) error {
-	var err error
 	if key != "" {
-		eio.ErrPtrWriteString(&err, w, escape(key))
-		eio.ErrPtrWriteString(&err, w, escape("="))
+		ew := io2.NewErrorWriter(w)
+		ew.WriteString(escape(key))
+		ew.WriteString(escape("="))
 		switch s := v.(type) {
 		case string:
-			eio.ErrPtrWriteString(&err, w, escape(s))
+			ew.WriteString(escape(s))
 		case []byte:
-			eio.ErrPtrWriteString(&err, w, escape(eio.String(s)))
+			ew.WriteString(escape(io2.String(s)))
 		default:
-			eio.ErrPtrWriteString(&err, w, escape(fmt.Sprint(v)))
+			ew.WriteString(escape(fmt.Sprint(v)))
 		}
-	} else {
-		buf, err := u.Marshal(v)
-		if err == nil {
-			_, err = w.Write(buf)
-		}
-		u.pool.Put(buf)
+		return ew.Error
 	}
+
+	buf, err := u.Marshal(v)
+	if err == nil {
+		_, err = w.Write(buf)
+	}
+	u.pool.Put(buf)
 	return err
 }
 

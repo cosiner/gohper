@@ -4,7 +4,7 @@ import (
 	"encoding/xml"
 	"io"
 
-	eio "github.com/cosiner/gohper/lib/io"
+	io2 "github.com/cosiner/gohper/lib/io"
 )
 
 type XML struct{}
@@ -20,28 +20,28 @@ func (XML) Unmarshal(data []byte, v interface{}) error {
 func (XML) Pool([]byte) {}
 
 func (XML) Send(w io.Writer, key string, value interface{}) error {
-	var err error
-	if key != "" {
-		eio.ErrPtrWrite(&err, w, XMLTagStart)
-		eio.ErrPtrWriteString(&err, w, key)
-		eio.ErrPtrWrite(&err, w, XMLTagEnd)
-		switch s := value.(type) {
-		case string:
-			eio.ErrPtrWriteString(&err, w, s)
-		case []byte:
-			eio.ErrPtrWrite(&err, w, s)
-		default:
-			if err == nil {
-				err = xml.NewEncoder(w).Encode(value)
-			}
-		}
-		eio.ErrPtrWrite(&err, w, XMLTagCloseStart)
-		eio.ErrPtrWriteString(&err, w, key)
-		eio.ErrPtrWrite(&err, w, XMLTagEnd)
-	} else {
-		err = xml.NewEncoder(w).Encode(value)
+	if key == "" {
+		return xml.NewEncoder(w).Encode(value)
 	}
-	return err
+
+	ew := io2.NewErrorWriter(w)
+	ew.Write(XMLTagStart)
+	ew.WriteString(key)
+	ew.Write(XMLTagEnd)
+	switch s := value.(type) {
+	case string:
+		ew.WriteString(s)
+	case []byte:
+		ew.Write(s)
+	default:
+		if ew.Error == nil {
+			ew.Error = xml.NewEncoder(w).Encode(value)
+		}
+	}
+	ew.Write(XMLTagCloseStart)
+	ew.WriteString(key)
+	ew.Write(XMLTagEnd)
+	return ew.Error
 }
 
 func (XML) Receive(r io.Reader, value interface{}) error {

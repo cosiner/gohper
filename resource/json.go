@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io"
 
-	eio "github.com/cosiner/gohper/lib/io"
+	io2 "github.com/cosiner/gohper/lib/io"
 )
 
 type JSON struct{}
@@ -20,30 +20,30 @@ func (JSON) Unmarshal(data []byte, v interface{}) error {
 func (JSON) Pool([]byte) {}
 
 func (JSON) Send(w io.Writer, key string, value interface{}) error {
-	var err error
-	if key != "" {
-		eio.ErrPtrWrite(&err, w, JSONObjStart)
-		eio.ErrPtrWriteString(&err, w, key)
-		switch s := value.(type) {
-		case string:
-			eio.ErrPtrWrite(&err, w, JSONQuoteMid)
-			eio.ErrPtrWriteString(&err, w, s)
-			eio.ErrPtrWrite(&err, w, JSONQuoteEnd)
-		case []byte:
-			eio.ErrPtrWrite(&err, w, JSONQuoteMid)
-			eio.ErrPtrWrite(&err, w, s)
-			eio.ErrPtrWrite(&err, w, JSONQuoteEnd)
-		default:
-			eio.ErrPtrWrite(&err, w, JSONObjMid)
-			if err == nil {
-				err = json.NewEncoder(w).Encode(value)
-			}
-			eio.ErrPtrWrite(&err, w, JSONObjEnd)
-		}
-	} else {
-		err = json.NewEncoder(w).Encode(value)
+	if key == "" {
+		return json.NewEncoder(w).Encode(value)
 	}
-	return err
+
+	ew := io2.NewErrorWriter(w)
+	ew.Write(JSONObjStart)
+	ew.WriteString(key)
+	switch s := value.(type) {
+	case string:
+		ew.Write(JSONQuoteMid)
+		ew.WriteString(s)
+		ew.Write(JSONQuoteEnd)
+	case []byte:
+		ew.Write(JSONQuoteMid)
+		ew.Write(s)
+		ew.Write(JSONQuoteEnd)
+	default:
+		ew.Write(JSONObjMid)
+		if ew.Error == nil {
+			ew.Error = json.NewEncoder(w).Encode(value)
+		}
+		ew.Write(JSONObjEnd)
+	}
+	return ew.Error
 }
 
 func (JSON) Receive(r io.Reader, value interface{}) error {
