@@ -25,6 +25,26 @@ type Pool interface {
 	CheckPut(buf []byte) bool
 }
 
+type FakePool struct{}
+
+func (p FakePool) Init() Pool {
+	return p
+}
+
+func (p FakePool) Get(size int, asLen bool) []byte {
+	bs := make([]byte, 0, size)
+	if asLen {
+		bs = bs[:size]
+	}
+	return bs
+}
+
+func (p FakePool) Put([]byte) {}
+
+func (p FakePool) CheckPut([]byte) bool {
+	return false
+}
+
 // SyncPool is a sync.Pool's wrapper with same interface
 type SyncPool struct {
 	pool       sync.Pool
