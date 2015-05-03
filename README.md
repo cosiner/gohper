@@ -1,20 +1,6 @@
 #Gohper [![wercker status](https://app.wercker.com/status/7736d0f7ea77997f830cb7aee6b3ea5a/s "wercker status")](https://app.wercker.com/project/bykey/7736d0f7ea77997f830cb7aee6b3ea5a) [![GoDoc](https://godoc.org/github.com/go-martini/martini?status.png)](http://godoc.org/github.com/cosiner/gohper)
 
-**gohper** is goh(el)per, not gopher, but it's gophers' friend.
-
-**gohper** provide some tools help for gophers' development.
-* Validate: series validators as a chain and behave like a single validator, then chain it again, elimate if-else block from your code, [README](https://github.com/cosiner/gohper/tree/master/validate).
-* Lib: some common utils for go, errors/testing/regexp/sys/terminal color/data structures
-* Log: level, colorful console log, file log with splition
-* Config: parse ini, line(key=value&key=value)
-* Cache: lru, random-elimate
-* Redis: simple wrapper of [garyburd/redigo](https://github.com/garyburd/redigo/redis)
-
-
-**others**
-* Database: code generation, bitset, sql cache, high-performance, no reflection at runtime. have been seperated to [cosiner/gomodel](https://github.com/cosiner/gomodel).
-* Zerver: a pure restful api framework with many wonderful features, it has been seperated to [cosiner/zerver](https://github.com/cosiner/zerver).
-* apidoc: a simple tool generate rest api document from source code using http format, output as markdown.[cosiner/apidoc](http://github.com/cosiner/apidoc)
+Common libs.
 
 ###License
 MIT.
