@@ -12,10 +12,10 @@ import (
 var Bufsize = 128
 var emptyBytes = []byte("")
 
-// Encode parameters to url query string without escape,
+// Query parameters to url query string without escape,
 // if buf is not nil, and there is more than one parameter, the allocated buffer
 // will stored to *buf
-func Encode(params map[string]string, buf *bytes.Buffer) ([]byte, bool) {
+func Query(params map[string]string, buf *bytes.Buffer) ([]byte, bool) {
 	if l := len(params); l == 0 {
 		return emptyBytes, false
 	} else if l == 1 {
@@ -40,9 +40,9 @@ func Encode(params map[string]string, buf *bytes.Buffer) ([]byte, bool) {
 	return nbuf.Bytes(), buf != nil
 }
 
-// EscapeEncode is same as Encode, but escape the query string
-func EscapeEncode(params map[string]string, buf *bytes.Buffer) ([]byte, bool) {
-	s, b := Encode(params, buf)
+// QueryEscape is same as Query, but escape the query string
+func QueryEscape(params map[string]string, buf *bytes.Buffer) ([]byte, bool) {
+	s, b := Query(params, buf)
 	if len(s) != 0 {
 		return []byte(url.QueryEscape(string(s))), false // TODO: remove bytes convert
 	}

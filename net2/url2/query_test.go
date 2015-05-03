@@ -13,7 +13,7 @@ func TestQueryEscape(t *testing.T) {
 		"A": "DD",
 		"Z": "DD",
 	}
-	q, _ := EscapeEncode(qs, nil)
+	q, _ := QueryEscape(qs, nil)
 	s := string(q)
 	tt.NE(url.QueryEscape("A=DD&Z=DD") == s, url.QueryEscape("Z=DD&A=DD") == s)
 }
