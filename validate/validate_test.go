@@ -3,14 +3,14 @@ package validate
 import (
 	"testing"
 
-	. "github.com/cosiner/gohper/lib/errors"
-	"github.com/cosiner/gohper/lib/test"
+	"github.com/cosiner/gohper/errors"
+	"github.com/cosiner/gohper/testing2"
 )
 
 func TestFunc(t *testing.T) {
-	tt := test.Wrap(t)
-	errLength := Err("Wrong length")
-	errChars := Err("Wrong chars")
+	tt := testing2.Wrap(t)
+	errLength := errors.Err("Wrong length")
+	errChars := errors.Err("Wrong chars")
 	length := Length{
 		Min: 3, Max: 10, Err: errLength,
 	}

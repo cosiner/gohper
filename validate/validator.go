@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/cosiner/gohper/lib/types"
+	"github.com/cosiner/gohper/strings2"
 )
 
 type Length struct {
@@ -26,7 +26,7 @@ type Chars struct {
 }
 
 func (c Chars) Validate(s string) error {
-	if types.AllCharsIn(s, c.Chars) {
+	if strings2.IsAllCharsIn(s, c.Chars) {
 		return nil
 	}
 	return c.Err
