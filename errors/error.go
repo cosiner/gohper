@@ -39,7 +39,7 @@ func Newf(format string, v ...interface{}) error {
 	return Err(fmt.Sprintf(format, v...))
 }
 
-// Panic panic on error
+// Panic on error
 func Panic(err error) {
 	if err != nil {
 		panic(err)
@@ -74,6 +74,13 @@ func Ffatal(w io.Writer, err error) {
 // Do call param function when err is not null when err is not nil
 func Do(err error, fn func(err error)) {
 	if err != nil {
+		fn(err)
+	}
+}
+
+// CondDo call function if val is true
+func CondDo(val bool, err error, fn func(error)) {
+	if val {
 		fn(err)
 	}
 }

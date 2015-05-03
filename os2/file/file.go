@@ -134,8 +134,8 @@ func FilterTo(dst, src string, trunc bool, filter io2.LineFilterFunc) error {
 type FileOpFunc func(*os.File) error
 
 // OpenOrCreate open or create file
-func OpenOrCreate(fname string) (*os.File, error) {
-	return os.OpenFile(fname, os.O_CREATE|os.O_RDWR, FilePerm)
+func OpenOrCreate(fname string, trunc bool) (*os.File, error) {
+	return os.OpenFile(fname, os.O_CREATE|os.O_WRONLY|WriteFlag(trunc), FilePerm)
 }
 
 // Open openfile use given flag

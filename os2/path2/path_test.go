@@ -1,4 +1,4 @@
-package path
+package path2
 
 import (
 	"runtime"

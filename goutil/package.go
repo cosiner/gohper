@@ -14,8 +14,8 @@ func PackagePath(pkgName string) string {
 	gopath := os.Getenv("GOPATH")
 	if gopath != "" {
 		for _, path := range strings.FieldsFunc(gopath, func(c rune) bool {
-			sep := path.EnvSeperator()
-			return c == sep && sep != path.UNKNOWN
+			sep := path2.EnvSeperator()
+			return c == sep && sep != path2.UNKNOWN
 		}) {
 			path = filepath.Join(path, "src", pkgName)
 			if file.IsExist(path) && file.IsDir(path) {
