@@ -5,19 +5,22 @@ import (
 	"os"
 
 	"github.com/cosiner/gohper/defval"
-
 	"github.com/cosiner/gohper/io2"
 )
 
 // FileOpFunc accept a file descriptor, return an error or nil
 type FileOpFunc func(*os.File) error
 
-// Open openfile use given flag
+// Open file use given flag
 func Open(fname string, flags int, fn FileOpFunc) error {
 	fd, err := os.OpenFile(fname, flags, FilePerm)
 	if err == nil {
-		err = fn(fd)
-		fd.Close()
+		if fn != nil {
+			err = fn(fd)
+		}
+		if e := fd.Close(); e != nil && err == nil {
+			err = e
+		}
 	}
 	return err
 }
