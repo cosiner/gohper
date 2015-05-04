@@ -10,6 +10,11 @@ const FileBufferSIze = 4096
 
 type LineFilterFunc func(num int, line []byte) (newLine []byte, err error)
 
+// NopLineFilter do nothing, just return the line
+func NopLineFilte(_ int, line []byte) ([]byte, error) {
+	return line, nil
+}
+
 // FilterRead filter line from reader
 func FilterRead(r io.Reader, filter func(int, []byte) error) error {
 	return Filter(r, nil, false, func(linenum int, line []byte) ([]byte, error) {
@@ -22,8 +27,7 @@ func FilterRead(r io.Reader, filter func(int, []byte) error) error {
 // a write operation
 //
 // return an error to stop filter, io.EOF means normal stop
-func Filter(r io.Reader, w io.Writer,
-	sync bool, filter LineFilterFunc) error {
+func Filter(r io.Reader, w io.Writer, sync bool, filter LineFilterFunc) error {
 	var (
 		save  = func([]byte) {}
 		flush = func() error { return nil }

@@ -10,8 +10,8 @@ import (
 func TestCopyFile(t *testing.T) {
 	tt := testing2.Wrap(t)
 	src, dst := "/tmp/copytest", "/tmp/copytest.copy"
-	if Create(src, true, nil) == nil {
-		tt.True(Create(src, true, nil) != nil)
+	if Create(src, nil) == nil {
+		tt.True(Create(src, nil) != nil)
 		tt.True(Copy(dst, src) == nil)
 		tt.True(IsFile(dst))
 		os.Remove(dst)

@@ -1,4 +1,4 @@
-// Package defval help for setup default value for primitive types
+// Package defval help reduce if-else block due that go has no '?:'
 package defval
 
 import "reflect"
