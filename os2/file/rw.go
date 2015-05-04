@@ -22,6 +22,9 @@ func Open(fname string, flags int, fn FileOpFunc) error {
 			err = e
 		}
 	}
+	if err == io.EOF {
+		return nil
+	}
 	return err
 }
 

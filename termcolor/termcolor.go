@@ -7,7 +7,9 @@
 package termcolor
 
 import (
+	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/cosiner/gohper/strings2"
@@ -15,11 +17,11 @@ import (
 )
 
 const (
-	BLACK      = "black"
 	RED        = "red"
 	GREEN      = "green"
-	YELLOW     = "yellow"
 	BLUE       = "blue"
+	BLACK      = "black"
+	YELLOW     = "yellow"
 	PURPLE     = "purple"
 	DEEP_GREEN = "deep_green"
 	WHITE      = "white"
@@ -28,16 +30,27 @@ const (
 // background: 30:黑 31:红 32:绿 33:黄 34:蓝色 35:紫色 36:深绿 37:白色
 // background: 30:black 31:red 32:green 33:yellow 34:blue 35:purple 36:deep green 37:white
 // frontground: 40, 41, ...
-var Colors = map[string]int{
-	BLACK:      0,
-	RED:        1,
-	GREEN:      2,
-	YELLOW:     3,
-	BLUE:       4,
-	PURPLE:     5,
-	DEEP_GREEN: 6,
-	WHITE:      7,
-}
+var (
+	Colors = map[string]int{
+		RED:        0,
+		GREEN:      1,
+		BLUE:       2,
+		BLACK:      3,
+		YELLOW:     4,
+		PURPLE:     5,
+		DEEP_GREEN: 6,
+		WHITE:      7,
+	}
+	// only background
+	Red       = Bg(RED)
+	Green     = Bg(GREEN)
+	Blue      = Bg((BLUE))
+	Black     = Bg(BLACK)
+	Yellow    = Bg(YELLOW)
+	Purple    = Bg(PURPLE)
+	DeepGreen = Bg(DEEP_GREEN)
+	White     = Bg(WHITE)
+)
 
 // TermColor is a render for terminal string
 type TermColor struct {
@@ -62,6 +75,11 @@ func New() *TermColor {
 	}
 }
 
+// Bg is a quick way to New().Bg(color).Finish()
+func Bg(color string) *TermColor {
+	return New().Bg(color).Finish()
+}
+
 // Disable disable color render
 func (tc *TermColor) Disable() {
 	tc.enable = false
@@ -77,17 +95,18 @@ func (tc *TermColor) Render(str string) string {
 }
 
 // RenderTo render string to writer
-func (tc *TermColor) RenderTo(w io.Writer, str string) error {
-	var err error
+func (tc *TermColor) RenderTo(w io.Writer, str string) (int, error) {
 	if str == "" || !tc.enable {
-		_, err = w.Write(unsafe2.Bytes(str))
-	} else {
-		if err = tc.Begin(w); err == nil {
-			_, err = w.Write(unsafe2.Bytes(str))
-			tc.End(w)
-		}
+		return w.Write(unsafe2.Bytes(str))
 	}
-	return err
+
+	if err := tc.Begin(w); err == nil {
+		c, err := w.Write(unsafe2.Bytes(str))
+		tc.End(w)
+		return c, err
+	} else {
+		return 0, err
+	}
 }
 
 func (tc *TermColor) Begin(w io.Writer) error {
@@ -183,4 +202,28 @@ func (tc *TermColor) Finish() *TermColor {
 	}
 	tc.settings = strings2.JoinInt(color, ";")
 	return tc
+}
+
+func (tc *TermColor) Fprint(w io.Writer, args ...interface{}) (int, error) {
+	return tc.RenderTo(w, fmt.Sprint(args...))
+}
+
+func (tc *TermColor) Fprintln(w io.Writer, args ...interface{}) (int, error) {
+	return tc.RenderTo(w, fmt.Sprintln(args...))
+}
+
+func (tc *TermColor) Fprintf(w io.Writer, format string, args ...interface{}) (int, error) {
+	return tc.RenderTo(w, fmt.Sprintf(format, args...))
+}
+
+func (tc *TermColor) Print(args ...interface{}) (int, error) {
+	return tc.RenderTo(os.Stdout, fmt.Sprint(args...))
+}
+
+func (tc *TermColor) Println(args ...interface{}) (int, error) {
+	return tc.RenderTo(os.Stdout, fmt.Sprintln(args...))
+}
+
+func (tc *TermColor) Printf(format string, args ...interface{}) (int, error) {
+	return tc.RenderTo(os.Stdout, fmt.Sprintf(format, args...))
 }

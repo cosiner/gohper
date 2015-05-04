@@ -6,11 +6,6 @@ import (
 	"os"
 )
 
-const (
-	// ExitCode is the default exit code on error
-	ExitCode = -1
-)
-
 type Err string
 
 func (e Err) Error() string {
@@ -51,6 +46,11 @@ func Print(err error) {
 	Fprint(os.Stderr, err)
 }
 
+// Println error message to stderr when err is not nil
+func Println(err error) {
+	Fprintln(os.Stderr, err)
+}
+
 // Fprint error message to given writer when err is not nil
 func Fprint(w io.Writer, err error) {
 	if err != nil {
@@ -58,16 +58,62 @@ func Fprint(w io.Writer, err error) {
 	}
 }
 
-// Fatal print message, then Fatal with error code when err is not nil
+// Fprintln error message to given writer when err is not nil
+func Fprintln(w io.Writer, err error) {
+	if err != nil {
+		fmt.Fprint(w, err)
+	}
+}
+
+// Exit if error is not nil, print error message to Stdout and exit code is 0
+func Exit(err error) {
+	Fexit(os.Stdout, err)
+}
+
+// Exitln if error is not nil, print error message to Stdout and exit code is 0
+func Exitln(err error) {
+	Fexitln(os.Stdout, err)
+}
+
+// Fexit if error is not nil, print error message to Writer and exit code is 0
+func Fexit(w io.Writer, err error) {
+	if err != nil {
+		fmt.Fprint(w, err)
+		os.Exit(0)
+	}
+}
+
+// Fexitln if error is not nil, print error message to Writer and exit code is 0
+func Fexitln(w io.Writer, err error) {
+	if err != nil {
+		fmt.Fprintln(w, err)
+		os.Exit(0)
+	}
+}
+
+// Fatal print message, then Fatal with -1 as error code when err is not nil
 func Fatal(err error) {
 	Ffatal(os.Stderr, err)
 }
 
-// Ffatal print message, then exit with error code when err is not nil
+// Fatalln print message, then Fatal with  -1 as error code when err is not nil
+func Fatalln(err error) {
+	Ffatalln(os.Stderr, err)
+}
+
+// Ffatal print message, then exit with  -1 as error code when err is not nil
 func Ffatal(w io.Writer, err error) {
 	if err != nil {
-		Fprint(w, err)
-		os.Exit(ExitCode)
+		fmt.Fprint(w, err)
+		os.Exit(-1)
+	}
+}
+
+// Ffatalln print message, then exit with  -1 as error code when err is not nil
+func Ffatalln(w io.Writer, err error) {
+	if err != nil {
+		fmt.Fprintln(w, err)
+		os.Exit(-1)
 	}
 }
 
