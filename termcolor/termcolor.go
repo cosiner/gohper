@@ -27,29 +27,29 @@ const (
 	WHITE      = "white"
 )
 
-// background: 30:黑 31:红 32:绿 33:黄 34:蓝色 35:紫色 36:深绿 37:白色
+// frontground: 30:黑 31:红 32:绿 33:黄 34:蓝色 35:紫色 36:深绿 37:白色
 // background: 30:black 31:red 32:green 33:yellow 34:blue 35:purple 36:deep green 37:white
-// frontground: 40, 41, ...
+// background: 40, 41, ...
 var (
 	Colors = map[string]int{
-		BLACK:      3,
-		RED:        0,
-		GREEN:      1,
-		YELLOW:     4,
-		BLUE:       2,
+		BLACK:      0,
+		RED:        1,
+		GREEN:      2,
+		YELLOW:     3,
+		BLUE:       4,
 		PURPLE:     5,
 		DEEP_GREEN: 6,
 		WHITE:      7,
 	}
 	// only background
-	Black     = Bg(BLACK)
-	Red       = Bg(RED)
-	Green     = Bg(GREEN)
-	Yellow    = Bg(YELLOW)
-	Blue      = Bg((BLUE))
-	Purple    = Bg(PURPLE)
-	DeepGreen = Bg(DEEP_GREEN)
-	White     = Bg(WHITE)
+	Black     = Fg(BLACK)
+	Red       = Fg(RED)
+	Green     = Fg(GREEN)
+	Yellow    = Fg(YELLOW)
+	Blue      = Fg((BLUE))
+	Purple    = Fg(PURPLE)
+	DeepGreen = Fg(DEEP_GREEN)
+	White     = Fg(WHITE)
 )
 
 // TermColor is a render for terminal string
@@ -75,9 +75,9 @@ func New() *TermColor {
 	}
 }
 
-// Bg is a quick way to New().Bg(color).Finish()
-func Bg(color string) *TermColor {
-	return New().Bg(color).Finish()
+// Fg is a quick way to New().Fg(color).Finish()
+func Fg(color string) *TermColor {
+	return New().Fg(color).Finish()
 }
 
 // Disable disable color render
@@ -173,11 +173,11 @@ func (tc *TermColor) Finish() *TermColor {
 	color := make([]int, tc.settingsCount)
 	index := 0
 	if tc.fg != -1 {
-		color[index] = tc.fg + 40
+		color[index] = tc.fg + 30
 		index++
 	}
 	if tc.bg != -1 {
-		color[index] = tc.bg + 30
+		color[index] = tc.bg + 40
 		index++
 	}
 	if tc.highlight {
