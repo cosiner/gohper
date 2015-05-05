@@ -12,6 +12,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/mattn/go-colorable"
+
+	"github.com/cosiner/gohper/os2"
 	"github.com/cosiner/gohper/strings2"
 	"github.com/cosiner/gohper/unsafe2"
 )
@@ -27,10 +30,23 @@ const (
 	WHITE      = "white"
 )
 
-// frontground: 30:黑 31:红 32:绿 33:黄 34:蓝色 35:紫色 36:深绿 37:白色
-// background: 30:black 31:red 32:green 33:yellow 34:blue 35:purple 36:deep green 37:white
-// background: 40, 41, ...
 var (
+	// compatible for Windows
+	Stdout io.Writer = os.Stdout
+	Stderr io.Writer = os.Stderr
+)
+
+func init() {
+	if os2.IsWindows() {
+		Stdout = colorable.NewColorableStdout()
+		Stderr = colorable.NewColorableStderr()
+	}
+}
+
+var (
+	// frontground: 30:黑 31:红 32:绿 33:黄 34:蓝色 35:紫色 36:深绿 37:白色
+	// background: 30:black 31:red 32:green 33:yellow 34:blue 35:purple 36:deep green 37:white
+	// background: 40, 41, ...
 	Colors = map[string]int{
 		BLACK:      0,
 		RED:        1,
@@ -42,14 +58,14 @@ var (
 		WHITE:      7,
 	}
 	// only background
-	Black     = Fg(BLACK)
-	Red       = Fg(RED)
-	Green     = Fg(GREEN)
-	Yellow    = Fg(YELLOW)
-	Blue      = Fg((BLUE))
-	Purple    = Fg(PURPLE)
-	DeepGreen = Fg(DEEP_GREEN)
-	White     = Fg(WHITE)
+	Black     = FgHl(BLACK)
+	Red       = FgHl(RED)
+	Green     = FgHl(GREEN)
+	Yellow    = FgHl(YELLOW)
+	Blue      = FgHl((BLUE))
+	Purple    = FgHl(PURPLE)
+	DeepGreen = FgHl(DEEP_GREEN)
+	White     = FgHl(WHITE)
 )
 
 // TermColor is a render for terminal string
@@ -75,9 +91,9 @@ func New() *TermColor {
 	}
 }
 
-// Fg is a quick way to New().Fg(color).Finish()
-func Fg(color string) *TermColor {
-	return New().Fg(color).Finish()
+// FgHl is a quick way to New().Fg(color).Highlight().Finish()
+func FgHl(color string) *TermColor {
+	return New().Fg(color).Highlight().Finish()
 }
 
 // Disable disable color render
@@ -217,13 +233,13 @@ func (tc *TermColor) Fprintf(w io.Writer, format string, args ...interface{}) (i
 }
 
 func (tc *TermColor) Print(args ...interface{}) (int, error) {
-	return tc.RenderTo(os.Stdout, fmt.Sprint(args...))
+	return tc.RenderTo(Stdout, fmt.Sprint(args...))
 }
 
 func (tc *TermColor) Println(args ...interface{}) (int, error) {
-	return tc.RenderTo(os.Stdout, fmt.Sprintln(args...))
+	return tc.RenderTo(Stdout, fmt.Sprintln(args...))
 }
 
 func (tc *TermColor) Printf(format string, args ...interface{}) (int, error) {
-	return tc.RenderTo(os.Stdout, fmt.Sprintf(format, args...))
+	return tc.RenderTo(Stdout, fmt.Sprintf(format, args...))
 }
