@@ -17,11 +17,11 @@ import (
 )
 
 const (
+	BLACK      = "black"
 	RED        = "red"
 	GREEN      = "green"
-	BLUE       = "blue"
-	BLACK      = "black"
 	YELLOW     = "yellow"
+	BLUE       = "blue"
 	PURPLE     = "purple"
 	DEEP_GREEN = "deep_green"
 	WHITE      = "white"
@@ -32,21 +32,21 @@ const (
 // frontground: 40, 41, ...
 var (
 	Colors = map[string]int{
+		BLACK:      3,
 		RED:        0,
 		GREEN:      1,
-		BLUE:       2,
-		BLACK:      3,
 		YELLOW:     4,
+		BLUE:       2,
 		PURPLE:     5,
 		DEEP_GREEN: 6,
 		WHITE:      7,
 	}
 	// only background
+	Black     = Bg(BLACK)
 	Red       = Bg(RED)
 	Green     = Bg(GREEN)
-	Blue      = Bg((BLUE))
-	Black     = Bg(BLACK)
 	Yellow    = Bg(YELLOW)
+	Blue      = Bg((BLUE))
 	Purple    = Bg(PURPLE)
 	DeepGreen = Bg(DEEP_GREEN)
 	White     = Bg(WHITE)

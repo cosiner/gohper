@@ -1,6 +1,8 @@
 package goutil
 
 import (
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,4 +26,9 @@ func PackagePath(pkgName string) string {
 		}
 	}
 	return ""
+}
+
+// WriteImportPath write path to writer, automaticlly join with '/', quote it and start a new line
+func WriteImportpath(w io.Writer, path ...string) (int, error) {
+	return fmt.Fprintf(w, `"%s"`+"\n", strings.Join(path, "/"))
 }
