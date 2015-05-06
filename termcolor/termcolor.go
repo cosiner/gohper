@@ -20,14 +20,14 @@ import (
 )
 
 const (
-	BLACK      = "black"
-	RED        = "red"
-	GREEN      = "green"
-	YELLOW     = "yellow"
-	BLUE       = "blue"
-	PURPLE     = "purple"
-	DEEP_GREEN = "deep_green"
-	WHITE      = "white"
+	BLACK   = "black"
+	RED     = "red"
+	GREEN   = "green"
+	YELLOW  = "yellow"
+	BLUE    = "blue"
+	MAGENTA = "magenta"
+	CYAN    = "cyan"
+	WHITE   = "white"
 )
 
 var (
@@ -48,24 +48,33 @@ var (
 	// background: 30:black 31:red 32:green 33:yellow 34:blue 35:purple 36:deep green 37:white
 	// background: 40, 41, ...
 	Colors = map[string]int{
-		BLACK:      0,
-		RED:        1,
-		GREEN:      2,
-		YELLOW:     3,
-		BLUE:       4,
-		PURPLE:     5,
-		DEEP_GREEN: 6,
-		WHITE:      7,
+		BLACK:   0,
+		RED:     1,
+		GREEN:   2,
+		YELLOW:  3,
+		BLUE:    4,
+		MAGENTA: 5,
+		CYAN:    6,
+		WHITE:   7,
 	}
 	// only background
-	Black     = FgHl(BLACK)
-	Red       = FgHl(RED)
-	Green     = FgHl(GREEN)
-	Yellow    = FgHl(YELLOW)
-	Blue      = FgHl((BLUE))
-	Purple    = FgHl(PURPLE)
-	DeepGreen = FgHl(DEEP_GREEN)
-	White     = FgHl(WHITE)
+	LightBlack   = FgHl(BLACK)
+	LightRed     = FgHl(RED)
+	LightGreen   = FgHl(GREEN)
+	LightYellow  = FgHl(YELLOW)
+	LightBlue    = FgHl((BLUE))
+	LightMagenta = FgHl(MAGENTA)
+	LightCyan    = FgHl(CYAN)
+	LightWhite   = FgHl(WHITE)
+
+	Black   = Fg(BLACK)
+	Red     = Fg(RED)
+	Green   = Fg(GREEN)
+	Yellow  = Fg(YELLOW)
+	Blue    = Fg((BLUE))
+	Magenta = Fg(MAGENTA)
+	Cyan    = Fg(CYAN)
+	White   = Fg(WHITE)
 )
 
 // TermColor is a render for terminal string
@@ -94,6 +103,11 @@ func New() *TermColor {
 // FgHl is a quick way to New().Fg(color).Highlight().Finish()
 func FgHl(color string) *TermColor {
 	return New().Fg(color).Highlight().Finish()
+}
+
+// Fg is a quick way to New().Fg(color).Finish()
+func Fg(color string) *TermColor {
+	return New().Fg(color).Finish()
 }
 
 // Disable disable color render

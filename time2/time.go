@@ -8,6 +8,13 @@ import (
 const DATETIME_FMT = "2006/01/02 15:04:05"
 const DATE_FMT = "2006/01/02"
 const TIME_FMT = "15:04:05"
+const FMT_USAGE = `yyyy - 2006
+yy   - 06
+mm   - 01
+dd   - 02
+HH   - 15
+MM   - 04
+SS   - 05`
 
 var formatReplacer = strings.NewReplacer([]string{
 	"yyyy", "2006",
