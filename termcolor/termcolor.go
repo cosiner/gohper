@@ -91,6 +91,24 @@ type TermColor struct {
 	settings      string
 }
 
+type Writer struct {
+	Prefix string
+	io.Writer
+	*TermColor
+}
+
+func (w Writer) Write(bs []byte) (int, error) {
+	i, err := w.Writer.Write(unsafe2.Bytes(w.Prefix))
+	if err == nil {
+		n, e := w.RenderTo(w.Writer, unsafe2.String(bs))
+		if e == nil {
+			return n + i, err
+		}
+		err = e
+	}
+	return 0, err
+}
+
 // New create a new terminal color render
 func New() *TermColor {
 	return &TermColor{
@@ -232,6 +250,14 @@ func (tc *TermColor) Finish() *TermColor {
 	}
 	tc.settings = strings2.JoinInt(color, ";")
 	return tc
+}
+
+func (tc *TermColor) Writer(prefix string, w io.Writer) io.Writer {
+	return Writer{
+		Prefix:    prefix,
+		Writer:    w,
+		TermColor: tc,
+	}
 }
 
 func (tc *TermColor) Fprint(w io.Writer, args ...interface{}) (int, error) {

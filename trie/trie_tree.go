@@ -2,28 +2,27 @@ package trie
 
 import (
 	"fmt"
-
 	"io"
 )
 
 type TrieTree struct {
-	str        string
-	childChars []byte
-	childs     []*TrieTree
+	Str        string
+	ChildChars []byte
+	Childs     []*TrieTree
 	Value      interface{}
 }
 
 func (tt *TrieTree) AddPath(path string, value interface{}) {
 	tt.AddPathFor(path, func(t *TrieTree) {
-		t.Value = value
+		if value != nil {
+			t.Value = value
+		}
 	})
 }
 
 func (tt *TrieTree) AddPathFor(path string, fn func(*TrieTree)) {
-	str := tt.str
-	if str == "" && len(tt.childChars) == 0 {
-		tt.str = path
-	} else {
+	if tt.HasElement() {
+		str := tt.Str
 		diff, pathLen, strLen := 0, len(path), len(str)
 		for diff != pathLen && diff != strLen && path[diff] == str[diff] {
 			diff++
@@ -31,20 +30,23 @@ func (tt *TrieTree) AddPathFor(path string, fn func(*TrieTree)) {
 		if diff < pathLen {
 			first := path[diff]
 			if diff == strLen {
-				for i, c := range tt.childChars {
+				for i, c := range tt.ChildChars {
 					if c == first {
-						tt.childs[i].AddPathFor(path[diff:], fn)
+						tt.Childs[i].AddPathFor(path[diff:], fn)
+						return
 					}
 				}
 			} else { // diff < strLen
 				tt.moveAllToChild(str[diff:], str[:diff])
 			}
-			newNode := &TrieTree{str: path[diff:]}
+			newNode := &TrieTree{Str: path[diff:]}
 			tt.addChild(first, newNode)
 			tt = newNode
 		} else if diff < strLen {
 			tt.moveAllToChild(str[diff:], path)
 		}
+	} else {
+		tt.Str = path
 	}
 	fn(tt)
 }
@@ -53,82 +55,124 @@ func (tt *TrieTree) AddPathFor(path string, fn func(*TrieTree)) {
 //  as one of it's child
 func (tt *TrieTree) moveAllToChild(childStr string, newStr string) {
 	rnCopy := &TrieTree{
-		str:        childStr,
-		childChars: tt.childChars,
-		childs:     tt.childs,
+		Str:        childStr,
+		ChildChars: tt.ChildChars,
+		Childs:     tt.Childs,
 		Value:      tt.Value,
 	}
-	tt.childChars, tt.childs, tt.Value = nil, nil, nil
+	tt.ChildChars, tt.Childs, tt.Value = nil, nil, nil
 	tt.addChild(childStr[0], rnCopy)
-	tt.str = newStr
+	tt.Str = newStr
 }
 
-// addChild add an child, all childs is sorted
+// addChild add an child, all Childs is sorted
 func (tt *TrieTree) addChild(b byte, n *TrieTree) {
-	childChars, childs := tt.childChars, tt.childs
-	l := len(childChars)
-	childChars, childs = make([]byte, l+1), make([]*TrieTree, l+1)
-	copy(childChars, tt.childChars)
-	copy(childs, tt.childs)
-	for ; l > 0 && childChars[l-1] > b; l-- {
-		childChars[l], childs[l] = childChars[l-1], childs[l-1]
+	ChildChars, Childs := tt.ChildChars, tt.Childs
+	l := len(ChildChars)
+	ChildChars, Childs = make([]byte, l+1), make([]*TrieTree, l+1)
+	copy(ChildChars, tt.ChildChars)
+	copy(Childs, tt.Childs)
+	for ; l > 0 && ChildChars[l-1] > b; l-- {
+		ChildChars[l], Childs[l] = ChildChars[l-1], Childs[l-1]
 	}
-	childChars[l], childs[l] = b, n
-	tt.childChars, tt.childs = childChars, childs
+	ChildChars[l], Childs[l] = b, n
+	tt.ChildChars, tt.Childs = ChildChars, Childs
 }
 
-// Match match one longest route node and return values of path variable
-func (tt *TrieTree) Match(path string) interface{} {
+const (
+	NO     = iota // NO means there is a chaacter don't match
+	PREFIX        // PREFIX means last node's `Str` is only match the begining part
+	FULL          // FULL means last node's `Str` is full matched
+)
+
+func (tt *TrieTree) MatchFrom(nodestart int, path string) (t *TrieTree, index int, typ int) {
 	var (
 		str                string
 		strLen             int
-		pathIndex, pathLen = 0, len(path)
-		node               = tt
-		start              int
+		pathIndex, pathLen     = 0, len(path)
+		node                   = tt
+		start              int = nodestart
 	)
 	for node != nil {
-		str = tt.str
+		str = tt.Str
 		strLen = len(str)
 		pathIndex += start
 		for i := start; i < strLen; i++ {
-			if pathIndex == pathLen || str[i] != path[pathIndex] {
-				return nil
+			if pathIndex == pathLen {
+				return tt, i, PREFIX
+			} else if str[i] != path[pathIndex] {
+				return nil, 0, NO
 			}
 			pathIndex++
 		}
 		node = nil
 		if pathIndex != pathLen { // path not parse end, must find a child node to continue
 			p := path[pathIndex]
-			for i, c := range tt.childChars {
+			for i, c := range tt.ChildChars {
 				if c == p {
-					node = tt.childs[i] // child
+					node = tt.Childs[i] // child
 					break
 				}
 			}
 			if node == nil {
-				return nil
+				return nil, 0, NO
 			}
 			tt = node // child to parse
+			start = 1
 		} /* else { path parse end, node is the last matched node }*/
-		start = 1
 	}
-	return tt.Value
+	return tt, strLen, FULL
 }
 
-// Print print an route tree
-// every level will be seperated by "-"
-func (tt *TrieTree) Print(w io.Writer) {
-	tt.print(w, "")
+func (tt *TrieTree) Match(path string) (t *TrieTree, index int, typ int) {
+	return tt.MatchFrom(0, path)
 }
 
-// print print route tree with given parent path
-func (tt *TrieTree) print(w io.Writer, parentPath string) {
+// Match one longest route node and return values of path variable
+func (tt *TrieTree) MatchValue(path string) interface{} {
+	t, _, m := tt.Match(path)
+	if m != FULL {
+		return nil
+	}
+	return t.Value
+}
+
+func (tt *TrieTree) HasElement() bool {
+	return tt.Str != "" || len(tt.Childs) != 0
+}
+
+func NopHook(interface{}) string {
+	return ""
+}
+
+func (tt *TrieTree) Print(w io.Writer, withCurr bool, parentPath, sep string, hook func(value interface{}) string) {
 	if parentPath != "" {
-		parentPath = parentPath + "-"
+		parentPath = parentPath + sep
 	}
-	cur := parentPath + tt.str
-	fmt.Fprintln(w, cur)
-	for _, n := range tt.childs {
-		n.print(w, cur)
+
+	if withCurr {
+		parentPath += tt.Str
+		if tt.Value != nil {
+			fmt.Fprintln(w, parentPath+hook(tt.Value))
+		}
+	}
+	for _, n := range tt.Childs {
+		n.Print(w, true, parentPath, sep, hook)
+	}
+}
+
+func (tt *TrieTree) Visit(visitor func(string, interface{})) {
+	if visitor != nil {
+		tt.visit("", visitor)
+	}
+}
+
+func (tt *TrieTree) visit(parentPath string, visitor func(string, interface{})) {
+	path := parentPath + tt.Str
+	if tt.Value != nil {
+		visitor(path, tt.Value)
+	}
+	for _, c := range tt.Childs {
+		c.visit(path, visitor)
 	}
 }

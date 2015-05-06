@@ -6,24 +6,30 @@ import (
 	"os/exec"
 )
 
-// RunCmdN run commond with N io parameter specified stdin, stdout, stderr
+// RunCmd run commond, if reader or writer is nil, use os.Stdin/out/err,
+// first elelemts of args should be the command to execute
+func RunCmd(in io.Reader, out, err io.Writer, args ...string) error {
+	if in == nil {
+		in = os.Stdin
+	}
+	if out == nil {
+		out = os.Stdout
+	}
+	if err == nil {
+		err = os.Stderr
+	}
 
-func RunCmd0(cmd string, arg ...string) error {
-	return RunCmd3(os.Stdin, os.Stdout, os.Stderr, cmd, arg...)
-}
-
-func RunCmd1(in io.Reader, cmd string, arg ...string) error {
-	return RunCmd3(in, os.Stdout, os.Stderr, cmd, arg...)
-}
-
-func RunCmd2(in io.Reader, out io.Writer, cmd string, arg ...string) error {
-	return RunCmd3(in, out, os.Stderr, cmd, arg...)
-}
-
-func RunCmd3(in io.Reader, out io.Writer, err io.Writer, cmd string, arg ...string) error {
-	c := exec.Command(cmd, arg...)
+	var c *exec.Cmd
+	if l := len(args); l == 0 {
+		panic("no command to run")
+	} else if l == 1 {
+		c = exec.Command(args[0])
+	} else {
+		c = exec.Command(args[0], args[1:]...)
+	}
 	c.Stdin = in
 	c.Stdout = out
 	c.Stderr = err
+
 	return c.Run()
 }

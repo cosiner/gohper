@@ -13,14 +13,14 @@ func TestTrieTree(t *testing.T) {
 	tree.AddPath("bcdef", 234)
 	tree.AddPath("efghi", 456)
 	tree.AddPath("fghij", 789)
-	tt.True(tree.Match("efghi") != nil)
-	tt.Eq(tree.Match("abcde").(int), 123)
-	tt.Eq(tree.Match("bcdef").(int), 234)
-	tt.Eq(tree.Match("efghi").(int), 456)
-	tt.Eq(tree.Match("fghij").(int), 789)
-	tt.Eq(tree.Match("fghia"), nil)
-	tt.Eq(tree.Match("fasdahia"), nil)
-	tt.Eq(tree.Match("csaghia"), nil)
+	tt.True(tree.MatchValue("efghi") != nil)
+	tt.Eq(tree.MatchValue("abcde").(int), 123)
+	tt.Eq(tree.MatchValue("bcdef").(int), 234)
+	tt.Eq(tree.MatchValue("efghi").(int), 456)
+	tt.Eq(tree.MatchValue("fghij").(int), 789)
+	tt.Eq(tree.MatchValue("fghia"), nil)
+	tt.Eq(tree.MatchValue("fasdahia"), nil)
+	tt.Eq(tree.MatchValue("csaghia"), nil)
 }
 
 var s = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890"
@@ -34,7 +34,7 @@ var tree = func() *TrieTree {
 
 func BenchmarkTrieTree(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		if tree.Match(s).(bool) != true {
+		if tree.MatchValue(s).(bool) != true {
 			b.Fail()
 		}
 	}
