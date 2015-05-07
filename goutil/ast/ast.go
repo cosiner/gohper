@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"reflect"
 
 	"github.com/cosiner/gohper/errors"
 	"github.com/cosiner/gohper/strings2"
@@ -30,7 +31,8 @@ type Attrs struct {
 
 	// Struct
 	S struct {
-		Field, Tag, Type string // if type is empty, means anonymous field
+		Field, Type string // if type is empty, means anonymous field
+		Tag         reflect.StructTag
 	}
 
 	// Const
@@ -118,15 +120,16 @@ func (call Callback) callStruct(spec *ast.TypeSpec, attrs *Attrs) error {
 	}
 
 	for _, f := range st.Fields.List {
+		attrs.S.Type = ""
+		if f.Type != nil {
+			attrs.S.Type = fmt.Sprint(f.Type)
+		}
 		for _, n := range f.Names {
 			attrs.S.Field = n.Name
 			attrs.S.Tag = ""
 			if f.Tag != nil {
-				attrs.S.Tag, _ = strings2.TrimQuote(f.Tag.Value)
-			}
-			attrs.S.Type = ""
-			if f.Type != nil {
-				attrs.S.Type = fmt.Sprint(f.Type)
+				tag, _ := strings2.TrimQuote(f.Tag.Value)
+				attrs.S.Tag = reflect.StructTag(tag)
 			}
 			if err = call.StructField(attrs); err != nil {
 				goto END

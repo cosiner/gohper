@@ -33,10 +33,10 @@ func TestParse(t *testing.T) {
 		StructField: func(a *Attrs) error {
 			if a.S.Field == "Name" {
 				tt.Eq("string", a.S.Type)
-				tt.Eq(`json:"name"`, a.S.Tag)
+				tt.Eq(`json:"name"`, string(a.S.Tag))
 			} else if a.S.Field == "Id" {
 				tt.Eq("int", a.S.Type)
-				tt.Eq(`json:"id"`, a.S.Tag)
+				tt.Eq(`json:"id"`, string(a.S.Tag))
 			} else {
 				t.Fail()
 			}
