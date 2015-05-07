@@ -1,8 +1,17 @@
 package ast
 
 import (
-	"fmt"
 	"testing"
+
+	"github.com/cosiner/gohper/index"
+	"github.com/cosiner/gohper/testing2"
+)
+
+type UserType int
+
+const (
+	ADMIN UserType = iota
+	NORMAL
 )
 
 // User is user
@@ -11,21 +20,43 @@ type User struct {
 	Id   int    `json:"id"`
 }
 
-func TestParseStruct(t *testing.T) {
-	// tt := testing2.Wrap(t)
+func (u User) GetName() string {
+	return u.Name
+}
+
+func (u *User) SetName(n string) {}
+
+func TestParse(t *testing.T) {
+	tt := testing2.Wrap(t)
+
 	c := Callback{
 		Struct: func(a *Attrs) error {
-			fmt.Println("Struct", a.TypeName, a.Field, a.Tag)
+			tt.Eq(a.TypeName, "User")
+			tt.True(index.StringIn(a.Field, []string{"Name", "Id"}) >= 0)
+			tt.True(index.StringIn(a.Tag, []string{"`json:\"name\"`", "`json:\"id\"`"}) >= 0)
 			return nil
 		},
+
 		Const: func(a *Attrs) error {
-			fmt.Println("Const", a.TypeName, a.Name, a.Value)
+			tt.True(a.Name == "ADMIN" || a.Name == "NORMAL")
+			tt.True(a.TypeName == "UserType" || a.TypeName == "")
 			return nil
 		},
+
 		Func: func(a *Attrs) error {
-			fmt.Println("Func", a.TypeName, a.Name)
+			switch a.Name {
+			case "GetName":
+				tt.True(!a.PtrRecv)
+				tt.Eq("User", a.TypeName)
+			case "SetName":
+				tt.True(a.PtrRecv)
+			case "TestParse":
+				tt.Eq("", a.TypeName)
+			default:
+				tt.Fail()
+			}
 			return nil
 		},
 	}
-	ParseFile("ast.go", c)
+	ParseFile("ast_test.go", c)
 }

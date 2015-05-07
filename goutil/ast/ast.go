@@ -28,6 +28,7 @@ type Attrs struct {
 
 	// Func, share Const's Name attribute
 	// Name string
+	PtrRecv bool
 }
 
 type Callback struct {
@@ -83,9 +84,17 @@ func Parse(file *ast.File, call Callback) error {
 		case *ast.FuncDecl:
 			if call.Func != nil {
 				attrs.TypeName = ""
+				attrs.PtrRecv = false
 				if decl.Recv != nil {
-					attrs.TypeName = fmt.Sprint(decl.Recv.List[0].Type)
+					switch t := decl.Recv.List[0].Type.(type) {
+					case *ast.Ident:
+						attrs.TypeName = t.Name
+					case *ast.StarExpr:
+						attrs.TypeName = fmt.Sprint(t.X)
+						attrs.PtrRecv = true
+					}
 				}
+
 				if err := call.callFunc(decl, attrs); err != nil {
 					return nonEOF(err)
 				}
@@ -136,4 +145,8 @@ func nonEOF(err error) error {
 		err = nil
 	}
 	return err
+}
+
+func (c *Callback) Test() {
+
 }
