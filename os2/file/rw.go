@@ -22,10 +22,7 @@ func Open(fname string, flags int, fn FileOpFunc) error {
 			err = e
 		}
 	}
-	if err == io.EOF {
-		return nil
-	}
-	return err
+	return io2.NonEOF(err)
 }
 
 // WriteFlag return os.O_APPEND if not delete content, else os.O_TRUNC

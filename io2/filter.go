@@ -83,7 +83,6 @@ func Filter(r io.Reader, w io.Writer, sync bool, filter LineFilterFunc) error {
 			}
 		}
 	}
-
 	if err == io.EOF {
 		flush()
 		err = nil

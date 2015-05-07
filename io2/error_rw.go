@@ -11,6 +11,13 @@ type ErrorReader struct {
 	Error error
 }
 
+func NonEOF(err error) error {
+	if err == io.EOF {
+		err = nil
+	}
+	return err
+}
+
 func NewErrorReader(r io.Reader) *ErrorReader {
 	if er, is := r.(*ErrorReader); is {
 		return er
