@@ -3,7 +3,6 @@ package ast
 import (
 	"testing"
 
-	"github.com/cosiner/gohper/index"
 	"github.com/cosiner/gohper/testing2"
 )
 
@@ -32,24 +31,31 @@ func TestParse(t *testing.T) {
 			return nil
 		},
 		StructField: func(a *Attrs) error {
-			tt.True(index.StringIn(a.Field, []string{"Name", "Id"}) >= 0)
-			tt.True(index.StringIn(a.Tag, []string{`json:"name"`, `json:"id"`}) >= 0)
+			if a.S.Field == "Name" {
+				tt.Eq("string", a.S.Type)
+				tt.Eq(`json:"name"`, a.S.Tag)
+			} else if a.S.Field == "Id" {
+				tt.Eq("int", a.S.Type)
+				tt.Eq(`json:"id"`, a.S.Tag)
+			} else {
+				t.Fail()
+			}
 			return nil
 		},
 
 		Const: func(a *Attrs) error {
-			tt.True(a.Name == "ADMIN" || a.Name == "NORMAL")
+			tt.True(a.C.Name == "ADMIN" || a.C.Name == "NORMAL")
 			tt.Eq(a.TypeName, "UserType")
 			return nil
 		},
 
 		Func: func(a *Attrs) error {
-			switch a.Name {
+			switch a.F.Name {
 			case "GetName":
-				tt.True(!a.PtrRecv)
+				tt.True(!a.F.PtrRecv)
 				tt.Eq("User", a.TypeName)
 			case "SetName":
-				tt.True(a.PtrRecv)
+				tt.True(a.F.PtrRecv)
 			case "TestParse":
 				tt.Eq("", a.TypeName)
 			default:

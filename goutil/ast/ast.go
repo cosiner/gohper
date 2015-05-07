@@ -29,14 +29,20 @@ type Attrs struct {
 	TypeName string
 
 	// Struct
-	Field, Tag string
+	S struct {
+		Field, Tag, Type string // if type is empty, means anonymous field
+	}
 
 	// Const
-	Name, Value string
+	C struct {
+		Name, Value string
+	}
 
-	// Func, share Name attribute whith Const
-	// Name string
-	PtrRecv bool // whether a method's reciever is pointer, only valid for method
+	// Func
+	F struct {
+		Name    string
+		PtrRecv bool // whether a method's reciever is pointer, only valid for method
+	}
 }
 
 type Callback struct {
@@ -113,10 +119,14 @@ func (call Callback) callStruct(spec *ast.TypeSpec, attrs *Attrs) error {
 
 	for _, f := range st.Fields.List {
 		for _, n := range f.Names {
-			attrs.Field = n.Name
-			attrs.Tag = ""
+			attrs.S.Field = n.Name
+			attrs.S.Tag = ""
 			if f.Tag != nil {
-				attrs.Tag, _ = strings2.TrimQuote(f.Tag.Value)
+				attrs.S.Tag, _ = strings2.TrimQuote(f.Tag.Value)
+			}
+			attrs.S.Type = ""
+			if f.Type != nil {
+				attrs.S.Type = fmt.Sprint(f.Type)
 			}
 			if err = call.StructField(attrs); err != nil {
 				goto END
@@ -145,10 +155,10 @@ func (call Callback) callConsts(decl *ast.GenDecl, attrs *Attrs) error {
 
 		vlen := len(spec.Values)
 		for i, name := range spec.Names {
-			attrs.Name = name.Name
-			attrs.Value = ""
+			attrs.C.Name = name.Name
+			attrs.C.Value = ""
 			if i < vlen {
-				attrs.Value = fmt.Sprint(spec.Values[i])
+				attrs.C.Value = fmt.Sprint(spec.Values[i])
 			}
 			if err := call.Const(attrs); err == TYPE_END {
 				return nil
@@ -162,8 +172,8 @@ func (call Callback) callConsts(decl *ast.GenDecl, attrs *Attrs) error {
 
 func (call Callback) callFunc(decl *ast.FuncDecl, attrs *Attrs) error {
 	attrs.TypeName = ""
-	attrs.PtrRecv = false
-	attrs.Name = decl.Name.Name
+	attrs.F.PtrRecv = false
+	attrs.F.Name = decl.Name.Name
 
 	if decl.Recv != nil {
 		switch recv := decl.Recv.List[0].Type.(type) {
@@ -171,7 +181,7 @@ func (call Callback) callFunc(decl *ast.FuncDecl, attrs *Attrs) error {
 			attrs.TypeName = recv.Name
 		case *ast.StarExpr:
 			attrs.TypeName = fmt.Sprint(recv.X)
-			attrs.PtrRecv = true
+			attrs.F.PtrRecv = true
 		}
 	}
 
