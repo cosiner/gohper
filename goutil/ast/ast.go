@@ -7,11 +7,19 @@ import (
 	"go/token"
 
 	"github.com/cosiner/gohper/errors"
+	"github.com/cosiner/gohper/strings2"
 )
 
-const EOF = errors.Err("parsing end")
+const (
+	// END cause whole parsing end
+	END = errors.Err("parsing end")
+
+	// TYPE_END cause single type's parsing end
+	TYPE_END = errors.Err("type parsing end")
+)
 
 type Attrs struct {
+	// Package name
 	Package string
 
 	// helpful for access single type, if don't know, don't use it
@@ -26,15 +34,20 @@ type Attrs struct {
 	// Const
 	Name, Value string
 
-	// Func, share Const's Name attribute
+	// Func, share Name attribute whith Const
 	// Name string
-	PtrRecv bool
+	PtrRecv bool // whether a method's reciever is pointer, only valid for method
 }
 
 type Callback struct {
-	Struct func(*Attrs) error
-	Const  func(*Attrs) error
-	Func   func(*Attrs) error
+	// if Struct is not nil, StrucField should also be,
+	// otherwize this type will be skipped
+	Struct      func(*Attrs) error
+	StructField func(*Attrs) error
+
+	Const func(*Attrs) error
+
+	Func func(*Attrs) error
 }
 
 func ParseFile(fname string, call Callback) error {
@@ -46,7 +59,7 @@ func ParseFile(fname string, call Callback) error {
 	return err
 }
 
-func Parse(file *ast.File, call Callback) error {
+func Parse(file *ast.File, call Callback) (err error) {
 	attrs := &Attrs{
 		Package: file.Name.Name,
 	}
@@ -55,64 +68,91 @@ func Parse(file *ast.File, call Callback) error {
 		switch decl := decl.(type) {
 		case *ast.GenDecl:
 			if decl.Tok == token.TYPE {
-				if call.Struct == nil {
+				if call.Struct == nil || call.StructField == nil {
 					continue
 				}
 
 				for i, l := 0, len(decl.Specs); i < l; i++ {
-					spec := decl.Specs[i].(*ast.TypeSpec)
-
-					if st, is := spec.Type.(*ast.StructType); is {
-						attrs.TypeName = spec.Name.Name
-						if err := call.callStruct(st, attrs); err != nil {
-							return nonEOF(err)
-						}
+					err = call.callStruct(decl.Specs[i].(*ast.TypeSpec), attrs)
+					if err != nil {
+						goto END
 					}
 				}
 			} else if decl.Tok == token.CONST && call.Const != nil {
-				attrs.TypeName = ""
-				for i, l := 0, len(decl.Specs); i < l; i++ {
-					spec := decl.Specs[i].(*ast.ValueSpec)
-					if spec.Type != nil {
-						attrs.TypeName = fmt.Sprint(spec.Type)
-					}
-					if err := call.callConsts(spec, attrs); err != nil {
-						return nonEOF(err)
-					}
+				if err = call.callConsts(decl, attrs); err != nil {
+					goto END
 				}
 			}
 		case *ast.FuncDecl:
 			if call.Func != nil {
-				attrs.TypeName = ""
-				attrs.PtrRecv = false
-				if decl.Recv != nil {
-					switch t := decl.Recv.List[0].Type.(type) {
-					case *ast.Ident:
-						attrs.TypeName = t.Name
-					case *ast.StarExpr:
-						attrs.TypeName = fmt.Sprint(t.X)
-						attrs.PtrRecv = true
-					}
-				}
-
-				if err := call.callFunc(decl, attrs); err != nil {
-					return nonEOF(err)
+				if err = call.callFunc(decl, attrs); err != nil {
+					goto END
 				}
 			}
 		}
 	}
-	return nil
+
+END:
+	if err == END {
+		err = nil
+	}
+	return err
 }
 
-func (call Callback) callStruct(t *ast.StructType, attrs *Attrs) error {
-	for _, f := range t.Fields.List {
+func (call Callback) callStruct(spec *ast.TypeSpec, attrs *Attrs) error {
+	st, is := spec.Type.(*ast.StructType)
+	if !is {
+		return nil
+	}
+
+	attrs.TypeName = spec.Name.Name
+	err := call.Struct(attrs)
+	if err != nil {
+		goto END
+	}
+
+	for _, f := range st.Fields.List {
 		for _, n := range f.Names {
 			attrs.Field = n.Name
 			attrs.Tag = ""
 			if f.Tag != nil {
-				attrs.Tag = f.Tag.Value
+				attrs.Tag, _ = strings2.TrimQuote(f.Tag.Value)
 			}
-			if err := call.Struct(attrs); err != nil {
+			if err = call.StructField(attrs); err != nil {
+				goto END
+			}
+		}
+	}
+
+END:
+	if err == TYPE_END {
+		err = nil
+	}
+	return err
+}
+
+func (call Callback) callConsts(decl *ast.GenDecl, attrs *Attrs) error {
+	attrs.TypeName = ""
+
+	for i, l := 0, len(decl.Specs); i < l; i++ {
+		spec := decl.Specs[i].(*ast.ValueSpec)
+
+		if spec.Type != nil {
+			attrs.TypeName = fmt.Sprint(spec.Type)
+		} else if spec.Values != nil {
+			attrs.TypeName = "" // iota is break out
+		}
+
+		vlen := len(spec.Values)
+		for i, name := range spec.Names {
+			attrs.Name = name.Name
+			attrs.Value = ""
+			if i < vlen {
+				attrs.Value = fmt.Sprint(spec.Values[i])
+			}
+			if err := call.Const(attrs); err == TYPE_END {
+				return nil
+			} else if err != nil {
 				return err
 			}
 		}
@@ -120,33 +160,24 @@ func (call Callback) callStruct(t *ast.StructType, attrs *Attrs) error {
 	return nil
 }
 
-func (call Callback) callConsts(spec *ast.ValueSpec, attrs *Attrs) error {
-	vl := len(spec.Values)
-	for i, name := range spec.Names {
-		attrs.Name = name.Name
-		attrs.Value = ""
-		if i < vl {
-			attrs.Value = fmt.Sprint(spec.Values[i])
-		}
-		if err := call.Const(attrs); err != nil {
-			return err
+func (call Callback) callFunc(decl *ast.FuncDecl, attrs *Attrs) error {
+	attrs.TypeName = ""
+	attrs.PtrRecv = false
+	attrs.Name = decl.Name.Name
+
+	if decl.Recv != nil {
+		switch recv := decl.Recv.List[0].Type.(type) {
+		case *ast.Ident:
+			attrs.TypeName = recv.Name
+		case *ast.StarExpr:
+			attrs.TypeName = fmt.Sprint(recv.X)
+			attrs.PtrRecv = true
 		}
 	}
-	return nil
-}
 
-func (call Callback) callFunc(decl *ast.FuncDecl, attrs *Attrs) error {
-	attrs.Name = decl.Name.Name
-	return call.Func(attrs)
-}
-
-func nonEOF(err error) error {
-	if err == EOF {
+	err := call.Func(attrs)
+	if err == TYPE_END {
 		err = nil
 	}
 	return err
-}
-
-func (c *Callback) Test() {
-
 }

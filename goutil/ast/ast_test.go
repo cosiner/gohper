@@ -20,10 +20,7 @@ type User struct {
 	Id   int    `json:"id"`
 }
 
-func (u User) GetName() string {
-	return u.Name
-}
-
+func (u User) GetName() string   { return "" }
 func (u *User) SetName(n string) {}
 
 func TestParse(t *testing.T) {
@@ -32,14 +29,17 @@ func TestParse(t *testing.T) {
 	c := Callback{
 		Struct: func(a *Attrs) error {
 			tt.Eq(a.TypeName, "User")
+			return nil
+		},
+		StructField: func(a *Attrs) error {
 			tt.True(index.StringIn(a.Field, []string{"Name", "Id"}) >= 0)
-			tt.True(index.StringIn(a.Tag, []string{"`json:\"name\"`", "`json:\"id\"`"}) >= 0)
+			tt.True(index.StringIn(a.Tag, []string{`json:"name"`, `json:"id"`}) >= 0)
 			return nil
 		},
 
 		Const: func(a *Attrs) error {
 			tt.True(a.Name == "ADMIN" || a.Name == "NORMAL")
-			tt.True(a.TypeName == "UserType" || a.TypeName == "")
+			tt.Eq(a.TypeName, "UserType")
 			return nil
 		},
 
@@ -58,5 +58,6 @@ func TestParse(t *testing.T) {
 			return nil
 		},
 	}
-	ParseFile("ast_test.go", c)
+
+	tt.True(ParseFile("ast_test.go", c) == nil)
 }
