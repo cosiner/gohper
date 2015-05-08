@@ -30,7 +30,7 @@ func (u *User) SetName(n string) {}
 func TestParse(t *testing.T) {
 	tt := testing2.Wrap(t)
 
-	c := Callback{
+	err := Parser{
 		Interface: func(a *Attrs) error {
 			tt.Eq("UserIface", a.TypeName)
 			tt.True(a.I.Method == "GetName" || a.I.Method == "SetName")
@@ -70,7 +70,7 @@ func TestParse(t *testing.T) {
 			}
 			return nil
 		},
-	}
+	}.ParseFile("ast_test.go")
 
-	tt.True(ParseFile("ast_test.go", c) == nil)
+	tt.True(err == nil)
 }
