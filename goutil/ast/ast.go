@@ -40,6 +40,11 @@ type Attrs struct {
 		Name, Value string
 	}
 
+	// Interface
+	I struct {
+		Method string
+	}
+
 	// Func
 	F struct {
 		Name    string
@@ -48,14 +53,10 @@ type Attrs struct {
 }
 
 type Callback struct {
-	// if Struct is not nil, StrucField should also be,
-	// otherwize this type will be skipped
-	Struct      func(*Attrs) error
-	StructField func(*Attrs) error
-
-	Const func(*Attrs) error
-
-	Func func(*Attrs) error
+	Const     func(*Attrs) error
+	Interface func(*Attrs) error
+	Struct    func(*Attrs) error
+	Func      func(*Attrs) error
 }
 
 func ParseFile(fname string, call Callback) error {
@@ -72,54 +73,62 @@ func Parse(file *ast.File, call Callback) (err error) {
 		Package: file.Name.Name,
 	}
 
+	defer func(err *error) {
+		if *err == END {
+			*err = nil
+		}
+	}(&err)
+
 	for _, decl := range file.Decls {
 		switch decl := decl.(type) {
 		case *ast.GenDecl:
 			if decl.Tok == token.TYPE {
-				if call.Struct == nil || call.StructField == nil {
+				if call.Struct == nil || call.Interface == nil {
 					continue
 				}
 
-				for i, l := 0, len(decl.Specs); i < l; i++ {
-					err = call.callStruct(decl.Specs[i].(*ast.TypeSpec), attrs)
-					if err != nil {
-						goto END
+				for _, spec := range decl.Specs {
+					if err = call.callType(spec.(*ast.TypeSpec), attrs); err != nil {
+						return
 					}
 				}
 			} else if decl.Tok == token.CONST && call.Const != nil {
 				if err = call.callConsts(decl, attrs); err != nil {
-					goto END
+					return
 				}
 			}
 		case *ast.FuncDecl:
 			if call.Func != nil {
 				if err = call.callFunc(decl, attrs); err != nil {
-					goto END
+					return
 				}
 			}
 		}
 	}
-
-END:
-	if err == END {
-		err = nil
-	}
-	return err
+	return
 }
 
-func (call Callback) callStruct(spec *ast.TypeSpec, attrs *Attrs) error {
-	st, is := spec.Type.(*ast.StructType)
-	if !is {
-		return nil
+func (call Callback) callType(spec *ast.TypeSpec, attrs *Attrs) (err error) {
+	attrs.TypeName = ""
+	switch typ := spec.Type.(type) {
+	case *ast.StructType:
+		if call.Struct != nil {
+			attrs.TypeName = spec.Name.Name
+			err = call.callStruct(typ, attrs)
+		}
+	case *ast.InterfaceType:
+		if call.Interface != nil {
+			attrs.TypeName = spec.Name.Name
+			err = call.callInterface(typ, attrs)
+		}
 	}
+	return
+}
 
-	attrs.TypeName = spec.Name.Name
-	err := call.Struct(attrs)
-	if err != nil {
-		goto END
-	}
+func (call Callback) callStruct(spec *ast.StructType, attrs *Attrs) (err error) {
+	defer nonTypeEnd(&err)
 
-	for _, f := range st.Fields.List {
+	for _, f := range spec.Fields.List {
 		attrs.S.Type = ""
 		if f.Type != nil {
 			attrs.S.Type = fmt.Sprint(f.Type)
@@ -131,22 +140,32 @@ func (call Callback) callStruct(spec *ast.TypeSpec, attrs *Attrs) error {
 				tag, _ := strings2.TrimQuote(f.Tag.Value)
 				attrs.S.Tag = reflect.StructTag(tag)
 			}
-			if err = call.StructField(attrs); err != nil {
-				goto END
+			if err = call.Struct(attrs); err != nil {
+				return
 			}
 		}
 	}
-
-END:
-	if err == TYPE_END {
-		err = nil
-	}
-	return err
+	return
 }
 
-func (call Callback) callConsts(decl *ast.GenDecl, attrs *Attrs) error {
-	attrs.TypeName = ""
+func (call Callback) callInterface(spec *ast.InterfaceType, attrs *Attrs) (err error) {
+	defer nonTypeEnd(&err)
 
+	for _, m := range spec.Methods.List {
+		for _, n := range m.Names {
+			attrs.I.Method = n.Name
+			if err = call.Interface(attrs); err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
+func (call Callback) callConsts(decl *ast.GenDecl, attrs *Attrs) (err error) {
+	defer nonTypeEnd(&err)
+
+	attrs.TypeName = ""
 	for i, l := 0, len(decl.Specs); i < l; i++ {
 		spec := decl.Specs[i].(*ast.ValueSpec)
 
@@ -163,17 +182,15 @@ func (call Callback) callConsts(decl *ast.GenDecl, attrs *Attrs) error {
 			if i < vlen {
 				attrs.C.Value = fmt.Sprint(spec.Values[i])
 			}
-			if err := call.Const(attrs); err == TYPE_END {
-				return nil
-			} else if err != nil {
-				return err
+			if err = call.Const(attrs); err != nil {
+				return
 			}
 		}
 	}
-	return nil
+	return
 }
 
-func (call Callback) callFunc(decl *ast.FuncDecl, attrs *Attrs) error {
+func (call Callback) callFunc(decl *ast.FuncDecl, attrs *Attrs) (err error) {
 	attrs.TypeName = ""
 	attrs.F.PtrRecv = false
 	attrs.F.Name = decl.Name.Name
@@ -188,9 +205,13 @@ func (call Callback) callFunc(decl *ast.FuncDecl, attrs *Attrs) error {
 		}
 	}
 
-	err := call.Func(attrs)
-	if err == TYPE_END {
-		err = nil
+	err = call.Func(attrs)
+	nonTypeEnd(&err)
+	return
+}
+
+func nonTypeEnd(err *error) {
+	if *err == TYPE_END {
+		*err = nil
 	}
-	return err
 }

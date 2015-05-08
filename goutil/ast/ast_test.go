@@ -13,6 +13,11 @@ const (
 	NORMAL
 )
 
+type UserIface interface {
+	GetName() string
+	SetName(string)
+}
+
 // User is user
 type User struct {
 	Name string `json:"name"`
@@ -26,11 +31,13 @@ func TestParse(t *testing.T) {
 	tt := testing2.Wrap(t)
 
 	c := Callback{
-		Struct: func(a *Attrs) error {
-			tt.Eq(a.TypeName, "User")
+		Interface: func(a *Attrs) error {
+			tt.Eq("UserIface", a.TypeName)
+			tt.True(a.I.Method == "GetName" || a.I.Method == "SetName")
 			return nil
 		},
-		StructField: func(a *Attrs) error {
+		Struct: func(a *Attrs) error {
+			tt.Eq(a.TypeName, "User")
 			if a.S.Field == "Name" {
 				tt.Eq("string", a.S.Type)
 				tt.Eq(`json:"name"`, string(a.S.Tag))
