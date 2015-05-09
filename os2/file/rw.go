@@ -2,11 +2,16 @@ package file
 
 import (
 	"io"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/cosiner/gohper/defval"
+	"github.com/cosiner/gohper/errors"
 	"github.com/cosiner/gohper/io2"
 )
+
+const ErrDestIsFile = errors.Err("destnation is a file")
 
 // FileOpFunc accept a file descriptor, return an error or nil
 type FileOpFunc func(*os.File) error
@@ -59,6 +64,28 @@ func FilterTo(dst, src string, trunc bool, filter io2.LineFilterFunc) error {
 // Copy src file to dest file
 func Copy(dst, src string) error {
 	return FilterTo(dst, src, true, io2.NopLineFilte)
+}
+
+// CopyDir copy directory from source to destination
+func CopyDir(dst, src string) error {
+	err := os.MkdirAll(dst, 0755)
+	if err != nil {
+		return err
+	}
+
+	files, err := ioutil.ReadDir(src)
+
+	for i := 0; i < len(files) && err == nil; i++ {
+		file := files[i].Name()
+		df := filepath.Join(dst, file)
+		sf := filepath.Join(src, file)
+		if IsFile(file) {
+			err = Copy(df, sf)
+		} else {
+			err = CopyDir(df, sf)
+		}
+	}
+	return err
 }
 
 // Overwrite delete all content in file, and write new content to it

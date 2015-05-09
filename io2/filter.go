@@ -77,7 +77,7 @@ func Filter(r io.Reader, w io.Writer, sync bool, filter LineFilterFunc) error {
 		if line, _, err = br.ReadLine(); err == nil {
 			linenum++
 			if line, err = filter(linenum, line); err == nil || err == io.EOF {
-				if len(line) != 0 {
+				if line != nil {
 					save(line)
 				}
 			}

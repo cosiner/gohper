@@ -10,7 +10,7 @@ const (
 // IsExist check whether or not file/dir exist
 func IsExist(fname string) bool {
 	_, err := os.Stat(fname)
-	return err == nil || !os.IsNotExist(err)
+	return err != nil && os.IsExist(err)
 }
 
 // IsFile check whether or not file exist
