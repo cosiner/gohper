@@ -1,20 +1,4 @@
-// Package test is a wrapper of testing that supply some useful functions for test
-//
-// Example:
-// import (
-//		"testing"
-//
-//		"github.com/cosiner/gohper/testing2"
-// )
-// func TestXXX(t *testing.T) {
-// 	    tt := testing2.Wrap(t)
-//      tt.True(true)
-//      tt.False(false)
-//      tt.Eq(1, 1)
-//      tt.NE(2, 3)
-//      defer tt.Recover()
-//      // etc..
-// }
+// Package test is a wrapper of testing that supply some useful functions for test.
 package testing2
 
 import (
@@ -50,32 +34,30 @@ func (t Test) NE(expect interface{}, got interface{}) {
 	ne(t.TB, 1, expect, got)
 }
 
-// True assert value is true
+// True assert val is true
 func (t Test) True(val bool) {
 	eq(t.TB, 1, true, val)
 }
 
-// False assert value is false
+// False assert val is false
 func (t Test) False(val bool) {
 	eq(t.TB, 1, false, val)
 }
 
-// Recover catch a panic and log it
-func (t Test) Recover() {
-	if e := recover(); e != nil {
-		t.Log("Recover:", e)
-	}
+func (t Test) Nil(val interface{}) {
+	nil_(t.TB, 1, val)
 }
 
-// // Nil assert value is nil
-// func (t Test) Nil(value interface{}) {
-// 	nil_(t, 1, value)
-// }
+func (t Test) NNil(val interface{}) {
+	nnil(t.TB, 1, val)
+}
 
-// // NNil assert value is nil
-// func (t Test) NNil(value interface{}) {
-// 	nnil(t, 1, value)
-// }
+// Recover catch a panic and log it
+func (t Test) Recover() {
+	if e := recover(); e == nil {
+		errorInfo(t.TB, 1, "panic", "not panic", false)
+	}
+}
 
 // Eq assert expect and got is equal, else print error message
 func Eq(t testing.TB, expect interface{}, got interface{}) {
@@ -92,67 +74,78 @@ func NE(t testing.TB, expect interface{}, got interface{}) {
 	ne(t, 1, expect, got)
 }
 
-// // Nil assert value is nil
-// func Nil(t testing.TB, value interface{}) {
-// 	nil_(t, 1, value)
-// }
-
-// func NNil(t testing.TB, value interface{}) {
-// 	nnil(t, 1, value)
-// }
-
-// True assert value is true
+// True assert val is true
 func True(t testing.TB, val bool) {
 	eq(t, 1, true, val)
 }
 
-// False assert value is false
+// False assert val is false
 func False(t testing.TB, val bool) {
 	eq(t, 1, false, val)
+}
+
+func Nil(t testing.TB, val interface{}) {
+	nil_(t, 1, val)
+}
+
+func NNil(t testing.TB, val interface{}) {
+	nnil(t, 1, val)
 }
 
 // eq assert expect and got is equal, else print error message
 func eq(t testing.TB, skip int, expect interface{}, got interface{}) {
 	if expect != got {
-		t.Errorf("Error in %s : expect %s, but got %s\n",
-			runtime2.Caller(skip+1), fmt.Sprint(expect), fmt.Sprint(got))
+		errorInfo(t, skip+1, expect, got, true)
 	}
 }
 
 // deepEq assert expect and got is deep-equal, else print error message
 func deepEq(t testing.TB, skip int, expect interface{}, got interface{}) {
 	if !reflect.DeepEqual(expect, got) {
-		t.Errorf("Error in %s : expect %s, but got %s\n",
-			runtime2.Caller(skip+1), fmt.Sprint(expect), fmt.Sprint(got))
+		errorInfo(t, skip+1, expect, got, true)
 	}
 }
 
 // ne assert expect and got is not equal, else print error message
 func ne(t testing.TB, skip int, expect interface{}, got interface{}) {
 	if expect == got {
-		t.Errorf("Error in %s : expect different value, but got same: %s",
-			runtime2.Caller(skip+1), fmt.Sprint(got))
+		errorInfo(t, skip+1, "not equal", "equal", false)
 	}
 }
 
-// // nil_ assert value is nil
-// func nil_(t testing.TB, skip int, value interface{}) {
-// 	if s := fmt.Sprint(value); s != "<nil>" {
-// 		t.Errorf("Error in %s: expect nil value, but got %s", runtime2.Caller(skip+1), s)
-// 	}
-// }
+// nil_ assert val is nil
+func nil_(t testing.TB, skip int, val interface{}) {
+	if !reflect.ValueOf(val).IsNil() {
+		errorInfo(t, skip+1, "nil", "not nil", false)
+	}
+}
 
-// // nnil assert value is not nil
-// func nnil(t testing.TB, skip int, value interface{}) {
-// 	if s := fmt.Sprint(value); s == "<nil>" {
-// 		t.Errorf("Error in %s: expect non-nil value, but got nil", runtime2.Caller(skip+1))
-// 	}
-// }
-//
+// nnil assert val is not nil
+func nnil(t testing.TB, skip int, val interface{}) {
+	if reflect.ValueOf(val).IsNil() {
+		errorInfo(t, skip+1, "not nil", "nil", false)
+	}
+}
 
 // Recover catch a panic and log it
 func Recover(t testing.TB) {
-	if e := recover(); e != nil {
-		t.Log("Recover:", e)
+	if e := recover(); e == nil {
+		errorInfo(t, 1, "panic", "not panic", false)
 	}
+}
+
+func errorInfo(t testing.TB, skip int, expect, got interface{}, withType bool) {
+	var (
+		pos  = runtime2.Caller(skip + 1)
+		exps string
+		gs   string
+	)
+	if withType {
+		exps = fmt.Sprintf("%+v(%T)", expect, expect)
+		gs = fmt.Sprintf("%+v(%T)", got, got)
+	} else {
+		exps = fmt.Sprintf("%+v", expect)
+		gs = fmt.Sprintf("%+v", got)
+	}
+	t.Errorf("Error at %s : expect: %s, but got: %s", pos, exps, gs)
 }

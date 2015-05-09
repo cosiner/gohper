@@ -34,13 +34,11 @@ func Uint2LowerHex(u uint64) []byte {
 // if string is invalid, return an error
 func Hex2Uint(str string) (n uint64, err error) {
 	err = errors.Newf("Invalid hexadecimal string %s", str)
-	if len(str) <= 2 {
-		return
+	if len(str) > 2 {
+		if head := str[:2]; head == "0x" || head == "0X" {
+			str = str[2:]
+		}
 	}
-	if head := str[:2]; head != "0x" && head != "0X" {
-		return
-	}
-	str = str[2:]
 	for _, c := range str {
 		if c >= '0' && c <= '9' {
 			c = c - '0'

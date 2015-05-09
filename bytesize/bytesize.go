@@ -7,12 +7,12 @@ import (
 
 const (
 	// *BASE defines the base size of *B, include K,M,G,T,P
-	BASE = 1 << 10 // 1024
-	KB   = BASE
-	MB   = BASE * KB
-	GB   = BASE * MB
-	TB   = BASE * GB
-	PB   = BASE * TB
+	BASE uint64 = 1 << 10 // 1024
+	KB          = BASE
+	MB          = BASE * KB
+	GB          = BASE * MB
+	TB          = BASE * GB
+	PB          = BASE * TB
 )
 
 // Size convert byte count string to integer
@@ -36,6 +36,9 @@ func Size(size string) (uint64, error) {
 		s = s[:len(s)-1]
 	}
 	bs, err := strconv.Atoi(string(s))
+	if bs < 0 {
+		bs = 0
+	}
 	if err != nil {
 		return 0, err
 	}

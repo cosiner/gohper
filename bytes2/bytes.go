@@ -1,7 +1,11 @@
 // Package bytes2 provide some helpful functions and multiple bytes pools.
 package bytes2
 
-import "bytes"
+import (
+	"bytes"
+
+	"github.com/cosiner/gohper/index"
+)
 
 // TrimSplit split bytes array, and trim space on each section
 func TrimSplit(s, sep []byte) [][]byte {
@@ -18,4 +22,14 @@ func TrimAfter(s []byte, delim []byte) []byte {
 		s = s[:idx]
 	}
 	return bytes.TrimSpace(s)
+}
+
+// IsAllBytesIn check whether all bytes is in given encoding bytes
+func IsAllBytesIn(bs []byte, encoding []byte) bool {
+	for i := 0; i < len(bs); i++ {
+		if index.ByteIn(bs[i], encoding...) < 0 {
+			return false
+		}
+	}
+	return true
 }

@@ -12,11 +12,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/mattn/go-colorable"
-
 	"github.com/cosiner/gohper/os2"
 	"github.com/cosiner/gohper/strings2"
 	"github.com/cosiner/gohper/unsafe2"
+	"github.com/mattn/go-colorable"
 )
 
 const (
@@ -282,4 +281,16 @@ func (tc *TermColor) Println(args ...interface{}) (int, error) {
 
 func (tc *TermColor) Printf(format string, args ...interface{}) (int, error) {
 	return tc.RenderTo(Stdout, fmt.Sprintf(format, args...))
+}
+
+func (tc *TermColor) Sprint(args ...interface{}) string {
+	return tc.Render(fmt.Sprint(args...))
+}
+
+func (tc *TermColor) Sprintln(args ...interface{}) string {
+	return tc.Render(fmt.Sprintln(args...))
+}
+
+func (tc *TermColor) Sprintf(format string, args ...interface{}) string {
+	return tc.Render(fmt.Sprintf(format, args...))
 }

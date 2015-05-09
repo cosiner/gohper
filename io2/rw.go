@@ -27,6 +27,10 @@ func BufWriter(w io.Writer) *bufio.Writer {
 
 var _newLine = []byte("\n")
 
+func WriteString(w io.Writer, s string) (int, error) {
+	return w.Write(unsafe2.Bytes(s))
+}
+
 func WriteIfString(w io.Writer, v interface{}) (bool, error) {
 	switch s := v.(type) {
 	case string:

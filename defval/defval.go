@@ -80,18 +80,6 @@ func Nil(i, v interface{}) {
 	}
 }
 
-// NilFunc check whether *i is nil, if true set *i to f(),
-// i must be a pointer, and f must be a function accept no parameters and return
-// a value
-//
-// This function is not recommend to use.
-func NilFunc(i, f interface{}) {
-	ele := reflect.ValueOf(i).Elem()
-	if ele.IsNil() {
-		ele.Set(reflect.ValueOf(f).Call(nil)[0])
-	}
-}
-
 // BoolStr check b, set *s to "true" or "false"
 func BoolStr(b bool, s *string) {
 	if b {

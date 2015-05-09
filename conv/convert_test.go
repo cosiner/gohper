@@ -6,12 +6,28 @@ import (
 	"github.com/cosiner/gohper/testing2"
 )
 
-func TestHexStr2Uint(t *testing.T) {
-	res, _ := Hex2Uint("0xff")
-	testing2.Eq(t, uint64(0xff), res)
+func TestHex2Uint(t *testing.T) {
+	res, _ := Hex2Uint("0XAff")
+	testing2.Eq(t, uint64(0xaff), res)
 
-	res, _ = Hex2Uint("0x00fff")
+	res, err := Hex2Uint("0xzz")
+	testing2.True(t, err != nil)
+
+	res, _ = Hex2Uint("00fff")
 	testing2.Eq(t, uint64(0xfff), res)
+}
+
+func TestHex(t *testing.T) {
+	tt := testing2.Wrap(t)
+	var u uint64
+	for i := uint64(0); i < 8; i++ {
+		u |= 1 << i
+	}
+	tt.Eq("FF", string(Uint2Hex(u)))
+	tt.Eq("ff", string(Uint2LowerHex(u)))
+
+	tt.DeepEq([]byte{0xff}, Hex2Bytes([]byte("ff")))
+	tt.DeepEq([]byte("ff"), Bytes2Hex([]byte{0xff}))
 }
 
 func TestReverseBits(t *testing.T) {

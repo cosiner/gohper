@@ -48,8 +48,10 @@ func nonZeroLen(l uint) {
 // NewBitset return a new bitset with given length, all index in list are set to 1
 func NewBitset(length uint, indexs ...uint) *Bitset {
 	nonZeroLen(length)
-
-	s := &Bitset{length, newUnits(unitCount(length))}
+	s := &Bitset{
+		length: length,
+		set:    newUnits(unitCount(length)),
+	}
 	for _, i := range indexs {
 		s.Set(i)
 	}
@@ -180,7 +182,10 @@ func (s *Bitset) Diff(b *Bitset) *Bitset {
 }
 
 // bitsetOp is common operation for union, intersection, diff
-func (s *Bitset) bitsetOp(b *Bitset, lenFn func(s, b *Bitset, len *uint), opFn func(s, b *Bitset, index uint)) *Bitset {
+func (s *Bitset) bitsetOp(b *Bitset,
+	lenFn func(s, b *Bitset, len *uint),
+	opFn func(s, b *Bitset, index uint)) *Bitset {
+
 	length := b.Length(0)
 	if b == nil || b.Length(0) == 0 {
 		return s
@@ -269,9 +274,11 @@ func (s *Bitset) Clone() *Bitset {
 func (s *Bitset) Bits() []uint {
 	res := make([]uint, s.BitCount())
 	index := 0
-	for i, l := Uint0, s.Length(0); i < l && s.IsSet(i); i++ {
-		res[index] = i
-		index++
+	for i, l := Uint0, s.length; i < l; i++ {
+		if s.IsSet(i) {
+			res[index] = i
+			index++
+		}
 	}
 	return res
 }
@@ -280,7 +287,7 @@ func (s *Bitset) Bits() []uint {
 func (s *Bitset) BitCount() int {
 	var n int
 	s.unsetTop()
-	for i, n := 0, len(s.set); i < n; i++ {
+	for i, l := 0, len(s.set); i < l; i++ {
 		n += BitCount(s.set[i])
 	}
 	return n

@@ -6,30 +6,87 @@ import (
 	"github.com/cosiner/gohper/testing2"
 )
 
+func TestZeroLength(t *testing.T) {
+	tt := testing2.Wrap(t)
+	defer tt.Recover()
+	NewBitset(0)
+}
+
 func TestBitSet(t *testing.T) {
 	tt := testing2.Wrap(t)
-	bs := NewBitset(23)
-	tt.False(bs.IsSet(1))
+	list := []uint{1, 2, 4, 5, 6, 7, 60}
+	s := NewBitset(32, 1)
+	tt.True(s.UnitCount() == 1)
+	tt.True(s.Uint() == 2)
+	tt.True(s.Uint64() == 2)
+	testBitset(tt, s, list)
+}
 
-	bs.Set(23) //23
-	tt.True(bs.IsSet(23))
-	tt.False(bs.IsSet(24))
+func testBitset(tt testing2.Test, s *Bitset, list []uint) {
+	s.UnsetAll()
 
-	b := bs.Clone() //23
-	tt.True(b.IsSet(23))
-	tt.False(b.IsSet(24))
-	tt.Eq(uint(24), b.Length(0))
+	for _, l := range list {
+		s.Set(l)
+		tt.True(s.IsSet(l))
 
-	b.Set(20)   //23,20
-	bs.Union(b) // 23,20
-	bs.Set(21)  // 23 21 20
-	tt.True(bs.IsSet(20))
+		s.Unset(l)
+		tt.False(s.IsSet(l))
 
-	bs.Diff(b) //21
-	tt.False(bs.IsSet(20))
-	tt.True(bs.IsSet(21))
+		s.SetTo(l, true)
+		tt.True(s.IsSet(l))
 
-	tt.False(bs.IsSet(23))
+		s.SetTo(l, false)
+		tt.False(s.IsSet(l))
 
-	tt.Eq(uint(30), b.Length(30))
+		s.Flip(l)
+		tt.True(s.IsSet(l))
+
+		s.FlipAll()
+		tt.False(s.IsSet(l))
+
+		s.SetAll()
+		tt.True(s.IsSet(l))
+
+		s.Unset(l)
+		tt.Eq(s.BitCount(), int(s.Length(0)-1))
+
+		s.UnsetAll()
+		tt.False(s.IsSet(l))
+	}
+	tt.Eq(uint(64), s.UnitLen())
+	tt.Eq(uint(1), s.UnitCount())
+
+	s.UnsetAll()
+	for _, l := range list {
+		s.Set(l)
+	}
+	tt.DeepEq(s.Bits(), list)
+	s.Flip(127)
+	tt.Eq(uint(128), s.Length(0))
+
+	tt.True(s.Length(64) == 64)
+	s.UnsetAll()
+
+	s.Except(list...)
+	for _, l := range list {
+		tt.False(s.IsSet(l))
+	}
+
+	cl := s.Clone()
+	cl.Length(256)
+	tt.True(cl.UnitCount() == 4)
+	cl.Except(list...).Except(cl.Bits()...)
+	s.Intersection(cl)
+	tt.True(s.BitCount() == 0)
+
+	s.Union(cl)
+	tt.True(s.BitCount() == len(list))
+
+	s.Diff(cl)
+	tt.True(s.BitCount() == 0)
+
+	s.UnsetAll()
+	cl.UnsetAll()
+	cl.Intersection(s)
+	tt.True(cl.BitCount() == 0)
 }
