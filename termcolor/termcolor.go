@@ -76,6 +76,12 @@ var (
 	White   = Fg(WHITE)
 )
 
+// Has check whether a color can be use
+func Has(c string) bool {
+	_, has := Colors[strings.ToLower(c)]
+	return has
+}
+
 // TermColor is a render for terminal string
 type TermColor struct {
 	enable        bool
@@ -108,7 +114,7 @@ func (w Writer) Write(bs []byte) (int, error) {
 	return 0, err
 }
 
-// New create a new terminal color render
+// New create a new terminal color render,
 func New() *TermColor {
 	return &TermColor{
 		fg:     -1,
@@ -138,7 +144,6 @@ func (tc *TermColor) Render(str string) string {
 		return str
 	}
 	return "\033[" + tc.settings + "m" + str + "\033[0m"
-	// return fmt.Sprintf("\033[%sm%s\033[0m", tc.settings, str)
 }
 
 // RenderTo render string to writer
@@ -166,17 +171,21 @@ func (tc *TermColor) End(w io.Writer) error {
 	return err
 }
 
-// Bg set render's background color
+// Bg set render's background color, only working when color exist
 func (tc *TermColor) Bg(bg string) *TermColor {
-	tc.settingsCount++
-	tc.bg = Colors[strings.ToLower(bg)]
+	if bg, has := Colors[strings.ToLower(bg)]; has {
+		tc.settingsCount++
+		tc.bg = bg
+	}
 	return tc
 }
 
-// Fg set render's foreground color
+// Fg set render's foreground color, only working when color exist
 func (tc *TermColor) Fg(fg string) *TermColor {
-	tc.settingsCount++
-	tc.fg = Colors[strings.ToLower(fg)]
+	if fg, has := Colors[strings.ToLower(fg)]; has {
+		tc.settingsCount++
+		tc.fg = fg
+	}
 	return tc
 }
 

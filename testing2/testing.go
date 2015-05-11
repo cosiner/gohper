@@ -59,6 +59,15 @@ func (t Test) Recover() {
 	}
 }
 
+// Recover catch a panic and log it
+func (t Test) RecoverEq(s string) {
+	if e := recover(); e == nil {
+		errorInfo(t.TB, 1, "panic", "not panic", false)
+	} else if es := fmt.Sprint(e); es != s {
+		errorInfo(t, 1, "panic: "+s, "panic: "+es, false)
+	}
+}
+
 // Eq assert expect and got is equal, else print error message
 func Eq(t testing.TB, expect interface{}, got interface{}) {
 	eq(t, 1, expect, got)
@@ -134,18 +143,27 @@ func Recover(t testing.TB) {
 	}
 }
 
+// Recover catch a panic and log it
+func RecoverEq(t testing.TB, s string) {
+	if e := recover(); e == nil {
+		errorInfo(t, 1, "panic", "not panic", false)
+	} else if es := fmt.Sprint(e); es != s {
+		errorInfo(t, 1, "panic: "+s, "panic: "+es, false)
+	}
+}
+
 func errorInfo(t testing.TB, skip int, expect, got interface{}, withType bool) {
 	var (
-		pos  = runtime2.Caller(skip + 1)
+		pos  = "\033[1;34m" + runtime2.Caller(skip+1) + "\033[0m"
 		exps string
 		gs   string
 	)
 	if withType {
-		exps = fmt.Sprintf("%+v(%T)", expect, expect)
-		gs = fmt.Sprintf("%+v(%T)", got, got)
+		exps = fmt.Sprintf("\033[1;32m%+v(%T)\033[0m", expect, expect)
+		gs = fmt.Sprintf("\033[1;31m%+v(%T)\033[0m", got, got)
 	} else {
-		exps = fmt.Sprintf("%+v", expect)
-		gs = fmt.Sprintf("%+v", got)
+		exps = fmt.Sprintf("\033[1;32m%+v\033[0m", expect)
+		gs = fmt.Sprintf("\033[1;31m%+v\033[0m", got)
 	}
 	t.Errorf("Error at %s : expect: %s, but got: %s", pos, exps, gs)
 }
