@@ -124,14 +124,14 @@ func ne(t testing.TB, skip int, expect interface{}, got interface{}) {
 
 // nil_ assert val is nil
 func nil_(t testing.TB, skip int, val interface{}) {
-	if !reflect.ValueOf(val).IsNil() {
+	if val != nil && !reflect.ValueOf(val).IsNil() {
 		errorInfo(t, skip+1, "nil", "not nil", false)
 	}
 }
 
 // nnil assert val is not nil
 func nnil(t testing.TB, skip int, val interface{}) {
-	if reflect.ValueOf(val).IsNil() {
+	if val == nil || reflect.ValueOf(val).IsNil() {
 		errorInfo(t, skip+1, "not nil", "nil", false)
 	}
 }
