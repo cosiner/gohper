@@ -24,8 +24,11 @@ type (
 func Write(w io.Writer, v interface{}, encoder EncodeFunc) error {
 	bs, err := encoder(v)
 	if err == nil {
-		_, err = w.Write(bs)
+		return err
 	}
+
+	_, err = w.Write(bs)
+
 	return err
 }
 
@@ -51,18 +54,20 @@ func WriteXML(w io.Writer, v interface{}) error {
 
 func Read(r io.Reader, v interface{}, decoder DecodeFunc) error {
 	bs, err := ioutil.ReadAll(r)
-	if err == nil {
-		err = decoder(bs, v)
+	if err != nil {
+		return err
 	}
-	return err
+
+	return decoder(bs, v)
 }
 
-func ReadString(r io.Reader) (s string, err error) {
+func ReadString(r io.Reader) (string, error) {
 	bs, err := ioutil.ReadAll(r)
-	if err == nil {
-		s = string(bs)
+	if err != nil {
+		return "", err
 	}
-	return
+
+	return string(bs), nil
 }
 
 func ReadGOB(r io.Reader, v interface{}) error {
@@ -77,13 +82,16 @@ func ReadXML(r io.Reader, v interface{}) error {
 	return xml.NewDecoder(r).Decode(v)
 }
 
-func ReadGZIP(r io.Reader) (data []byte, err error) {
+func ReadGZIP(r io.Reader) ([]byte, error) {
 	gr, err := gzip.NewReader(r)
-	if err == nil {
-		data, err = ioutil.ReadAll(gr)
-		gr.Close()
+	if err != nil {
+		return nil, err
 	}
-	return
+
+	data, err := ioutil.ReadAll(gr)
+	gr.Close()
+
+	return data, err
 }
 
 func WriteGZIP(w io.Writer, v interface{}) (err error) {
@@ -97,5 +105,6 @@ func WriteGZIP(w io.Writer, v interface{}) (err error) {
 		err = errors.Err("Only support string and []byte")
 	}
 	gw.Close()
+
 	return
 }

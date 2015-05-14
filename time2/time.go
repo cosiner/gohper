@@ -75,5 +75,6 @@ func ParseTime(t string) (time.Time, error) {
 func Calc(f func()) int64 {
 	now := time.Now().UnixNano()
 	f()
+
 	return time.Now().UnixNano() - now
 }

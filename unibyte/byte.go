@@ -32,6 +32,7 @@ func ToLower(b byte) byte {
 	if IsUpper(b) {
 		b = b - 'A' + 'a'
 	}
+
 	return b
 }
 
@@ -40,6 +41,7 @@ func ToUpper(b byte) byte {
 	if IsLower(b) {
 		b = b - 'a' + 'A'
 	}
+
 	return b
 }
 
@@ -48,6 +50,7 @@ func ToLowerString(b byte) string {
 	if IsUpper(b) {
 		b = b - 'A' + 'a'
 	}
+
 	return string(b)
 }
 
@@ -56,5 +59,6 @@ func ToUpperString(b byte) string {
 	if IsLower(b) {
 		b = b - 'a' + 'A'
 	}
+
 	return string(b)
 }

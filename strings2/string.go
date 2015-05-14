@@ -15,16 +15,19 @@ const ErrQuoteNotMatch = errors.Err("Quote don't match")
 // TrimQuote trim quote for string, return error if quote don't match
 func TrimQuote(str string) (string, error) {
 	str = strings.TrimSpace(str)
-	if l := len(str); l > 0 {
-		c := str[0]
-		if c == '\'' || c == '"' || c == '`' {
-			if str[l-1] == c {
-				str = str[1 : l-1]
-			} else {
-				return "", ErrQuoteNotMatch
-			}
+	l := len(str)
+	if l == 0 {
+		return "", nil
+	}
+
+	if c := str[0]; c == '\'' || c == '"' || c == '`' {
+		if str[l-1] == c {
+			str = str[1 : l-1]
+		} else {
+			return "", ErrQuoteNotMatch
 		}
 	}
+
 	return str, nil
 }
 
@@ -44,6 +47,7 @@ func TrimSplit(s, sep string) []string {
 	for i, n := 0, len(sp); i < n; i++ {
 		sp[i] = strings.TrimSpace(sp[i])
 	}
+
 	return sp
 }
 
@@ -52,6 +56,7 @@ func TrimAfter(s string, delimiter string) string {
 	if idx := strings.Index(s, delimiter); idx >= 0 {
 		s = s[:idx]
 	}
+
 	return strings.TrimSpace(s)
 }
 
@@ -65,11 +70,13 @@ func SplitAtN(str, sep string, n int) (index int) {
 		str = str[idx+seplen:]
 		index += idx
 	}
+
 	if idx == -1 {
 		index = -1
 	} else {
 		index += (n - 1) * seplen
 	}
+
 	return
 }
 
@@ -81,16 +88,19 @@ func SplitAtLastN(str, sep string, n int) (index int) {
 		}
 		str = str[:index]
 	}
+
 	return
 }
 
 // Seperate string by seperator, the seperator must in the middle of string,
 // not first and last
 func Seperate(s string, sep byte) (string, string) {
-	if i := MidIndex(s, sep); i > 0 {
-		return s[:i], s[i+1:]
+	i := MidIndex(s, sep)
+	if i < 0 {
+		return "", ""
 	}
-	return "", ""
+
+	return s[:i], s[i+1:]
 }
 
 func LastIndexByte(s string, b byte) int {
@@ -99,26 +109,28 @@ func LastIndexByte(s string, b byte) int {
 			return l
 		}
 	}
+
 	return -1
 }
 
 // IsAllCharsIn check whether all chars of string is in encoding string
 func IsAllCharsIn(s, encoding string) bool {
-	for i := 0; i < len(s); i++ {
-		if index.CharIn(s[i], encoding) < 0 {
-			return false
-		}
+	var is = true
+	for i := 0; i < len(s) && is; i++ {
+		is = index.CharIn(s[i], encoding) >= 0
 	}
-	return true
+
+	return is
 }
 
 // MidIndex find middle seperator index of string, not first and last
 func MidIndex(s string, sep byte) int {
 	i := strings.IndexByte(s, sep)
-	if i > 0 && i < len(s)-1 {
-		return i
+	if i <= 0 || i == len(s)-1 {
+		return -1
 	}
-	return -1
+
+	return i
 }
 
 // RepeatJoin repeat s count times as a string slice, then join with sep
@@ -134,10 +146,12 @@ func RepeatJoin(s, sep string, count int) string {
 		bs := make([]byte, 0, (len(s)+len(sep))*count-len(sep))
 		buf := bytes.NewBuffer(bs)
 		buf.WriteString(s)
+
 		for i := 1; i < count; i++ {
 			buf.WriteString(sep)
 			buf.WriteString(s)
 		}
+
 		return buf.String()
 	}
 }
@@ -147,13 +161,16 @@ func SuffixJoin(s []string, suffix, sep string) string {
 	if len(s) == 0 {
 		return ""
 	}
+
 	if len(s) == 1 {
 		return s[0] + suffix
 	}
+
 	n := len(sep) * (len(s) - 1)
 	for i, sl := 0, len(suffix); i < len(s); i++ {
 		n += len(s[i]) + sl
 	}
+
 	b := make([]byte, n)
 	bp := copy(b, s[0])
 	bp += copy(b[bp:], suffix)
@@ -162,35 +179,40 @@ func SuffixJoin(s []string, suffix, sep string) string {
 		bp += copy(b[bp:], s)
 		bp += copy(b[bp:], suffix)
 	}
+
 	return string(b)
 }
 
 // JoinInt join int slice as string
 func JoinInt(v []int, sep string) string {
-	if len(v) > 0 {
-		buf := bytes.NewBuffer([]byte{})
-		buf.WriteString(strconv.Itoa(v[0]))
-		for _, s := range v[1:] {
-			buf.WriteString(sep)
-			buf.WriteString(strconv.Itoa(s))
-		}
-		return buf.String()
+	if len(v) == 0 {
+		return ""
 	}
-	return ""
+
+	buf := bytes.NewBuffer([]byte{})
+	buf.WriteString(strconv.Itoa(v[0]))
+	for _, s := range v[1:] {
+		buf.WriteString(sep)
+		buf.WriteString(strconv.Itoa(s))
+	}
+
+	return buf.String()
 }
 
 // JoinInt join int slice as string
 func JoinUint(v []uint, sep string) string {
-	if len(v) > 0 {
-		buf := bytes.NewBuffer([]byte{})
-		buf.WriteString(strconv.FormatUint(uint64(v[0]), 10))
-		for _, s := range v[1:] {
-			buf.WriteString(sep)
-			buf.WriteString(strconv.FormatUint(uint64(s), 10))
-		}
-		return buf.String()
+	if len(v) == 0 {
+		return ""
 	}
-	return ""
+
+	buf := bytes.NewBuffer([]byte{})
+	buf.WriteString(strconv.FormatUint(uint64(v[0]), 10))
+	for _, s := range v[1:] {
+		buf.WriteString(sep)
+		buf.WriteString(strconv.FormatUint(uint64(s), 10))
+	}
+
+	return buf.String()
 }
 
 // Compare compare two string, if equal, 0 was returned, if s1 > s2, 1 was returned,
@@ -204,6 +226,7 @@ func Compare(s1, s2 string) int {
 			return 1
 		}
 	}
+
 	switch {
 	case l1 < l2:
 		return -1
@@ -224,5 +247,6 @@ func RemoveSpace(s string) string {
 			idx++
 		}
 	}
+
 	return string(bs[:idx])
 }

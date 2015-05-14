@@ -46,6 +46,7 @@ func (wc *writerChain) Wrap(wr io.Writer) {
 		top:  wc.top,
 		next: wc.next,
 	}
+
 	wc.top = wr
 	wc.next = newChain
 }
@@ -53,12 +54,16 @@ func (wc *writerChain) Wrap(wr io.Writer) {
 // Unwrap remove a writer on the top of writer chain and return it,
 // if there is only the base one, nil was returned
 func (wc *writerChain) Unwrap() (w io.Writer) {
-	if next := wc.next; next != nil {
-		w = wc.top
-		wc.top = next.top
-		wc.next = next.next
+	next := wc.next
+	if next == nil {
+		return nil
 	}
-	return
+
+	w = wc.top
+	wc.top = next.top
+	wc.next = next.next
+
+	return w
 }
 
 // IsWrapped check whether writer chain is wrapped

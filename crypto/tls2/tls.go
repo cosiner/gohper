@@ -17,10 +17,12 @@ func CAPool(pems ...string) (p *x509.CertPool, err error) {
 			if p == nil {
 				p = x509.NewCertPool()
 			}
+
 			if !p.AppendCertsFromPEM(data) {
 				err = ErrBadPEMFile
 			}
 		}
 	}
+
 	return
 }

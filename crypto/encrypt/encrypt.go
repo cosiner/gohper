@@ -19,10 +19,11 @@ var SaltSize = sha256.Size
 // Encode a message with fixed salt, return the encoded message and random salt
 func Encode(msg, salt []byte) ([]byte, []byte, error) {
 	rand, err := rand.B.Alphanumeric(SaltSize)
-	if err == nil {
-		return SaltEncode(msg, salt, rand), rand, err
+	if err != nil {
+		return nil, nil, err
 	}
-	return nil, nil, err
+
+	return SaltEncode(msg, salt, rand), rand, err
 }
 
 // SaltEncode encode the message with a fixed salt and a random salt, typically

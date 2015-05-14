@@ -27,43 +27,49 @@ type Equaler interface {
 func IndirectType(v interface{}) reflect.Type {
 	typ := reflect.TypeOf(v)
 	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
+		return typ.Elem()
 	}
+
 	return typ
 }
 
 // UnmarshalPrimitive unmarshal bytes to primitive
-func UnmarshalPrimitive(str string, v reflect.Value) (err error) {
+func UnmarshalPrimitive(str string, v reflect.Value) error {
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
+
 	switch k := v.Kind(); k {
 	case reflect.Bool:
 		v.SetBool(str[0] == 't')
 	case reflect.String:
 		v.SetString(str)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		if n, e := strconv.ParseInt(str, 10, 64); e == nil {
-			v.SetInt(n)
-		} else {
-			err = e
+		n, err := strconv.ParseInt(str, 10, 64)
+		if err == nil {
+			return err
 		}
+
+		v.SetInt(n)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		if n, e := strconv.ParseUint(str, 10, 64); e == nil {
-			v.SetUint(n)
-		} else {
-			err = e
+		n, err := strconv.ParseUint(str, 10, 64)
+		if err == nil {
+			return err
 		}
+
+		v.SetUint(n)
 	case reflect.Float32, reflect.Float64:
-		if n, e := strconv.ParseFloat(str, v.Type().Bits()); e == nil {
-			v.SetFloat(n)
-		} else {
-			err = e
+		n, err := strconv.ParseFloat(str, v.Type().Bits())
+		if err == nil {
+			return err
 		}
+
+		v.SetFloat(n)
 	default:
 		return ErrNonPrimitive
 	}
-	return
+
+	return nil
 }
 
 func MarshalPrimitive(v reflect.Value) string {
@@ -75,12 +81,14 @@ func MarshalStruct(v interface{}, values map[string]string, tag string) {
 	if value.Kind() == reflect.Ptr {
 		value = value.Elem()
 	}
+
 	typ := value.Type()
 	for i := 0; i < typ.NumField(); i++ {
 		vfield := value.Field(i)
 		if !vfield.CanInterface() {
 			continue
 		}
+
 		tfield := typ.Field(i)
 		name := tfield.Name
 		if n := tfield.Tag.Get(tag); n == "-" {
@@ -90,9 +98,9 @@ func MarshalStruct(v interface{}, values map[string]string, tag string) {
 		} else {
 			name = strings.ToLower(name)
 		}
+
 		values[name] = MarshalPrimitive(vfield)
 	}
-	return
 }
 
 func UnmarshalStruct(v interface{}, values map[string]string, tag string) {

@@ -28,10 +28,11 @@ func CompilePOSIX(expr string) (*Regexp, error) {
 
 func compile(expr string, compFunc func(string) (*regexp.Regexp, error)) (*Regexp, error) {
 	r, err := compFunc(expr)
-	if err == nil {
-		return &Regexp{Regexp: r}, nil
+	if err != nil {
+		return nil, err
 	}
-	return nil, err
+
+	return &Regexp{Regexp: r}, nil
 }
 
 func MustCompile(expr string) *Regexp {
@@ -46,10 +47,12 @@ func (r *Regexp) Names() map[string]int {
 	if r.names == nil {
 		names := r.SubexpNames()
 		r.names = make(map[string]int, len(names))
+
 		for i, name := range names {
 			r.names[name] = i
 		}
 	}
+
 	return r.names
 }
 
@@ -58,20 +61,25 @@ func (r *Regexp) First(s string) []string {
 }
 
 func (r *Regexp) ByIndex(s string, index int) string {
-	if index >= 0 && index < len(r.Names()) {
-		if vals := r.First(s); vals != nil {
-			return vals[index]
-		}
+	if index < 0 || index >= len(r.Names()) {
+		return ""
 	}
-	return ""
+
+	vals := r.First(s)
+	if vals == nil {
+		return ""
+	}
+
+	return vals[index]
 }
 
 func (r *Regexp) ByName(s, name string) string {
-	names := r.Names()
-	if index, has := names[name]; has {
-		return r.ByIndex(s, index)
+	index, has := r.Names()[name]
+	if !has {
+		return ""
 	}
-	return ""
+
+	return r.ByIndex(s, index)
 }
 
 func (r *Regexp) All(s string) [][]string {
@@ -79,22 +87,28 @@ func (r *Regexp) All(s string) [][]string {
 }
 
 func (r *Regexp) AllByIndex(s string, index int) []string {
-	if index >= 0 && index < len(r.Names()) {
-		if vals := r.All(s); vals != nil {
-			res := make([]string, len(vals))
-			for i := range res {
-				res[i] = vals[i][index]
-			}
-			return res
-		}
+	if index < 0 || index >= len(r.Names()) {
+		return nil
 	}
-	return nil
+
+	vals := r.All(s)
+	if vals == nil {
+		return nil
+	}
+
+	res := make([]string, len(vals))
+	for i := range res {
+		res[i] = vals[i][index]
+	}
+
+	return res
 }
 
 func (r *Regexp) AllByName(s, name string) []string {
-	names := r.Names()
-	if index, has := names[name]; has {
-		return r.AllByIndex(s, index)
+	index, has := r.Names()[name]
+	if !has {
+		return nil
 	}
-	return nil
+
+	return r.AllByIndex(s, index)
 }

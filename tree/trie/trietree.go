@@ -21,33 +21,39 @@ func (tt *TrieTree) AddPath(path string, value interface{}) {
 }
 
 func (tt *TrieTree) AddPathFor(path string, fn func(*TrieTree)) {
-	if tt.HasElement() {
-		str := tt.Str
-		diff, pathLen, strLen := 0, len(path), len(str)
-		for diff != pathLen && diff != strLen && path[diff] == str[diff] {
-			diff++
-		}
-		if diff < pathLen {
-			first := path[diff]
-			if diff == strLen {
-				for i, c := range tt.ChildChars {
-					if c == first {
-						tt.Childs[i].AddPathFor(path[diff:], fn)
-						return
-					}
-				}
-			} else { // diff < strLen
-				tt.moveAllToChild(str[diff:], str[:diff])
-			}
-			newNode := &TrieTree{Str: path[diff:]}
-			tt.addChild(first, newNode)
-			tt = newNode
-		} else if diff < strLen {
-			tt.moveAllToChild(str[diff:], path)
-		}
-	} else {
+	if !tt.HasElement() {
 		tt.Str = path
+		fn(tt)
+		return
 	}
+
+	str := tt.Str
+	diff, pathLen, strLen := 0, len(path), len(str)
+	for diff != pathLen && diff != strLen && path[diff] == str[diff] {
+		diff++
+	}
+
+	if diff < pathLen {
+		first := path[diff]
+		if diff == strLen {
+			for i, c := range tt.ChildChars {
+				if c == first {
+					tt.Childs[i].AddPathFor(path[diff:], fn)
+
+					return
+				}
+			}
+		} else { // diff < strLen
+			tt.moveAllToChild(str[diff:], str[:diff])
+		}
+
+		newNode := &TrieTree{Str: path[diff:]}
+		tt.addChild(first, newNode)
+		tt = newNode
+	} else if diff < strLen {
+		tt.moveAllToChild(str[diff:], path)
+	}
+
 	fn(tt)
 }
 
@@ -60,6 +66,7 @@ func (tt *TrieTree) moveAllToChild(childStr string, newStr string) {
 		Childs:     tt.Childs,
 		Value:      tt.Value,
 	}
+
 	tt.ChildChars, tt.Childs, tt.Value = nil, nil, nil
 	tt.addChild(childStr[0], rnCopy)
 	tt.Str = newStr
@@ -72,6 +79,7 @@ func (tt *TrieTree) addChild(b byte, n *TrieTree) {
 	ChildChars, Childs = make([]byte, l+1), make([]*TrieTree, l+1)
 	copy(ChildChars, tt.ChildChars)
 	copy(Childs, tt.Childs)
+
 	for ; l > 0 && ChildChars[l-1] > b; l-- {
 		ChildChars[l], Childs[l] = ChildChars[l-1], Childs[l-1]
 	}
@@ -93,6 +101,7 @@ func (tt *TrieTree) MatchFrom(nodestart int, path string) (t *TrieTree, index in
 		node                   = tt
 		start              int = nodestart
 	)
+
 	for node != nil {
 		str = tt.Str
 		strLen = len(str)
@@ -103,8 +112,10 @@ func (tt *TrieTree) MatchFrom(nodestart int, path string) (t *TrieTree, index in
 			} else if str[i] != path[pathIndex] {
 				return nil, 0, NO
 			}
+
 			pathIndex++
 		}
+
 		node = nil
 		if pathIndex != pathLen { // path not parse end, must find a child node to continue
 			p := path[pathIndex]
@@ -114,13 +125,16 @@ func (tt *TrieTree) MatchFrom(nodestart int, path string) (t *TrieTree, index in
 					break
 				}
 			}
+
 			if node == nil {
 				return nil, 0, NO
 			}
+
 			tt = node // child to parse
 			start = 1
 		} /* else { path parse end, node is the last matched node }*/
 	}
+
 	return tt, strLen, FULL
 }
 
@@ -134,6 +148,7 @@ func (tt *TrieTree) MatchValue(path string) interface{} {
 	if m != FULL {
 		return nil
 	}
+
 	return t.Value
 }
 
@@ -156,6 +171,7 @@ func (tt *TrieTree) Print(w io.Writer, withCurr bool, parentPath, sep string, ho
 			fmt.Fprintln(w, parentPath+hook(tt.Value))
 		}
 	}
+
 	for _, n := range tt.Childs {
 		n.Print(w, true, parentPath, sep, hook)
 	}
@@ -172,6 +188,7 @@ func (tt *TrieTree) visit(parentPath string, visitor func(string, interface{})) 
 	if tt.Value != nil {
 		visitor(path, tt.Value)
 	}
+
 	for _, c := range tt.Childs {
 		c.visit(path, visitor)
 	}

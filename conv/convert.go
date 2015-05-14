@@ -12,33 +12,38 @@ var hexTableLower = []byte("0123456789abcdef")
 
 func Uint2Hex(u uint64) []byte {
 	s := make([]byte, 16)
+
 	var idx int
 	for idx = 15; idx > -1 && u > 0; idx-- {
 		s[idx] = hexTable[u&0xF]
 		u = u >> 4
 	}
+
 	return s[idx+1:]
 }
 
 func Uint2LowerHex(u uint64) []byte {
 	s := make([]byte, 16)
+
 	var idx int
 	for idx = 15; idx > -1 && u > 0; idx-- {
 		s[idx] = hexTableLower[u&0xF]
 		u = u >> 4
 	}
+
 	return s[idx+1:]
 }
 
 // Hex2Uint convert a hexadecimal string to uint
 // if string is invalid, return an error
-func Hex2Uint(str string) (n uint64, err error) {
-	err = errors.Newf("Invalid hexadecimal string %s", str)
+func Hex2Uint(str string) (uint64, error) {
 	if len(str) > 2 {
 		if head := str[:2]; head == "0x" || head == "0X" {
 			str = str[2:]
 		}
 	}
+
+	var n uint64
 	for _, c := range str {
 		if c >= '0' && c <= '9' {
 			c = c - '0'
@@ -47,19 +52,20 @@ func Hex2Uint(str string) (n uint64, err error) {
 		} else if c >= 'A' && c <= 'F' {
 			c = c - 'A' + 10
 		} else {
-			return
+			return 0, errors.Newf("Invalid hexadecimal string %s", str)
 		}
 		n = n << 4
 		n |= uint64(c)
 	}
-	err = nil
-	return
+
+	return n, nil
 }
 
 // BytesToHex transfer binary to hex bytes
 func Bytes2Hex(src []byte) []byte {
 	dst := make([]byte, 2*len(src))
 	hex.Encode(dst, src)
+
 	return dst
 }
 
@@ -67,6 +73,7 @@ func Bytes2Hex(src []byte) []byte {
 func Hex2Bytes(src []byte) []byte {
 	dst := make([]byte, len(src)/2)
 	hex.Decode(dst, src)
+
 	return dst
 }
 
@@ -79,6 +86,7 @@ func ReverseBits(num uint) uint {
 		n |= (num & 1)
 		num = num >> 1
 	}
+
 	return n
 }
 
@@ -90,5 +98,6 @@ func ReverseByte(num byte) byte {
 		n |= (num & 1)
 		num = num >> 1
 	}
+
 	return n
 }

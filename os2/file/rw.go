@@ -19,14 +19,17 @@ type FileOpFunc func(*os.File) error
 // Open file use given flag
 func Open(fname string, flags int, fn FileOpFunc) error {
 	fd, err := os.OpenFile(fname, flags, FilePerm)
-	if err == nil {
-		if fn != nil {
-			err = fn(fd)
-		}
-		if e := fd.Close(); e != nil && err == nil {
-			err = e
-		}
+	if err != nil {
+		return err
 	}
+
+	if fn != nil {
+		err = fn(fd)
+	}
+	if e := fd.Close(); e != nil && err == nil {
+		err = e
+	}
+
 	return io2.NonEOF(err)
 }
 
@@ -39,8 +42,10 @@ func WriteFlag(trunc bool) int {
 func FirstLine(src string) (line string, err error) {
 	err = Filter(src, func(_ int, l []byte) ([]byte, error) {
 		line = string(l)
+
 		return nil, io.EOF
 	})
+
 	return
 }
 
@@ -85,14 +90,16 @@ func CopyDir(dst, src string) error {
 			err = CopyDir(df, sf)
 		}
 	}
+
 	return err
 }
 
 // Overwrite delete all content in file, and write new content to it
 func Overwrite(src string, content string) error {
-	return Trunc(src, func(fd *os.File) (err error) {
-		_, err = fd.WriteString(content)
-		return
+	return Trunc(src, func(fd *os.File) error {
+		_, err := fd.WriteString(content)
+
+		return err
 	})
 }
 

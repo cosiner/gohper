@@ -33,6 +33,7 @@ func (p FakePool) Get(size int, asLen bool) []byte {
 	if asLen {
 		return make([]byte, size)
 	}
+
 	return make([]byte, 0, size)
 }
 
@@ -54,10 +55,12 @@ func NewSyncPool(bufsize int, allowsmall bool) Pool {
 		bufsize:    bufsize,
 		allowSmall: allowsmall,
 	}
+
 	defval.Int(&p.bufsize, DEF_BUFSIZE)
 	p.pool.New = func() interface{} {
 		return make([]byte, p.bufsize)
 	}
+
 	return p
 }
 
@@ -70,6 +73,7 @@ func (p *SyncPool) TryPut(buf []byte) bool {
 	if succ {
 		p.pool.Put(buf)
 	}
+
 	return succ
 }
 
@@ -85,6 +89,7 @@ func (p *SyncPool) Get(size int, asLen bool) []byte {
 	} else {
 		buf = buf[:0]
 	}
+
 	return buf
 }
 
@@ -108,7 +113,9 @@ func NewListPool(bufsize int, allowsmall bool) Pool {
 		bufsize:    bufsize,
 		allowSmall: allowsmall,
 	}
+
 	defval.Int(&p.bufsize, DEF_BUFSIZE)
+
 	return p
 }
 
@@ -127,11 +134,13 @@ func (p *ListPool) Get(size int, asLen bool) []byte {
 		p.Count--
 	}
 	p.Unlock()
+
 	if asLen {
 		buf = buf[:size]
 	} else {
 		buf = buf[:0]
 	}
+
 	return buf
 }
 
@@ -150,6 +159,7 @@ func (p *ListPool) TryPut(buf []byte) bool {
 		}
 		p.Unlock()
 	}
+
 	return succ
 }
 
@@ -158,6 +168,7 @@ func (p *ListPool) ShrinkTo(count int) {
 	if count < 0 {
 		return
 	}
+
 	p.Lock()
 	c := p.Count - count
 	if c > 0 {
@@ -191,6 +202,7 @@ func NewSlotPool(pools []Pool) Pool {
 
 func (p *SlotPool) Get(size int, asLen bool) []byte {
 	c := atomic.AddInt32(&p.curr, 1) & p.mask
+
 	return p.pools[c].Get(size, asLen)
 
 }
@@ -201,6 +213,7 @@ func (p *SlotPool) Put(buf []byte) {
 
 func (p *SlotPool) TryPut(buf []byte) bool {
 	c := atomic.LoadInt32(&p.curr) & p.mask
+
 	return p.pools[c].TryPut(buf)
 }
 
@@ -210,6 +223,7 @@ func SyncSlotPool(slot, bufsize int, allowsmall bool) Pool {
 	for i := 0; i < slot; i++ {
 		pools[i] = NewSyncPool(bufsize, allowsmall)
 	}
+
 	return NewSlotPool(pools)
 }
 
@@ -219,5 +233,6 @@ func ListSlotPool(slot, bufsize int, allowsmall bool) Pool {
 	for i := 0; i < slot; i++ {
 		pools[i] = NewListPool(bufsize, allowsmall)
 	}
+
 	return NewSlotPool(pools)
 }

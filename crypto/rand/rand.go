@@ -25,6 +25,7 @@ var B BytesFunc = func(n int, charset string) ([]byte, error) {
 	if n <= 0 {
 		return nil, ErrNegativeNum
 	}
+
 	var l int
 	if l = len(charset); l == 0 {
 		return nil, ErrEmptyCharset
@@ -37,18 +38,21 @@ var B BytesFunc = func(n int, charset string) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		result[i] = charset[int(r.Int64())]
 	}
+
 	return result, nil
 }
 
 // String is same as Bytes, return string
 var S StringFunc = func(n int, charset string) (string, error) {
 	b, err := B(n, charset)
-	if err == nil {
-		return string(b), nil
+	if err != nil {
+		return "", err
 	}
-	return "", err
+
+	return string(b), nil
 }
 
 // NumberalBytes generate random ASCII bytes

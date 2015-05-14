@@ -16,37 +16,45 @@ var emptyBytes = []byte("")
 // if buf is not nil, and there is more than one parameter, the allocated buffer
 // will stored to *buf
 func Query(params map[string]string, buf *bytes.Buffer) ([]byte, bool) {
-	if l := len(params); l == 0 {
+	l := len(params)
+	if l == 0 {
 		return emptyBytes, false
-	} else if l == 1 {
+	}
+
+	if l == 1 {
 		for k, v := range params {
 			return []byte(k + "=" + v), false
 		}
 	}
+
 	var nbuf = buf
 	if buf == nil {
 		nbuf = bytes.NewBuffer(make([]byte, 0, Bufsize))
 	}
+
 	var i int
 	for k, v := range params {
 		if i != 0 {
 			nbuf.WriteByte('&')
 		}
+
 		i++
 		nbuf.WriteString(k)
 		nbuf.WriteByte('=')
 		nbuf.WriteString(v)
 	}
+
 	return nbuf.Bytes(), buf != nil
 }
 
 // QueryEscape is same as Query, but escape the query string
 func QueryEscape(params map[string]string, buf *bytes.Buffer) ([]byte, bool) {
 	s, b := Query(params, buf)
-	if len(s) != 0 {
-		return []byte(url.QueryEscape(string(s))), false // TODO: remove bytes convert
+	if len(s) == 0 {
+		return nil, b
 	}
-	return s, b
+
+	return []byte(url.QueryEscape(string(s))), false // TODO: remove bytes convert
 }
 
 // Param convert i to params string, join with ",", without escape
@@ -69,5 +77,6 @@ func Param(i interface{}) string {
 	case []byte:
 		return string(v)
 	}
+
 	panic("Only support int, []int, uint, []uint, string, []string, []byte")
 }

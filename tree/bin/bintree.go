@@ -20,6 +20,7 @@ func (t *BinTree) Search(score int) interface{} {
 			root = root.right
 		}
 	}
+
 	return nil
 }
 
@@ -35,6 +36,7 @@ func (t *BinTree) Add(score int, value interface{}, replace bool) {
 		case root.score > score:
 			if root.left == nil {
 				root.left = &BinTree{score: score, value: value}
+
 				return
 			} else {
 				root = root.left
@@ -42,6 +44,7 @@ func (t *BinTree) Add(score int, value interface{}, replace bool) {
 		case root.score < score:
 			if root.right == nil {
 				root.right = &BinTree{score: score, value: value}
+
 				return
 			} else {
 				root = root.right

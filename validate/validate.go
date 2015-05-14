@@ -16,6 +16,7 @@ func (pc PreChain) Process(s string) string {
 	for i := 0; i < len(pc); i++ {
 		s = pc[i](s)
 	}
+
 	return s
 }
 
@@ -59,6 +60,7 @@ func (vc ValidChain) Validate(s string) error {
 			return e
 		}
 	}
+
 	return nil
 }
 
@@ -70,6 +72,7 @@ func (vc ValidChain) Validate2Last(s string) error {
 			err = e
 		}
 	}
+
 	return err
 }
 
@@ -90,6 +93,7 @@ func (vc ValidChain) ValidateM(s ...string) error {
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -111,6 +115,7 @@ func (vc ValidChain) ValidateM2Last(s ...string) error {
 			}
 		}
 	}
+
 	return err
 }
 
@@ -120,6 +125,7 @@ func (v Validator) ValidateV(s ...string) error {
 			return e
 		}
 	}
+
 	return nil
 }
 
@@ -130,6 +136,7 @@ func (v Validator) ValidateV2Last(s ...string) error {
 			err = e
 		}
 	}
+
 	return err
 }
 
@@ -141,6 +148,7 @@ func (vc ValidChain) ValidateV(s ...string) error {
 			return e
 		}
 	}
+
 	return nil
 }
 
@@ -153,6 +161,7 @@ func (vc ValidChain) ValidateV2Last(s ...string) error {
 			err = e
 		}
 	}
+
 	return err
 }
 

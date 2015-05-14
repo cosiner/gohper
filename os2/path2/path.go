@@ -23,13 +23,16 @@ func ExpandHome(path string) string {
 	if len(path) == 0 || path[0] != '~' {
 		return path
 	}
+
 	u, _ := user.Current()
+
 	return u.HomeDir + path[1:]
 }
 
 // ExpandAbs expand path to absolute path
 func ExpandAbs(path string) string {
 	path, _ = filepath.Abs(ExpandHome(path))
+
 	return path
 }
 
@@ -42,20 +45,25 @@ func ProgramDir() (string, error) {
 // if path is dir, return itself
 // else return path's contain dir name
 func LastDir(path string) (string, error) {
-	var dir string
 	absPath, err := filepath.Abs(path)
-	if err == nil {
-		info, err := os.Stat(absPath)
-		if err == nil {
-			if info.IsDir() {
-				_, dir = filepath.Split(absPath)
-			} else {
-				dir = filepath.Dir(absPath)
-				_, dir = filepath.Split(dir)
-			}
-		}
+	if err != nil {
+		return "", err
 	}
-	return dir, err
+
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return "", err
+	}
+
+	var dir string
+	if info.IsDir() {
+		_, dir = filepath.Split(absPath)
+	} else {
+		dir = filepath.Dir(absPath)
+		_, dir = filepath.Split(dir)
+	}
+
+	return dir, nil
 }
 
 // IsRelative check whether a path is relative
@@ -74,20 +82,26 @@ func IsWinRoot(path string) bool {
 	if path == "" {
 		return false
 	}
+
 	return unibyte.IsLetter(path[0]) && strings.HasPrefix(path[1:], ":\\")
 }
 
 // IsRoot check wether or not path is root of filesystem
 func IsRoot(path string) bool {
-	if l := len(path); l > 0 {
-		switch os2.OS() {
-		case os2.WINDOWS:
-			return IsWinRoot(path)
-		case os2.LINUX, os2.DARWIN, os2.FREEBSD, os2.SOLARIS, os2.ANDROID:
-			return l == 1 && path[0] == '/'
-		}
+	l := len(path)
+	if l == 0 {
+		return false
 	}
-	return false
+
+	switch os2.OS() {
+	case os2.WINDOWS:
+		return IsWinRoot(path)
+	case os2.LINUX, os2.DARWIN, os2.FREEBSD, os2.SOLARIS, os2.ANDROID:
+		return l == 1 && path[0] == '/'
+	default:
+		return false
+	}
+
 }
 
 // EnvSeperator return seperator of env variable "PATH"

@@ -32,6 +32,7 @@ func (m *MRWMutex) locker(lockId string) (l *sync.RWMutex, b bool) {
 	m.lock.RLock()
 	if l = m.locks[lockId]; l == nil {
 		m.lock.RUnlock()
+
 		m.lock.Lock()
 		if l = m.locks[lockId]; l == nil {
 			l = &sync.RWMutex{}
@@ -42,6 +43,7 @@ func (m *MRWMutex) locker(lockId string) (l *sync.RWMutex, b bool) {
 	} else {
 		m.lock.RUnlock()
 	}
+
 	return
 }
 

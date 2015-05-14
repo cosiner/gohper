@@ -13,10 +13,11 @@ type Length struct {
 }
 
 func (length Length) Validate(s string) error {
-	if l := len(s); l >= length.Min && l <= length.Max {
-		return nil
+	if l := len(s); l < length.Min || l > length.Max {
+		return length.Err
 	}
-	return length.Err
+
+	return nil
 }
 
 type Chars struct {
@@ -26,10 +27,11 @@ type Chars struct {
 }
 
 func (c Chars) Validate(s string) error {
-	if strings2.IsAllCharsIn(s, c.Chars) {
-		return nil
+	if !strings2.IsAllCharsIn(s, c.Chars) {
+		return c.Err
 	}
-	return c.Err
+
+	return nil
 }
 
 type Regexp struct {
@@ -38,10 +40,11 @@ type Regexp struct {
 }
 
 func (r Regexp) Validate(s string) error {
-	if r.Regexp.MatchString(s) {
-		return nil
+	if !r.Regexp.MatchString(s) {
+		return r.Err
 	}
-	return r.Err
+
+	return nil
 }
 
 // SimpleEmail only check '@'' and '.' character
@@ -51,12 +54,15 @@ type SimpleEmail struct {
 
 func (e SimpleEmail) Validate(s string) error {
 	at := strings.IndexByte(s, '@')
-	if at > 0 && at < len(s)-1 {
-		s = s[at+1:]
-		dot := strings.IndexByte(s, '.')
-		if dot > 0 && dot < len(s)-1 {
-			return nil
-		}
+	if at <= 0 || at == len(s)-1 {
+		return e.Err
 	}
-	return e.Err
+
+	s = s[at+1:]
+	dot := strings.IndexByte(s, '.')
+	if dot <= 0 || dot == len(s)-1 {
+		return e.Err
+	}
+
+	return nil
 }

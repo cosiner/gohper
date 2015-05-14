@@ -6,6 +6,7 @@ type Bits uint64
 
 func NewBits() *Bits {
 	var s Bits
+
 	return &s
 }
 
@@ -15,12 +16,14 @@ func BitsList(bits ...uint) *Bits {
 	for _, b := range bits {
 		s |= uint64(1 << b)
 	}
+
 	return ((*Bits)(&s))
 }
 
 // BitsFrom create a Bits, all bits of number is copied
 func BitsFrom(b uint) *Bits {
 	var s Bits = Bits(b)
+
 	return &s
 }
 
@@ -110,6 +113,7 @@ func BitCount(n uint64) int {
 	n += n >> 4
 	n &= 0x0f0f0f0f0f0f0f0f
 	n *= 0x0101010101010101
+
 	return int(n >> 56)
 }
 
@@ -121,5 +125,6 @@ func BitCountUint(x uint) int {
 	n += n >> 4
 	n &= 0x0f0f0f0f0f0f0f0f
 	n *= 0x0101010101010101
+
 	return int(n >> 56)
 }

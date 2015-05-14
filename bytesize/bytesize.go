@@ -19,6 +19,7 @@ const (
 // such as: 1K/k -> 1024, 1M/m -> 1024*1024
 func Size(size string) (uint64, error) {
 	var base uint64 = 1
+
 	s := bytes.TrimSpace([]byte(size))
 	switch s[len(s)-1] {
 	case 'K', 'k':
@@ -32,16 +33,20 @@ func Size(size string) (uint64, error) {
 	case 'P', 'p':
 		base *= PB
 	}
+
 	if base > 1 {
 		s = s[:len(s)-1]
 	}
+
 	bs, err := strconv.Atoi(string(s))
-	if bs < 0 {
-		bs = 0
-	}
 	if err != nil {
 		return 0, err
 	}
+
+	if bs < 0 {
+		bs = 0
+	}
+
 	return uint64(bs) * base, nil
 }
 
@@ -51,6 +56,7 @@ func SizeDef(size string, defSize uint64) (s uint64) {
 	if s, err = Size(size); err != nil {
 		return defSize
 	}
+
 	return s
 }
 
@@ -60,5 +66,6 @@ func MustSize(size string) (s uint64) {
 	if err != nil {
 		panic(err)
 	}
+
 	return s
 }

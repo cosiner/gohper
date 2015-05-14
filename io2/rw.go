@@ -13,6 +13,7 @@ func BufReader(r io.Reader) *bufio.Reader {
 	if r, is := r.(*bufio.Reader); is {
 		return r
 	}
+
 	return bufio.NewReader(r)
 }
 
@@ -22,6 +23,7 @@ func BufWriter(w io.Writer) *bufio.Writer {
 	if w, is := w.(*bufio.Writer); is {
 		return w
 	}
+
 	return bufio.NewWriter(w)
 }
 
@@ -36,23 +38,28 @@ func WriteIfString(w io.Writer, v interface{}) (bool, error) {
 	case string:
 		_, err := w.Write(unsafe2.Bytes(s))
 		return true, err
+
 	case []byte:
 		_, err := w.Write(s)
 		return true, err
 	}
+
 	return false, nil
 }
 
 // Writeln write bytes to writer and append a newline character
 func Writeln(w io.Writer, bs []byte) (int, error) {
-	c, e := w.Write(bs)
-	if e == nil {
-		_, e = w.Write(_newLine)
-		if e == nil {
-			c++
-		}
+	c, err := w.Write(bs)
+	if err != nil {
+		return 0, err
 	}
-	return c, e
+
+	_, err = w.Write(_newLine)
+	if err == nil {
+		c++
+	}
+
+	return c, err
 }
 
 // WriteStringln write string to writer and append a newline character
@@ -70,6 +77,7 @@ func WriteLString(w io.Writer, strs ...string) (n int, err error) {
 			break
 		}
 	}
+
 	return
 }
 
@@ -83,5 +91,6 @@ func WriteL(w io.Writer, bs ...[]byte) (n int, err error) {
 			break
 		}
 	}
+
 	return
 }

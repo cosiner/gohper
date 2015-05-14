@@ -56,7 +56,7 @@ var (
 		CYAN:    6,
 		WHITE:   7,
 	}
-	// only background
+
 	LightBlack   = FgHl(BLACK)
 	LightRed     = FgHl(RED)
 	LightGreen   = FgHl(GREEN)
@@ -79,6 +79,7 @@ var (
 // Has check whether a color can be use
 func Has(c string) bool {
 	_, has := Colors[strings.ToLower(c)]
+
 	return has
 }
 
@@ -104,14 +105,16 @@ type Writer struct {
 
 func (w Writer) Write(bs []byte) (int, error) {
 	i, err := w.Writer.Write(unsafe2.Bytes(w.Prefix))
-	if err == nil {
-		n, e := w.RenderTo(w.Writer, unsafe2.String(bs))
-		if e == nil {
-			return n + i, err
-		}
-		err = e
+	if err != nil {
+		return 0, err
 	}
-	return 0, err
+
+	n, err := w.RenderTo(w.Writer, unsafe2.String(bs))
+	if err != nil {
+		return 0, err
+	}
+
+	return n + i, nil
 }
 
 // New create a new terminal color render,
@@ -143,6 +146,7 @@ func (tc *TermColor) Render(str string) string {
 	if str == "" || !tc.enable {
 		return str
 	}
+
 	return "\033[" + tc.settings + "m" + str + "\033[0m"
 }
 
@@ -155,6 +159,7 @@ func (tc *TermColor) RenderTo(w io.Writer, str string) (int, error) {
 	if err := tc.Begin(w); err == nil {
 		c, err := w.Write(unsafe2.Bytes(str))
 		tc.End(w)
+
 		return c, err
 	} else {
 		return 0, err
@@ -163,11 +168,13 @@ func (tc *TermColor) RenderTo(w io.Writer, str string) (int, error) {
 
 func (tc *TermColor) Begin(w io.Writer) error {
 	_, err := w.Write(unsafe2.Bytes("\033[" + tc.settings + "m"))
+
 	return err
 }
 
 func (tc *TermColor) End(w io.Writer) error {
 	_, err := w.Write(unsafe2.Bytes("\033[0m"))
+
 	return err
 }
 
@@ -177,6 +184,7 @@ func (tc *TermColor) Bg(bg string) *TermColor {
 		tc.settingsCount++
 		tc.bg = bg
 	}
+
 	return tc
 }
 
@@ -186,6 +194,7 @@ func (tc *TermColor) Fg(fg string) *TermColor {
 		tc.settingsCount++
 		tc.fg = fg
 	}
+
 	return tc
 }
 
@@ -193,6 +202,7 @@ func (tc *TermColor) Fg(fg string) *TermColor {
 func (tc *TermColor) Highlight() *TermColor {
 	tc.settingsCount++
 	tc.highlight = true
+
 	return tc
 }
 
@@ -200,6 +210,7 @@ func (tc *TermColor) Highlight() *TermColor {
 func (tc *TermColor) Underline() *TermColor {
 	tc.settingsCount++
 	tc.underline = true
+
 	return tc
 }
 
@@ -207,6 +218,7 @@ func (tc *TermColor) Underline() *TermColor {
 func (tc *TermColor) Blink() *TermColor {
 	tc.settingsCount++
 	tc.blink = true
+
 	return tc
 }
 
@@ -214,6 +226,7 @@ func (tc *TermColor) Blink() *TermColor {
 func (tc *TermColor) Inverse() *TermColor {
 	tc.settingsCount++
 	tc.inverse = true
+
 	return tc
 }
 
@@ -221,6 +234,7 @@ func (tc *TermColor) Inverse() *TermColor {
 func (tc *TermColor) Hidden() *TermColor {
 	tc.settingsCount++
 	tc.hidden = true
+
 	return tc
 }
 
@@ -256,7 +270,9 @@ func (tc *TermColor) Finish() *TermColor {
 		color[index] = 8
 		index++
 	}
+
 	tc.settings = strings2.JoinInt(color, ";")
+
 	return tc
 }
 

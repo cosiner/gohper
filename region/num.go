@@ -14,6 +14,7 @@ func SeqByDir(a, b int, dir Direction) (int, int) {
 	if dir == POSITIVE {
 		return a, b
 	}
+
 	return b, a
 }
 
@@ -22,6 +23,7 @@ func MinByDir(a, b int, dir Direction) int {
 	if dir == POSITIVE {
 		return a
 	}
+
 	return b
 }
 
@@ -30,6 +32,7 @@ func MaxByDir(a, b int, dir Direction) int {
 	if dir == POSITIVE {
 		return b
 	}
+
 	return a
 }
 
@@ -38,6 +41,7 @@ func Seq(a, b int) (int, int) {
 	if a <= b {
 		return a, b
 	}
+
 	return b, a
 }
 
@@ -46,6 +50,7 @@ func Min(a, b int) int {
 	if a < b {
 		return a
 	}
+
 	return b
 }
 
@@ -54,6 +59,7 @@ func Max(a, b int) int {
 	if a > b {
 		return a
 	}
+
 	return b
 }
 
@@ -83,6 +89,7 @@ func Abs(a int) int {
 	if a < 0 {
 		return -a
 	}
+
 	return a
 }
 

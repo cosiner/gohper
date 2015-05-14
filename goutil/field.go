@@ -13,13 +13,12 @@ func IsExported(name string) bool {
 }
 
 // ToSameExported return the same exported case with example string of a string
-func ToSameExported(example, str string) (res string) {
+func ToSameExported(example, str string) string {
 	if IsExported(example) {
-		res = ToExported(str)
-	} else {
-		res = ToUnexported(str)
+		return ToExported(str)
 	}
-	return
+
+	return ToUnexported(str)
 }
 
 // ToExported return the exported case of a string
@@ -27,6 +26,7 @@ func ToExported(str string) string {
 	if str == "" {
 		return ""
 	}
+
 	return unibyte.ToUpperString(str[0]) + str[1:]
 }
 
@@ -35,5 +35,6 @@ func ToUnexported(str string) string {
 	if str == "" {
 		return ""
 	}
+
 	return unibyte.ToLowerString(str[0]) + str[1:]
 }

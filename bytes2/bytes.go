@@ -13,6 +13,7 @@ func TrimSplit(s, sep []byte) [][]byte {
 	for i, n := 0, len(sp); i < n; i++ {
 		sp[i] = bytes.TrimSpace(sp[i])
 	}
+
 	return sp
 }
 
@@ -21,15 +22,16 @@ func TrimAfter(s []byte, delim []byte) []byte {
 	if idx := bytes.Index(s, delim); idx >= 0 {
 		s = s[:idx]
 	}
+
 	return bytes.TrimSpace(s)
 }
 
 // IsAllBytesIn check whether all bytes is in given encoding bytes
 func IsAllBytesIn(bs []byte, encoding []byte) bool {
-	for i := 0; i < len(bs); i++ {
-		if index.ByteIn(bs[i], encoding...) < 0 {
-			return false
-		}
+	var is = true
+	for i := 0; i < len(bs) && is; i++ {
+		is = index.ByteIn(bs[i], encoding...) >= 0
 	}
-	return true
+
+	return is
 }

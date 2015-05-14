@@ -165,5 +165,6 @@ func errorInfo(t testing.TB, skip int, expect, got interface{}, withType bool) {
 		exps = fmt.Sprintf("\033[1;32m%+v\033[0m", expect)
 		gs = fmt.Sprintf("\033[1;31m%+v\033[0m", got)
 	}
+
 	t.Errorf("Error at %s : expect: %s, but got: %s", pos, exps, gs)
 }

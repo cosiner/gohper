@@ -10,34 +10,40 @@ const (
 // IsExist check whether or not file/dir exist
 func IsExist(fname string) bool {
 	_, err := os.Stat(fname)
+
 	return err == nil || os.IsExist(err)
 }
 
 // IsFile check whether or not file exist
 func IsFile(fname string) bool {
 	fi, err := os.Stat(fname)
+
 	return err == nil && !fi.IsDir()
 }
 
 // IsDir check whether or not given name is a dir
 func IsDir(fname string) bool {
 	fi, err := os.Stat(fname)
+
 	return err == nil && fi.IsDir()
 }
 
 // IsFileOrNotExist check whether given name is a file or not exist
 func IsFileOrNotExist(fname string) bool {
+
 	return !IsDir(fname)
 }
 
 // IsDirOrNotExist check whether given is a directory or not exist
 func IsDirOrNotExist(dir string) bool {
+
 	return !IsFile(dir)
 }
 
 // IsSymlink check whether or not given name is a symlink
 func IsSymlink(fname string) bool {
 	fi, err := os.Lstat(fname)
+
 	return err == nil && (fi.Mode()&os.ModeSymlink == os.ModeSymlink)
 }
 
@@ -46,6 +52,7 @@ func IsModifiedAfter(fname string, fn func()) bool {
 	fi1, err := os.Stat(fname)
 	fn()
 	fi2, _ := os.Stat(fname)
+
 	return err == nil && !fi1.ModTime().Equal(fi2.ModTime())
 }
 

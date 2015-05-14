@@ -27,8 +27,10 @@ func (m WriteMode) Write(fname string, v interface{}, encoder encoding2.EncodeFu
 func (m WriteMode) WriteString(fname, str string) (c int, err error) {
 	err = file.OpenOrCreate(fname, bool(m), func(fd *os.File) error {
 		c, err = fd.Write(unsafe2.Bytes(str))
+
 		return err
 	})
+
 	return
 }
 
@@ -68,8 +70,10 @@ func Read(fname string, v interface{}, decoder encoding2.DecodeFunc) error {
 func ReadString(fname string) (s string, err error) {
 	err = file.Read(fname, func(fd *os.File) error {
 		s, err = encoding2.ReadString(fd)
+
 		return err
 	})
+
 	return
 }
 
@@ -94,7 +98,9 @@ func ReadXML(fname string, v interface{}) error {
 func ReadGZIP(fname string) (data []byte, err error) {
 	err = file.Read(fname, func(fd *os.File) error {
 		data, err = encoding2.ReadGZIP(fd)
+
 		return err
 	})
+
 	return
 }

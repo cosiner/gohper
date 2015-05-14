@@ -62,10 +62,11 @@ type Parser struct {
 func (p Parser) ParseFile(fname string) error {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, fname, nil, parser.ParseComments)
-	if err == nil {
-		err = p.Parse(f)
+	if err != nil {
+		return err
 	}
-	return err
+
+	return p.Parse(f)
 }
 
 func (p Parser) Parse(file *ast.File) (err error) {
@@ -97,6 +98,7 @@ func (p Parser) Parse(file *ast.File) (err error) {
 					return
 				}
 			}
+
 		case *ast.FuncDecl:
 			if p.Func != nil {
 				if err = p.parseFunc(decl, attrs); err != nil {
@@ -105,24 +107,27 @@ func (p Parser) Parse(file *ast.File) (err error) {
 			}
 		}
 	}
+
 	return
 }
 
-func (p Parser) parseType(spec *ast.TypeSpec, attrs *Attrs) (err error) {
+func (p Parser) parseType(spec *ast.TypeSpec, attrs *Attrs) error {
 	attrs.TypeName = ""
 	switch typ := spec.Type.(type) {
 	case *ast.StructType:
 		if p.Struct != nil {
 			attrs.TypeName = spec.Name.Name
-			err = p.parseStruct(typ, attrs)
+			return p.parseStruct(typ, attrs)
 		}
+
 	case *ast.InterfaceType:
 		if p.Interface != nil {
 			attrs.TypeName = spec.Name.Name
-			err = p.parseInterface(typ, attrs)
+			return p.parseInterface(typ, attrs)
 		}
 	}
-	return
+
+	return nil
 }
 
 func (p Parser) parseStruct(spec *ast.StructType, attrs *Attrs) (err error) {
@@ -133,18 +138,22 @@ func (p Parser) parseStruct(spec *ast.StructType, attrs *Attrs) (err error) {
 		if f.Type != nil {
 			attrs.S.Type = fmt.Sprint(f.Type)
 		}
+
 		for _, n := range f.Names {
 			attrs.S.Field = n.Name
 			attrs.S.Tag = ""
+
 			if f.Tag != nil {
 				tag, _ := strings2.TrimQuote(f.Tag.Value)
 				attrs.S.Tag = reflect.StructTag(tag)
 			}
+
 			if err = p.Struct(attrs); err != nil {
 				return
 			}
 		}
 	}
+
 	return
 }
 
@@ -159,6 +168,7 @@ func (p Parser) parseInterface(spec *ast.InterfaceType, attrs *Attrs) (err error
 			}
 		}
 	}
+
 	return
 }
 
@@ -182,11 +192,13 @@ func (p Parser) parseConsts(decl *ast.GenDecl, attrs *Attrs) (err error) {
 			if i < vlen {
 				attrs.C.Value = fmt.Sprint(spec.Values[i])
 			}
+
 			if err = p.Const(attrs); err != nil {
 				return
 			}
 		}
 	}
+
 	return
 }
 
@@ -207,6 +219,7 @@ func (p Parser) parseFunc(decl *ast.FuncDecl, attrs *Attrs) (err error) {
 
 	err = p.Func(attrs)
 	nonTypeEnd(&err)
+
 	return
 }
 

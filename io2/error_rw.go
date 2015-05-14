@@ -13,8 +13,9 @@ type ErrorReader struct {
 
 func NonEOF(err error) error {
 	if err == io.EOF {
-		err = nil
+		return nil
 	}
+
 	return err
 }
 
@@ -22,6 +23,7 @@ func NewErrorReader(r io.Reader) *ErrorReader {
 	if er, is := r.(*ErrorReader); is {
 		return er
 	}
+
 	return &ErrorReader{
 		Reader: r,
 	}
@@ -39,6 +41,7 @@ func (r *ErrorReader) ReadDo(data []byte, f func([]byte)) (int, error) {
 			f(data)
 		}
 	}
+
 	return i, r.Error
 }
 
@@ -55,6 +58,7 @@ func NewErrorWriter(w io.Writer) *ErrorWriter {
 	if ew, is := w.(*ErrorWriter); is {
 		return ew
 	}
+
 	return &ErrorWriter{
 		Writer: w,
 	}
@@ -69,13 +73,16 @@ func (w *ErrorWriter) WriteString(s string) (int, error) {
 }
 
 func (w *ErrorWriter) WriteDo(data []byte, f func([]byte)) (int, error) {
-	var i int
-	if w.Error == nil {
-		i, w.Error = w.Writer.Write(data)
-		if f != nil {
-			f(data)
-		}
+	if w.Error != nil {
+		return 0, w.Error
 	}
+
+	var i int
+	i, w.Error = w.Writer.Write(data)
+	if f != nil {
+		f(data)
+	}
+
 	return i, w.Error
 }
 

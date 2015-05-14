@@ -17,6 +17,7 @@ func (o *Once) Do(f func()) {
 	if atomic.LoadUint32(&o.done) == 1 {
 		return
 	}
+
 	o.m.Lock()
 	if o.done == 0 {
 		f()
@@ -27,10 +28,12 @@ func (o *Once) Do(f func()) {
 
 // ErrorDo will do f only once when function call is successful,
 // if function return error, Once will be failed
-func (o *Once) ErrorDo(f func() error) (err error) {
+func (o *Once) ErrorDo(f func() error) error {
 	if atomic.LoadUint32(&o.done) == 1 {
-		return
+		return nil
 	}
+
+	var err error
 	o.m.Lock()
 	if o.done == 0 {
 		if err = f(); err == nil {
@@ -38,7 +41,8 @@ func (o *Once) ErrorDo(f func() error) (err error) {
 		}
 	}
 	o.m.Unlock()
-	return
+
+	return err
 }
 
 // Undo restore Once's state to initial,

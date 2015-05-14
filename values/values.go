@@ -65,6 +65,7 @@ func (v Values) Update(key string, val interface{}) (s bool) {
 	if s = v.IsExist(key); s {
 		v[key] = val
 	}
+
 	return
 }
 
@@ -76,6 +77,7 @@ func (lc *LockedValues) Size() int {
 	lc.RLock()
 	size := lc.Values.Size()
 	lc.RUnlock()
+
 	return size
 }
 
@@ -83,6 +85,7 @@ func (lc *LockedValues) Get(key string) (val interface{}) {
 	lc.RLock()
 	val = lc.Values.Get(key)
 	lc.RUnlock()
+
 	return
 }
 
@@ -90,6 +93,7 @@ func (lc *LockedValues) IsExist(key string) bool {
 	lc.RLock()
 	has := lc.Values.IsExist(key)
 	lc.RUnlock()
+
 	return has
 }
 
@@ -115,6 +119,7 @@ func (lc *LockedValues) Update(key string, val interface{}) (s bool) {
 	lc.Lock()
 	s = lc.Values.Update(key, val)
 	lc.Unlock()
+
 	return
 }
 

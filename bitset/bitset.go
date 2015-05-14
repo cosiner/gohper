@@ -20,6 +20,7 @@ func unitCount(length uint) uint {
 	if length&(unitLen-1) != 0 {
 		count++
 	}
+
 	return count
 }
 
@@ -52,9 +53,11 @@ func NewBitset(length uint, indexs ...uint) *Bitset {
 		length: length,
 		set:    newUnits(unitCount(length)),
 	}
+
 	for _, i := range indexs {
 		s.Set(i)
 	}
+
 	return s
 }
 
@@ -62,6 +65,7 @@ func NewBitset(length uint, indexs ...uint) *Bitset {
 func (s *Bitset) Set(index uint) *Bitset {
 	s.extend(index)
 	s.set[unitPos(index)] |= 1 << unitIndex(index)
+
 	return s
 }
 
@@ -76,6 +80,7 @@ func (s *Bitset) SetAll() *Bitset {
 func (s *Bitset) Unset(index uint) *Bitset {
 	s.extend(index)
 	s.set[unitPos(index)] &= ^(1 << unitIndex(index))
+
 	return s
 }
 
@@ -92,6 +97,7 @@ func (s *Bitset) Flip(index uint) *Bitset {
 		s.Set(index)
 	}
 	s.set[unitPos(index)] ^= 1 << unitIndex(index)
+
 	return s
 }
 
@@ -108,6 +114,7 @@ func (s *Bitset) Except(index ...uint) *Bitset {
 	for _, i := range index {
 		s.Unset(i)
 	}
+
 	return s
 }
 
@@ -121,6 +128,7 @@ func (s *Bitset) SetTo(index uint, value bool) *Bitset {
 	if value {
 		return s.Set(index)
 	}
+
 	return s.Unset(index)
 }
 
@@ -129,14 +137,18 @@ func (s *Bitset) unitOp(f func(*Bitset, int)) *Bitset {
 	for i, n := 0, len(s.set); i < n; i++ {
 		f(s, i)
 	}
+
 	return s
 }
 
 // Union union another bitset to current bitset, expand the bitset if index out of length range
 func (s *Bitset) Union(b *Bitset) *Bitset {
-	return s.bitsetOp(b,
+	return s.bitsetOp(
+		b,
+
 		func(s, b *Bitset, length *uint) {
 			bl, l := s.Length(0), *length
+
 			if bl < l {
 				s.unsetTop()
 				s.Length(l)
@@ -144,16 +156,21 @@ func (s *Bitset) Union(b *Bitset) *Bitset {
 				b.unsetTop()
 			}
 		},
+
 		func(s, b *Bitset, index uint) {
 			s.set[index] |= b.set[index]
-		})
+		},
+	)
 }
 
 // Intersection another bitset to current bitset
 func (s *Bitset) Intersection(b *Bitset) *Bitset {
-	return s.bitsetOp(b,
+	return s.bitsetOp(
+		b,
+
 		func(s, b *Bitset, length *uint) {
 			bl, l := s.Length(0), *length
+
 			if bl < l {
 				s.unsetTop()
 				s.Length(l)
@@ -161,14 +178,18 @@ func (s *Bitset) Intersection(b *Bitset) *Bitset {
 				s.setTop()
 			}
 		},
+
 		func(s, b *Bitset, index uint) {
 			s.set[index] &= b.set[index]
-		})
+		},
+	)
 }
 
 // Diff calculate difference between current and another bitset
 func (s *Bitset) Diff(b *Bitset) *Bitset {
-	return s.bitsetOp(b,
+	return s.bitsetOp(
+		b,
+
 		func(s, b *Bitset, length *uint) {
 			if *length > s.Length(0) {
 				*length = s.Length(0)
@@ -176,9 +197,11 @@ func (s *Bitset) Diff(b *Bitset) *Bitset {
 				b.unsetTop()
 			}
 		},
+
 		func(s, b *Bitset, index uint) {
 			s.set[index] &= ^b.set[index]
-		})
+		},
+	)
 }
 
 // bitsetOp is common operation for union, intersection, diff
@@ -190,10 +213,12 @@ func (s *Bitset) bitsetOp(b *Bitset,
 	if b == nil || b.Length(0) == 0 {
 		return s
 	}
+
 	lenFn(s, b, &length)
 	for i, n := Uint0, unitCount(length); i < n; i++ {
 		opFn(s, b, i)
 	}
+
 	return s
 }
 
@@ -238,8 +263,8 @@ func (s *Bitset) Length(l uint) uint {
 	} else {
 		s.set = s.set[:new]
 	}
-
 	s.length = l
+
 	return l
 }
 
@@ -267,6 +292,7 @@ func (s *Bitset) Uint64() uint64 {
 func (s *Bitset) Clone() *Bitset {
 	new := NewBitset(s.Length(0))
 	copy(new.set, s.set)
+
 	return new
 }
 
@@ -280,6 +306,7 @@ func (s *Bitset) Bits() []uint {
 			index++
 		}
 	}
+
 	return res
 }
 
@@ -290,5 +317,6 @@ func (s *Bitset) BitCount() int {
 	for i, l := 0, len(s.set); i < l; i++ {
 		n += BitCount(s.set[i])
 	}
+
 	return n
 }

@@ -11,8 +11,9 @@ import (
 func Format(fname string, r io.Reader, w io.Writer) error {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, fname, r, parser.ParseComments)
-	if err == nil {
-		err = format.Node(w, fset, f)
+	if err != nil {
+		return err
 	}
-	return err
+
+	return format.Node(w, fset, f)
 }

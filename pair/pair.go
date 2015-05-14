@@ -40,6 +40,7 @@ func parse(str string, index int) *Pair {
 	} else if index < 0 {
 		key, value = str, ""
 	}
+
 	return &Pair{Key: key, Value: value}
 }
 
@@ -52,20 +53,25 @@ func (p *Pair) String() string {
 func (p *Pair) Trim() *Pair {
 	p.Key = strings.TrimSpace(p.Key)
 	p.Value = strings.TrimSpace(p.Value)
+
 	return p
 }
 
 // TrimQuote trim quote for pair's key and value
-func (p *Pair) TrimQuote() (err error) {
-	var key, value string
-	key, err = strings2.TrimQuote(p.Key)
-	if err == nil {
-		value, err = strings2.TrimQuote(p.Value)
-		if err == nil {
-			p.Key, p.Value = key, value
-		}
+func (p *Pair) TrimQuote() error {
+	key, err := strings2.TrimQuote(p.Key)
+	if err != nil {
+		return err
 	}
-	return
+
+	value, err := strings2.TrimQuote(p.Value)
+	if err != nil {
+		return err
+	}
+
+	p.Key, p.Value = key, value
+
+	return nil
 }
 
 // NoKey check whether pair has key or not
@@ -93,6 +99,7 @@ func (p *Pair) ValueOrKey() string {
 	if p.HasValue() {
 		return p.Value
 	}
+
 	return p.Key
 }
 

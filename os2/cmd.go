@@ -12,13 +12,13 @@ func StdRunCmd(in io.Reader, out, err io.Writer, args ...string) error {
 	if in == nil {
 		in = os.Stdin
 	}
-
 	if out == nil {
 		out = os.Stdout
 	}
 	if err == nil {
 		err = os.Stderr
 	}
+
 	return RunCmd(in, out, err, args...)
 }
 

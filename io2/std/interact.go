@@ -20,17 +20,26 @@ func (i *Interactor) ReadInput(prompt, def string) string {
 	if i.Buf == nil {
 		i.Buf = make([]byte, READ_BUFSIZE)
 	}
+
 	_, i.Error = fmt.Print(prompt)
-	if i.Error == nil {
-		if i.Error = os.Stdout.Sync(); i.Error == nil {
-			var n int
-			if n, i.Error = os.Stdin.Read(i.Buf); i.Error == nil {
-				if n <= 1 {
-					return def
-				}
-				return string(i.Buf[:n-1]) // remove '\n'
-			}
-		}
+	if i.Error != nil {
+		return ""
 	}
-	return ""
+
+	i.Error = os.Stdout.Sync()
+	if i.Error != nil {
+		return ""
+	}
+
+	var n int
+	n, i.Error = os.Stdin.Read(i.Buf)
+	if i.Error != nil {
+		return ""
+	}
+
+	if n <= 1 {
+		return def
+	}
+
+	return string(i.Buf[:n-1]) // remove '\n'
 }
