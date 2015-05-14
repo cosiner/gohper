@@ -9,6 +9,7 @@ import (
 type ErrorReader struct {
 	io.Reader
 	Error error
+	Count int
 }
 
 func NonEOF(err error) error {
@@ -41,6 +42,7 @@ func (r *ErrorReader) ReadDo(data []byte, f func([]byte)) (int, error) {
 			f(data)
 		}
 	}
+	r.Count += i
 
 	return i, r.Error
 }
@@ -52,6 +54,7 @@ func (r *ErrorReader) ClearError() {
 type ErrorWriter struct {
 	io.Writer
 	Error error
+	Count int
 }
 
 func NewErrorWriter(w io.Writer) *ErrorWriter {
@@ -82,6 +85,7 @@ func (w *ErrorWriter) WriteDo(data []byte, f func([]byte)) (int, error) {
 	if f != nil {
 		f(data)
 	}
+	w.Count += i
 
 	return i, w.Error
 }

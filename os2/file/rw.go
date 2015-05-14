@@ -84,7 +84,7 @@ func CopyDir(dst, src string) error {
 		file := files[i].Name()
 		df := filepath.Join(dst, file)
 		sf := filepath.Join(src, file)
-		if IsFile(file) {
+		if IsFile(sf) {
 			err = Copy(df, sf)
 		} else {
 			err = CopyDir(df, sf)

@@ -26,10 +26,7 @@ func (i *Interactor) ReadInput(prompt, def string) string {
 		return ""
 	}
 
-	i.Error = os.Stdout.Sync()
-	if i.Error != nil {
-		return ""
-	}
+	_ = os.Stdout.Sync()
 
 	var n int
 	n, i.Error = os.Stdin.Read(i.Buf)

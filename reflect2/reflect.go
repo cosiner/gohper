@@ -110,6 +110,7 @@ func UnmarshalStruct(v interface{}, values map[string]string, tag string) {
 	} else {
 		panic("non-pointer type")
 	}
+
 	typ := value.Type()
 	for i := 0; i < typ.NumField(); i++ {
 		vfield := value.Field(i)
@@ -127,5 +128,6 @@ func UnmarshalStruct(v interface{}, values map[string]string, tag string) {
 		}
 		UnmarshalPrimitive(values[name], vfield)
 	}
+
 	return
 }
