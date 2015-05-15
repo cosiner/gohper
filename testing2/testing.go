@@ -129,8 +129,8 @@ func nil_(t testing.TB, skip int, val interface{}) {
 	}
 
 	refval := reflect.ValueOf(val)
-	if canNil(refval) && !refval.IsNil() {
-		errorInfo(t, skip+1, "nil", "not nil", false)
+	if !canNil(refval) || !refval.IsNil() {
+		errorInfo(t, skip+1, "nil", fmt.Sprintf("%+v(%T)", val, val), false)
 	}
 }
 

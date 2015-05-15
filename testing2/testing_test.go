@@ -16,6 +16,10 @@ func TestTest(t *testing.T) {
 	DeepEq(t, []string{"1"}, j)
 
 	tt.NNil("")
+	tt.NNil(1)
+	tt.NNil("a")
+	tt.NNil(struct{}{})
+	tt.Nil(nil)
 	tt.Eq(1, 1)
 	tt.NE(t, nil)
 	tt.Nil(i)
