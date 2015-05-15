@@ -15,6 +15,7 @@ func TestTest(t *testing.T) {
 	False(t, false)
 	DeepEq(t, []string{"1"}, j)
 
+	tt.NNil("")
 	tt.Eq(1, 1)
 	tt.NE(t, nil)
 	tt.Nil(i)

@@ -33,6 +33,15 @@ func IndirectType(v interface{}) reflect.Type {
 	return typ
 }
 
+func CanNil(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.Interface, reflect.Slice:
+		return true
+	default:
+		return false
+	}
+}
+
 // UnmarshalPrimitive unmarshal bytes to primitive
 func UnmarshalPrimitive(str string, v reflect.Value) error {
 	if v.Kind() == reflect.Ptr {

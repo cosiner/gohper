@@ -124,14 +124,24 @@ func ne(t testing.TB, skip int, expect interface{}, got interface{}) {
 
 // nil_ assert val is nil
 func nil_(t testing.TB, skip int, val interface{}) {
-	if val != nil && !reflect.ValueOf(val).IsNil() {
+	if val == nil {
+		return
+	}
+
+	refval := reflect.ValueOf(val)
+	if canNil(refval) && !refval.IsNil() {
 		errorInfo(t, skip+1, "nil", "not nil", false)
 	}
 }
 
 // nnil assert val is not nil
 func nnil(t testing.TB, skip int, val interface{}) {
-	if val == nil || reflect.ValueOf(val).IsNil() {
+	if val != nil {
+		return
+	}
+
+	refval := reflect.ValueOf(val)
+	if canNil(refval) && refval.IsNil() {
 		errorInfo(t, skip+1, "not nil", "nil", false)
 	}
 }
@@ -167,4 +177,13 @@ func errorInfo(t testing.TB, skip int, expect, got interface{}, withType bool) {
 	}
 
 	t.Errorf("Error at %s : expect: %s, but got: %s", pos, exps, gs)
+}
+
+func canNil(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.Interface, reflect.Slice:
+		return true
+	default:
+		return false
+	}
 }
