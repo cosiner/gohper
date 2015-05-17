@@ -19,7 +19,7 @@ func PackagePath(pkgName string) string {
 	}
 
 	fn := func(c rune) bool {
-		sep := path2.EnvSeperator()
+		sep := os.PathListSeparator
 
 		return c == sep && sep != path2.UNKNOWN
 	}

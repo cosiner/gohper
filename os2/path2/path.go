@@ -69,12 +69,10 @@ func LastDir(path string) (string, error) {
 // IsRelative check whether a path is relative
 // In these condition: path is empty, start with '[.~][/\]', '/', "[a-z]:\"
 func IsRelative(path string) bool {
-	return !(strings.HasPrefix(path, "./") ||
-		strings.HasPrefix(path, ".\\") ||
-		strings.HasPrefix(path, "~/") ||
-		strings.HasPrefix(path, "~\\") ||
-		strings.HasPrefix(path, "/") ||
-		IsWinRoot(path))
+	return strings.HasPrefix(path, ".") ||
+		strings.HasPrefix(path, "~") ||
+		!(strings.HasPrefix(path, "/") &&
+			!IsWinRoot(path))
 }
 
 // IsWinRoot check whether a path is windows absolute path with disk letter
@@ -100,18 +98,5 @@ func IsRoot(path string) bool {
 		return l == 1 && path[0] == '/'
 	default:
 		return false
-	}
-
-}
-
-// EnvSeperator return seperator of env variable "PATH"
-func EnvSeperator() rune {
-	switch os2.OS() {
-	case os2.LINUX, os2.DARWIN, os2.SOLARIS, os2.FREEBSD, os2.ANDROID:
-		return ':'
-	case os2.WINDOWS:
-		return ';'
-	default:
-		return UNKNOWN
 	}
 }

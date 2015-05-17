@@ -5,6 +5,7 @@
 package encrypt
 
 import (
+	"bytes"
 	"crypto/sha256"
 
 	"github.com/cosiner/gohper/crypto/rand"
@@ -44,4 +45,10 @@ func SaltEncode(msg, fixed, rand []byte) []byte {
 	h.Write(new)
 
 	return h.Sum(nil)
+}
+
+// Verify will encode msg, salt, randSalt, then compare it with encoded password,
+// return true if equal, else false
+func Verify(msg, salt, randSalt, pass []byte) bool {
+	return bytes.Equal(SaltEncode(msg, salt, randSalt), pass)
 }

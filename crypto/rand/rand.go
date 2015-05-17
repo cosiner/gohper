@@ -17,22 +17,19 @@ const (
 	ErrEmptyCharset = errors.Err("Charset cannot be empty")
 )
 
-type BytesFunc func(n int, charset string) ([]byte, error)
-type StringFunc func(n int, charset string) (string, error)
+type (
+	BytesFunc  func(n int, charset string) ([]byte, error)
+	StringFunc func(n int, charset string) (string, error)
+)
 
 // B generate a random bytes in gived charset
 var B BytesFunc = func(n int, charset string) ([]byte, error) {
-	if n <= 0 {
-		return nil, ErrNegativeNum
-	}
-
-	var l int
-	if l = len(charset); l == 0 {
-		return nil, ErrEmptyCharset
+	if n <= 0 || len(charset) == 0 {
+		panic("negative number or empty charset")
 	}
 
 	result := make([]byte, n)
-	charnum := big.NewInt(int64(l))
+	charnum := big.NewInt(int64(len(charset)))
 	for i := 0; i < n; i++ {
 		r, err := rand.Int(rand.Reader, charnum)
 		if err != nil {
@@ -41,7 +38,6 @@ var B BytesFunc = func(n int, charset string) ([]byte, error) {
 
 		result[i] = charset[int(r.Int64())]
 	}
-
 	return result, nil
 }
 
