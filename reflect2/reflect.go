@@ -55,10 +55,9 @@ func UnmarshalPrimitive(str string, v reflect.Value) error {
 		v.SetString(str)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		n, err := strconv.ParseInt(str, 10, 64)
-		if err == nil {
+		if err != nil {
 			return err
 		}
-
 		v.SetInt(n)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 		n, err := strconv.ParseUint(str, 10, 64)
