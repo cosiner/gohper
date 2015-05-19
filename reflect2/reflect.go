@@ -111,7 +111,26 @@ func MarshalStruct(v interface{}, values map[string]string, tag string) {
 	}
 }
 
-func UnmarshalStruct(v interface{}, values map[string]string, tag string) {
+type Values interface {
+	Get(name string) string
+}
+
+type StringMap map[string]string
+
+func (m StringMap) Get(name string) string {
+	return m[name]
+}
+
+type StringSliceMap struct {
+	Values    map[string][]string
+	Seperator string
+}
+
+func (s StringSliceMap) Get(name string) string {
+	return strings.Join(s.Values[name], s.Seperator)
+}
+
+func UnmarshalStruct(v interface{}, values Values, tag string) {
 	value := reflect.ValueOf(v)
 	if value.Kind() == reflect.Ptr {
 		value = value.Elem()
@@ -134,7 +153,7 @@ func UnmarshalStruct(v interface{}, values map[string]string, tag string) {
 		} else {
 			name = strings.ToLower(name)
 		}
-		UnmarshalPrimitive(values[name], vfield)
+		UnmarshalPrimitive(values.Get(name), vfield)
 	}
 
 	return

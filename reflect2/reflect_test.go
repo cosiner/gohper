@@ -35,7 +35,7 @@ func TestMarshalStruct(t *testing.T) {
 
 	mp["nm"] = "bbb"
 	mp["age"] = "234"
-	UnmarshalStruct(&st, mp, "fd")
+	UnmarshalStruct(&st, StringMap(mp), "fd")
 
 	tt.Eq("bbb", st.Name)
 	tt.Eq(123, st.Age)
