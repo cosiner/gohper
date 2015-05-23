@@ -7,15 +7,17 @@ import (
 	"github.com/cosiner/gohper/errors"
 )
 
-var hexTable = []byte("0123456789ABCDEF")
-var hexTableLower = []byte("0123456789abcdef")
+var (
+	HexTable      = []byte("0123456789ABCDEF")
+	HexTableLower = []byte("0123456789abcdef")
+)
 
 func Uint2Hex(u uint64) []byte {
 	s := make([]byte, 16)
 
 	var idx int
 	for idx = 15; idx > -1 && u > 0; idx-- {
-		s[idx] = hexTable[u&0xF]
+		s[idx] = HexTable[u&0xF]
 		u = u >> 4
 	}
 
@@ -27,7 +29,7 @@ func Uint2LowerHex(u uint64) []byte {
 
 	var idx int
 	for idx = 15; idx > -1 && u > 0; idx-- {
-		s[idx] = hexTableLower[u&0xF]
+		s[idx] = HexTableLower[u&0xF]
 		u = u >> 4
 	}
 

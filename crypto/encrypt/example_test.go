@@ -2,7 +2,6 @@ package encrypt_test
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/cosiner/gohper/crypto/encrypt"
 )
@@ -15,7 +14,7 @@ func ExampleSaltEncode() {
 	if encrypt.Verify(password, salt, randSalt, enc) {
 		fmt.Println("Password Match")
 	} else {
-		log.Fatalln("Password don't match")
+		fmt.Println("Password don't match")
 	}
 	// Output: Password Match
 }
