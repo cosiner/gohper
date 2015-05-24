@@ -4,6 +4,7 @@ import (
 	"unsafe"
 
 	"sync"
+	"sync/atomic"
 )
 
 const APPEND = "01235"
@@ -70,4 +71,20 @@ func (m *MRWMutex) RLock(lockId string) {
 
 func (m *MRWMutex) RUnlock(lockId string) {
 	m.locker2(lockId).RUnlock()
+}
+
+// Spinlock should not be used on single cpu(core) machines.
+// if one goroute take out the lock, the programm will be died if another goroutine
+// try to take out the lock again
+type Spinlock int32
+
+func (s *Spinlock) Lock() {
+	for !atomic.CompareAndSwapInt32((*int32)(s), 0, 1) {
+	}
+}
+
+func (s *Spinlock) Unlock() {
+	if !atomic.CompareAndSwapInt32((*int32)(s), 1, 0) {
+		panic("unlock unlocked spinlock")
+	}
 }
