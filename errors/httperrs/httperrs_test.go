@@ -9,6 +9,6 @@ import (
 func TestErrors(t *testing.T) {
 	tt := testing2.Wrap(t)
 
-	tt.Nil(Server(nil))
-	tt.Eq(500, ServerS("err").Code())
+	tt.Nil(Server.New(nil))
+	tt.Eq(503, Service.NewS("err").Code())
 }
