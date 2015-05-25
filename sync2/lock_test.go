@@ -16,7 +16,7 @@ func TestSpinLock(t *testing.T) {
 
 	runtime.GOMAXPROCS(2)
 
-	var lock SpinLock
+	var lock Spinlock
 	go func() {
 		lock.Lock()
 		lock.Unlock()

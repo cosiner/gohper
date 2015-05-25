@@ -1,10 +1,9 @@
 package sync2
 
 import (
-	"unsafe"
-
 	"sync"
 	"sync/atomic"
+	"unsafe"
 )
 
 const APPEND = "01235"

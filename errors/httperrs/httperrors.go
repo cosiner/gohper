@@ -6,9 +6,13 @@ import (
 	"github.com/cosiner/gohper/errors"
 )
 
+const (
+	StatusTooManyRequests = 429
+)
+
 type Error interface {
 	error
-	HTTPCode() int
+	Code() int
 }
 
 type HTTPError struct {
@@ -38,7 +42,7 @@ func NewS(err string, code int) Error {
 	}
 }
 
-func (e HTTPError) HTTPCode() int {
+func (e HTTPError) Code() int {
 	return e.code
 }
 
@@ -53,7 +57,7 @@ func UnAuth(err error) Error {
 }
 
 // 402
-func PaymentRequired(err error) Error {
+func NoPayment(err error) Error {
 	return New(err, http.StatusPaymentRequired)
 }
 
@@ -102,9 +106,29 @@ func NoLength(err error) Error {
 	return New(err, http.StatusLengthRequired)
 }
 
+// 429
+func Frequently(err error) Error {
+	return New(err, StatusTooManyRequests)
+}
+
+// 500
+func Server(err error) Error {
+	return New(err, http.StatusInternalServerError)
+}
+
+// 501
+func NotImplemented(err error) Error {
+	return New(err, http.StatusNotImplemented)
+}
+
+//503
+func Service(err error) Error {
+	return New(err, http.StatusServiceUnavailable)
+}
+
 // 400
-func BadRequestS(err error) Error {
-	return New(err, http.StatusBadRequest)
+func BadRequestS(err string) Error {
+	return NewS(err, http.StatusBadRequest)
 }
 
 // 401
@@ -113,7 +137,7 @@ func UnAuthS(err string) Error {
 }
 
 // 402
-func PaymentRequiredS(err string) Error {
+func NoPaymentS(err string) Error {
 	return NewS(err, http.StatusPaymentRequired)
 }
 
@@ -160,4 +184,24 @@ func GoneS(err string) Error {
 // 411
 func NoLengthS(err string) Error {
 	return NewS(err, http.StatusLengthRequired)
+}
+
+// 429
+func FrequentlyS(err string) Error {
+	return NewS(err, StatusTooManyRequests)
+}
+
+// 500
+func ServerS(err string) Error {
+	return NewS(err, http.StatusInternalServerError)
+}
+
+// 501
+func NotImplementedS(err string) Error {
+	return NewS(err, http.StatusNotImplemented)
+}
+
+//503
+func ServiceS(err string) Error {
+	return NewS(err, http.StatusServiceUnavailable)
 }
