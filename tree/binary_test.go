@@ -1,4 +1,4 @@
-package bin
+package tree
 
 import (
 	"testing"
@@ -9,7 +9,7 @@ import (
 func TestBinaryTree(t *testing.T) {
 	tt := testing2.Wrap(t)
 
-	bt := BinTree{}
+	bt := Binary{}
 	bt.Add(1, 'A', false)
 	bt.Add(2, 'B', false)
 	bt.Add(3, 'C', false)

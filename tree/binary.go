@@ -1,14 +1,13 @@
-// Package bin implements a simple binary-search tree
-package bin
+package tree
 
-type BinTree struct {
+type Binary struct {
 	score int
 	value interface{}
 
-	left, right *BinTree
+	left, right *Binary
 }
 
-func (t *BinTree) Search(score int) interface{} {
+func (t *Binary) Search(score int) interface{} {
 	root := t
 	for root != nil {
 		switch {
@@ -24,7 +23,7 @@ func (t *BinTree) Search(score int) interface{} {
 	return nil
 }
 
-func (t *BinTree) Add(score int, value interface{}, replace bool) {
+func (t *Binary) Add(score int, value interface{}, replace bool) {
 	root := t
 	for {
 		switch {
@@ -35,7 +34,7 @@ func (t *BinTree) Add(score int, value interface{}, replace bool) {
 			return
 		case root.score > score:
 			if root.left == nil {
-				root.left = &BinTree{score: score, value: value}
+				root.left = &Binary{score: score, value: value}
 
 				return
 			} else {
@@ -43,7 +42,7 @@ func (t *BinTree) Add(score int, value interface{}, replace bool) {
 			}
 		case root.score < score:
 			if root.right == nil {
-				root.right = &BinTree{score: score, value: value}
+				root.right = &Binary{score: score, value: value}
 
 				return
 			} else {

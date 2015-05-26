@@ -1,4 +1,4 @@
-package trie
+package tree
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 
 func TestTrieTree(t *testing.T) {
 	tt := testing2.Wrap(t)
-	tree := new(TrieTree)
+	tree := Trie{}
 	tree.AddPath("abcde", 123)
 	tree.AddPath("bcdef", 234)
 	tree.AddPath("efghi", 456)
@@ -24,12 +24,12 @@ func TestTrieTree(t *testing.T) {
 }
 
 var s = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890"
-var tree = func() *TrieTree {
-	t := new(TrieTree)
+var tree = func() *Trie {
+	t := Trie{}
 	for i := 0; i < len(s); i++ {
 		t.AddPath(s[i:]+s[:i], true)
 	}
-	return t
+	return &t
 }()
 
 func BenchmarkTrieTree(b *testing.B) {
@@ -38,4 +38,31 @@ func BenchmarkTrieTree(b *testing.B) {
 			b.Fail()
 		}
 	}
+}
+
+func TestPrefix(t *testing.T) {
+	tt := testing2.Wrap(t)
+
+	tree := Trie{}
+
+	tree.AddPath("1234", 1)
+	tree.AddPath("234", 2)
+	tree.AddPath("12", 3)
+	tree.AddPath("347", 4)
+	tree.AddPath("00", 5)
+
+	tt.Nil(tree.PrefixMatchValue(""))
+	tt.Nil(tree.PrefixMatchValue("1"))
+	tt.Nil(tree.PrefixMatchValue("2"))
+	tt.Nil(tree.PrefixMatchValue("3"))
+	tt.Nil(tree.PrefixMatchValue("0"))
+	tt.Nil(tree.PrefixMatchValue("13"))
+	tt.Nil(tree.PrefixMatchValue("01"))
+
+	tt.Eq(1, tree.PrefixMatchValue("1234").(int))
+	tt.Eq(1, tree.PrefixMatchValue("12345").(int))
+
+	tt.Eq(3, tree.PrefixMatchValue("12").(int))
+	tt.Eq(3, tree.PrefixMatchValue("123").(int))
+	tt.Eq(3, tree.PrefixMatchValue("124").(int))
 }
