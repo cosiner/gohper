@@ -43,7 +43,7 @@ Name("12345") == wrongChars
 
 Password("111") == wrongLength
 
-//     Email    Name  Password
-//      |         |      |
-User("abcde", "12345", "111") == ?
+//     Email    Name  Password Password
+//      |         |      |       |
+User("abcde", "12345", "111", "ddd") == ?
 ```
