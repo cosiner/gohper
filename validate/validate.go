@@ -26,23 +26,29 @@ func (vc ValidChain) Validate(s string) error {
 	return nil
 }
 
-// ValidateM validate multiple string with validators, first validator process first string,
-// second process next string, etc.., return first error or nil
 func (vc ValidChain) ValidateM(s ...string) error {
-	if i, last := 0, len(s)-1; last > -1 {
-		for _, v := range vc {
-			if i < last {
-				if e := v(s[i]); e != nil {
-					return e
-				}
-				i++
-			} else {
-				if e := v(s[last]); e != nil {
-					return e
-				}
-			}
+	l1, l2 := len(vc)-1, len(s)-1
+	var (
+		i   int
+		err error
+	)
+	if l1 < 0 || l2 < 0 {
+	} else if l1 <= l2 {
+		for i = 0; err == nil && i <= l1; i++ {
+			err = vc[i](s[i])
 		}
-	}
 
-	return nil
+		for i = l1 + 1; err == nil && i <= l2; i++ {
+			err = vc[l1](s[i])
+		} // last validator process all remains string
+	} else {
+		for i = 0; err == nil && i <= l2; i++ {
+			err = vc[i](s[i])
+		}
+
+		for i = l2 + 1; err == nil && i <= l1; i++ {
+			err = vc[i](s[l2])
+		} // remains validators process last string
+	}
+	return err
 }
