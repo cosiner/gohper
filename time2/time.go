@@ -1,6 +1,7 @@
 package time2
 
 import (
+	"strconv"
 	"strings"
 	"time"
 )
@@ -71,10 +72,47 @@ func ParseTime(t string) (time.Time, error) {
 	return time.Parse(DATETIME_FMT, t)
 }
 
-// Calc calculate function call's time cose, unix nano was returned
-func Calc(f func()) int64 {
+// Timing the cost of function call, unix nano was returned
+func Timing(f func()) int64 {
 	now := time.Now().UnixNano()
 	f()
 
 	return time.Now().UnixNano() - now
+}
+
+// ToHuman convert nano to human time size, insufficient portion will be discarded
+// performs rounding.
+//
+// support 0-999ns, 0-999us, 0-999ms, 0-Maxs,
+func ToHuman(nano int64) string {
+	var base int64 = 1
+	if nano < 1000*base {
+		return strconv.Itoa(int(nano/base)) + "ns"
+	}
+
+	base *= 1000
+	if nano < 1000*base {
+		var us = int(nano / base)
+		if nano%base >= base/2 {
+			us++
+		}
+
+		return strconv.Itoa(us) + "us"
+	}
+
+	base *= 1000
+	if nano < 1000*base {
+		var ms = int(nano / base)
+		if nano%base >= base/2 {
+			ms++
+		}
+		return strconv.Itoa(ms) + "ms"
+	}
+
+	base *= 1000
+	var s = int(nano / base)
+	if nano%base >= base/2 {
+		s++
+	}
+	return strconv.Itoa(s) + "s"
 }
