@@ -11,7 +11,7 @@ func (e Err) Error() string {
 	return string(e)
 }
 
-func Assert(val bool, err interface{}) {
+func Assert(val bool, err error) {
 	if !val {
 		panic(err)
 	}

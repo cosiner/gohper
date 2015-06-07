@@ -2,14 +2,15 @@ package conv
 
 import (
 	"encoding/hex"
+	"strconv"
 	"unsafe"
 
 	"github.com/cosiner/gohper/errors"
 )
 
-var (
-	HexTable      = []byte("0123456789ABCDEF")
-	HexTableLower = []byte("0123456789abcdef")
+const (
+	HEX  = "0123456789ABCDEF"
+	LHEX = "0123456789abcdef"
 )
 
 func Uint2Hex(u uint64) []byte {
@@ -17,7 +18,7 @@ func Uint2Hex(u uint64) []byte {
 
 	var idx int
 	for idx = 15; idx > -1 && u > 0; idx-- {
-		s[idx] = HexTable[u&0xF]
+		s[idx] = HEX[u&0xF]
 		u = u >> 4
 	}
 
@@ -29,7 +30,7 @@ func Uint2LowerHex(u uint64) []byte {
 
 	var idx int
 	for idx = 15; idx > -1 && u > 0; idx-- {
-		s[idx] = HexTableLower[u&0xF]
+		s[idx] = LHEX[u&0xF]
 		u = u >> 4
 	}
 
@@ -102,4 +103,17 @@ func ReverseByte(num byte) byte {
 	}
 
 	return n
+}
+
+func IntDef(val string, def int) int {
+	if val == "" {
+		return def
+	}
+
+	i, err := strconv.Atoi(val)
+	if err != nil {
+		i = def
+	}
+
+	return i
 }

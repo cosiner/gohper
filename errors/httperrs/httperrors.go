@@ -1,3 +1,4 @@
+// Package httperrs provide error types help interactive over http
 package httperrs
 
 import "github.com/cosiner/gohper/errors"

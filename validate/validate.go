@@ -1,5 +1,13 @@
 package validate
 
+import (
+	"github.com/cosiner/gohper/errors"
+)
+
+const (
+	ErrParamsCountNotMatch = errors.Err("parameters count not matched with validators")
+)
+
 type Validator func(string) error
 type ValidChain []Validator
 
@@ -15,6 +23,10 @@ func UseMul(vc ...Validator) func(...string) error {
 	return New(vc...).ValidateM
 }
 
+func UseStrictMul(vc ...Validator) func(...string) error {
+	return New(vc...).StrictValidateM
+}
+
 // Validate string with validators, return first error or nil
 func (vc ValidChain) Validate(s string) error {
 	for _, v := range vc {
@@ -24,6 +36,18 @@ func (vc ValidChain) Validate(s string) error {
 	}
 
 	return nil
+}
+
+func (vc ValidChain) StrictValidateM(s ...string) error {
+	l1, l2 := len(vc)-1, len(s)-1
+	errors.Assert(l1 == l2, ErrParamsCountNotMatch)
+
+	var err error
+	for i := 0; err == nil && i <= l1; i++ {
+		err = vc[i](s[i])
+	}
+
+	return err
 }
 
 func (vc ValidChain) ValidateM(s ...string) error {

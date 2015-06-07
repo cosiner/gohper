@@ -163,20 +163,27 @@ func RecoverEq(t testing.TB, s string) {
 }
 
 func errorInfo(t testing.TB, skip int, expect, got interface{}, withType bool) {
+	const blue = "\033[1;34m" // "1" means highlight
+	const green = "\033[1;32m"
+	const red = "\033[1;31m"
+	const end = "\033[0m"
+
 	var (
-		pos  = "\033[1;34m" + runtime2.Caller(skip+1) + "\033[0m"
+		pos  = blue + runtime2.Caller(skip+1) + end
 		exps string
-		gs   string
+		gots string
 	)
 	if withType {
-		exps = fmt.Sprintf("\033[1;32m%+v(%T)\033[0m", expect, expect)
-		gs = fmt.Sprintf("\033[1;31m%+v(%T)\033[0m", got, got)
+		const format = "%+v(%T)" + end
+		exps = fmt.Sprintf(green+format, expect, expect)
+		gots = fmt.Sprintf(red+format, got, got)
 	} else {
-		exps = fmt.Sprintf("\033[1;32m%+v\033[0m", expect)
-		gs = fmt.Sprintf("\033[1;31m%+v\033[0m", got)
+		const format = "%+v" + end
+		exps = fmt.Sprintf(green+format, expect)
+		gots = fmt.Sprintf(red+format, got)
 	}
 
-	t.Errorf("Error at %s : expect: %s, but got: %s", pos, exps, gs)
+	t.Errorf("%s: expect: %s, got: %s", pos, exps, gots)
 }
 
 func canNil(v reflect.Value) bool {
