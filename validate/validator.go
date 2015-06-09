@@ -13,7 +13,7 @@ type Length struct {
 }
 
 func (length Length) Validate(s string) error {
-	if l := len(s); (length.Min >= 0 && l < length.Min) || (length.Max >= 0 && l > length.Max) {
+	if l := len(s); (length.Min > 0 && l < length.Min) || (length.Max > 0 && l > length.Max) {
 		return length.Err
 	}
 
