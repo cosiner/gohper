@@ -73,12 +73,14 @@ func (test *TestCase) Arg(args ...interface{}) *TestCase {
 	return test
 }
 
-func (test *TestCase) Run(t testing.TB, fn interface{}) {
+func (test *TestCase) Run(t testing.TB, fn ...interface{}) {
 	for index := range test.expects {
-		var args = test.args[index]
 		var expects = test.expects[index]
 
-		results := reflect.ValueOf(fn).Call(args)
+		var results = test.args[index]
+		for _, f := range fn {
+			results = reflect.ValueOf(f).Call(results)
+		}
 
 		for i, r := range results {
 			if expect := expects[i]; expect != NoCheck {
