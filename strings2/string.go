@@ -250,3 +250,33 @@ func RemoveSpace(s string) string {
 
 	return string(bs[:idx])
 }
+
+// MergeSpace merge mutiple space to one, trim determin whether remove space at prefix and suffix
+func MergeSpace(s string, trim bool) string {
+	space := false
+
+	idx, end := 0, len(s)
+	bs := make([]byte, end)
+	for i := 0; i < end; i++ {
+		if unibyte.IsSpace(s[i]) {
+			space = true
+		} else {
+			if space && (!trim || idx != 0) {
+				bs[idx] = ' '
+				idx++
+			}
+
+			bs[idx] = s[i]
+			idx++
+
+			space = false
+		}
+	}
+
+	if space && !trim {
+		bs[idx] = ' '
+		idx++
+	}
+
+	return string(bs[:idx])
+}

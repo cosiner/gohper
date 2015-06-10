@@ -7,67 +7,85 @@ import (
 )
 
 func TestSnakeCase(t *testing.T) {
-	testing2.Eq(t, "_xy_xy", ToSnake("_xy_xy"))
-	testing2.Eq(t, "_xy_xy", ToSnake("_xyXy"))
-	testing2.Eq(t, "_xy xy", ToSnake("_Xy Xy"))
-	testing2.Eq(t, "_xy_xy", ToSnake("_Xy_Xy"))
+	testing2.
+		Expect("_xy_xy").Arg("_xy_xy").
+		Expect("_xy_xy").Arg("_xy_xy").
+		Expect("_xy_xy").Arg("_xyXy").
+		Expect("_xy xy").Arg("_Xy Xy").
+		Expect("_xy_xy").Arg("_Xy_Xy").
+		Run(t, ToSnake)
 }
 
 func TestCamelString(t *testing.T) {
-	testing2.Eq(t, "XyXy", ToCamel("xy_xy"))
-	testing2.Eq(t, "Xy__Xy", ToCamel("xy__Xy"))
-	testing2.Eq(t, "Xy Xy", ToCamel("xy Xy"))
-	testing2.Eq(t, "XY Xy", ToCamel("x_y Xy"))
-	testing2.Eq(t, "X_Y XY", ToCamel("x__y XY"))
-	testing2.Eq(t, "XY XY", ToCamel("x_y xY"))
-	testing2.Eq(t, "XY XY", ToCamel("x_y _x_y"))
-	testing2.Eq(t, "  XY", ToCamel("  x_y"))
+	testing2.
+		Expect("XyXy").Arg("xy_xy").
+		Expect("Xy__Xy").Arg("xy__Xy").
+		Expect("Xy Xy").Arg("xy Xy").
+		Expect("XY Xy").Arg("x_y Xy").
+		Expect("X_Y XY").Arg("x__y XY").
+		Expect("XY XY").Arg("x_y xY").
+		Expect("XY XY").Arg("x_y _x_y").
+		Expect("  XY").Arg("  x_y").
+		Run(t, ToCamel)
 }
 
 func TestAbridgeString(t *testing.T) {
-	tt := testing2.Wrap(t)
-
-	tt.Eq("ABC", ToAbridge("AaaBbbCcc"))
-	tt.Eq("ABC", ToAbridge("AaaBbbCcc"))
+	testing2.
+		Expect("ABC").Arg("AaaBbbCcc").
+		Expect("ABC").Arg("AaaBbbCcc").
+		Run(t, ToAbridge)
 }
 
 func TestTrimQuote(t *testing.T) {
-	tt := testing2.Wrap(t)
-	s, err := TrimQuote("\"aaa\"")
-	tt.Eq("aaa", s)
-	tt.Eq(err, nil)
+	testing2.
+		Expect("aaa", nil).Arg("\"aaa\"").
+		Expect("aaa", nil).Arg("'aaa'").
+		Expect("aaa", nil).Arg("`aaa`").
+		Run(t, TrimQuote)
 }
 
 func TestSplitAtN(t *testing.T) {
-	tt := testing2.Wrap(t)
-	tt.Eq(3, SplitAtN("123123123", "12", 2))
-	tt.Eq(6, SplitAtN("123123123", "12", 3))
-	tt.Eq(-1, SplitAtN("123123123", "12", 4))
+	testing2.
+		Expect(3).Arg("123123123", "12", 2).
+		Expect(6).Arg("123123123", "12", 3).
+		Expect(-1).Arg("123123123", "12", 4).
+		Run(t, SplitAtN)
 }
 
 func TestSplitAtLastN(t *testing.T) {
-	tt := testing2.Wrap(t)
-	tt.Eq(6, SplitAtLastN("123123123", "12", 1))
-	tt.Eq(3, SplitAtLastN("123123123", "12", 2))
-	tt.Eq(0, SplitAtLastN("123123123", "12", 3))
-	tt.Eq(-1, SplitAtLastN("123123123", "12", 4))
+	testing2.
+		Expect(6).Arg("123123123", "12", 1).
+		Expect(3).Arg("123123123", "12", 2).
+		Expect(0).Arg("123123123", "12", 3).
+		Expect(-1).Arg("123123123", "12", 4).
+		Run(t, SplitAtLastN)
 }
 
 func TestRepeatJoin(t *testing.T) {
-	tt := testing2.Wrap(t)
-	tt.Eq("abc=?,abc=?,abc", RepeatJoin("abc", "=?,", 3))
+	testing2.
+		Expect("abc=?,abc=?,abc").Arg("abc", "=?,", 3).
+		Run(t, RepeatJoin)
 }
 
 func TestValid(t *testing.T) {
-	tt := testing2.Wrap(t)
-	tt.True(IsAllCharsIn("", "abcdefghijklmn"))
-	tt.True(IsAllCharsIn("abc", "abcdefghijklmn"))
-	tt.False(IsAllCharsIn("ao", "abcdefghijklmn"))
+	testing2.Tests().
+		True().Arg("", "abcdefghijklmn").
+		True().Arg("abc", "abcdefghijklmn").
+		False().Arg("ao", "abcdefghijklmn").
+		Run(t, IsAllCharsIn)
 }
 
 func TestRemoveSpace(t *testing.T) {
-	tt := testing2.Wrap(t)
-	tt.Eq("abcdefg", RemoveSpace(`a b
+	testing2.
+		Expect("abcdefg").Arg(`a b
     	c d 	e
-    	 	f g`))
+    	 	f g`).
+		Run(t, RemoveSpace)
+}
+
+func TestMergeSpace(t *testing.T) {
+	testing2.
+		Expect("a b c dd").Arg("   a    b   c  dd   ", true).
+		Expect(" a b c dd ").Arg("   a    b   c  dd   ", false).
+		Run(t, MergeSpace)
 }

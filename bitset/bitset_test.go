@@ -22,7 +22,7 @@ func TestBitSet(t *testing.T) {
 	testBitset(tt, s, list)
 }
 
-func testBitset(tt testing2.Test, s *Bitset, list []uint) {
+func testBitset(tt testing2.TB, s *Bitset, list []uint) {
 	s.UnsetAll()
 
 	for _, l := range list {

@@ -7,6 +7,8 @@ import (
 	"encoding/xml"
 	"os"
 
+	"github.com/cosiner/gohper/pair"
+
 	"github.com/cosiner/gohper/encoding2"
 	"github.com/cosiner/gohper/os2/file"
 	"github.com/cosiner/gohper/unsafe2"
@@ -103,4 +105,18 @@ func ReadGZIP(fname string) (data []byte, err error) {
 	})
 
 	return
+}
+
+func ReadProperties(fname string) (map[string]string, error) {
+	props := make(map[string]string)
+	err := file.Filter(fname, func(_ int, line []byte) ([]byte, error) {
+		p := pair.Parse(unsafe2.String(line), "=").Trim()
+		if p.HasKey() {
+			props[p.Key] = p.Value
+		}
+
+		return line, nil
+	})
+
+	return props, err
 }

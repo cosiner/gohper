@@ -26,18 +26,20 @@ func TestRandom(t *testing.T) {
 	}
 }
 
-func testRandString(tt testing2.Test, f func(int) (string, error), charset string) {
+func testRandString(tt testing2.TB, f func(int) (string, error), charset string) {
 	s, e := f(32)
-	tt.Eq(e, nil)
-	tt.Eq(32, len(s))
-	tt.True(strings2.IsAllCharsIn(s, charset))
+	tt.
+		Eq(e, nil).
+		Eq(32, len(s)).
+		True(strings2.IsAllCharsIn(s, charset))
 }
 
-func testRandBytes(tt testing2.Test, f func(int) ([]byte, error), charset string) {
+func testRandBytes(tt testing2.TB, f func(int) ([]byte, error), charset string) {
 	s, e := f(32)
-	tt.Eq(e, nil)
-	tt.Eq(32, len(s))
-	tt.True(strings2.IsAllCharsIn(unsafe2.String(s), charset))
+	tt.
+		Eq(e, nil).
+		Eq(32, len(s)).
+		True(strings2.IsAllCharsIn(unsafe2.String(s), charset))
 }
 
 func BenchmarkRandom(b *testing.B) {

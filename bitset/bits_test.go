@@ -23,7 +23,7 @@ func TestBits(t *testing.T) {
 	testBits(tt, s3, list, false)
 }
 
-func testBits(tt testing2.Test, s *Bits, list []uint, empty bool) {
+func testBits(tt testing2.TB, s *Bits, list []uint, empty bool) {
 	for _, l := range list {
 		s.Set(l)
 		tt.True(s.IsSet(l))
@@ -87,6 +87,6 @@ func TestBitCount(t *testing.T) {
 		u |= 1 << l
 	}
 
-	tt.True(BitCountUint(u) == len(list))
-	tt.True(BitCount(uint64(u)) == len(list))
+	tt.Eq(BitCountUint(u), len(list))
+	tt.Eq(BitCount(uint64(u)), len(list))
 }
