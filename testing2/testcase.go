@@ -73,7 +73,7 @@ func (test *TestCase) Arg(args ...interface{}) *TestCase {
 	return test
 }
 
-func (test *TestCase) Run(t testing.TB, fn ...interface{}) {
+func (test *TestCase) Run(t testing.TB, fn ...interface{}) *TestCase {
 	for index := range test.expects {
 		var expects = test.expects[index]
 
@@ -95,6 +95,8 @@ func (test *TestCase) Run(t testing.TB, fn ...interface{}) {
 			}
 		}
 	}
+
+	return test
 }
 
 func indexNil(t testing.TB, skip int, index string, expect, got interface{}) {

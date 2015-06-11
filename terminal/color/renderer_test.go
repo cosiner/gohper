@@ -1,4 +1,4 @@
-package termcolor
+package color
 
 import (
 	"os"
@@ -6,9 +6,9 @@ import (
 )
 
 func TestRender(t *testing.T) {
-	tc := LightBlue.Finish()
-	t.Log(tc.Render("aaa"))
-	t.Log(tc.Render("aaadd"))
+	r := LightBlue
+	t.Log(r.Render("aaa"))
+	t.Log(r.Render("aaadd"))
 }
 
 func TestRenderTo(t *testing.T) {

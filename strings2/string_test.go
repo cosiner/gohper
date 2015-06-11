@@ -41,6 +41,7 @@ func TestTrimQuote(t *testing.T) {
 		Expect("aaa", nil).Arg("\"aaa\"").
 		Expect("aaa", nil).Arg("'aaa'").
 		Expect("aaa", nil).Arg("`aaa`").
+		Expect("", testing2.NonNil).Arg("`aaa").
 		Run(t, TrimQuote)
 }
 
@@ -88,4 +89,13 @@ func TestMergeSpace(t *testing.T) {
 		Expect("a b c dd").Arg("   a    b   c  dd   ", true).
 		Expect(" a b c dd ").Arg("   a    b   c  dd   ", false).
 		Run(t, MergeSpace)
+}
+
+func TestIndexNonSpace(t *testing.T) {
+	testing2.
+		Expect(1).Arg(" 1             ").
+		Expect(-1).Arg("             ").
+		Expect(0).Arg("a   ").
+		Run(t, IndexNonSpace).
+		Run(t, LastIndexNonSpace)
 }

@@ -3,11 +3,17 @@ package testing2
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 
 	"github.com/cosiner/gohper/runtime2"
+	"github.com/cosiner/gohper/terminal/ansi"
+	"github.com/cosiner/gohper/terminal/color/output"
+	"github.com/mattn/go-isatty"
 )
+
+var isTTY = isatty.IsTerminal(os.Stdout.Fd())
 
 // TB is a wrapper of testing.testing.TB
 type TB struct {
@@ -189,32 +195,45 @@ func errorInfo(t testing.TB, skip int, expect, got interface{}, withType bool) {
 }
 
 func indexErrorInfo(t testing.TB, skip int, index string, expect, got interface{}, withType bool) {
-	const blue = "\033[1;34m" // "1" means highlight
-	const green = "\033[1;32m"
-	const red = "\033[1;31m"
-	const yellow = "\033[1;33m"
-	const end = "\033[0m"
-
 	var (
-		pos  = blue + runtime2.Caller(skip+1) + end
-		exps string
-		gots string
+		pos        = runtime2.Caller(skip + 1)
+		exps, gots string
 	)
-	if withType {
-		const format = "%+v(%T)" + end
-		exps = fmt.Sprintf(green+format, expect, expect)
-		gots = fmt.Sprintf(red+format, got, got)
+
+	const formatT = "%+v(%T)"
+	const format = "%+v"
+
+	if !output.IsTTY {
+		if withType {
+			exps = fmt.Sprintf(formatT, expect, expect)
+			gots = fmt.Sprintf(formatT, got, got)
+		} else {
+			exps = fmt.Sprintf(format, expect)
+			gots = fmt.Sprintf(format, got)
+		}
 	} else {
-		const format = "%+v" + end
-		exps = fmt.Sprintf(green+format, expect)
-		gots = fmt.Sprintf(red+format, got)
+		var red = ansi.Begin(ansi.Highlight, ansi.FgRed)
+		var green = ansi.Begin(ansi.Highlight, ansi.FgGreen)
+		var end = ansi.End()
+
+		pos = ansi.Render(pos, ansi.Highlight, ansi.FgBlue)
+		if withType {
+			exps = fmt.Sprintf(green+formatT+end, expect, expect)
+			gots = fmt.Sprintf(red+formatT+end, got, got)
+		} else {
+			exps = fmt.Sprintf(green+format+end, expect)
+			gots = fmt.Sprintf(red+format+end, got)
+		}
 	}
-	if index == "" {
-		t.Errorf("%s: expect: %s, got: %s", pos, exps, gots)
-	} else {
-		indexs := fmt.Sprintf(yellow+"%s"+end, index)
-		t.Errorf("%s: %s: expect: %s, got: %s", pos, indexs, exps, gots)
+	if index != "" {
+		if output.IsTTY {
+			index = ansi.Render(index, ansi.Highlight, ansi.FgYellow)
+		}
+
+		pos += ": " + index
 	}
+
+	t.Errorf("%s: expect: %s, got: %s", pos, exps, gots)
 }
 
 func isNil(v interface{}) bool {

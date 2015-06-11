@@ -158,3 +158,18 @@ func UnmarshalStruct(v interface{}, values Values, tag string) {
 
 	return
 }
+
+func IsNil(v interface{}) bool {
+	if v == nil {
+		return true
+	}
+
+	switch val := reflect.ValueOf(v); val.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.Interface, reflect.Slice:
+		return val.IsNil()
+	case reflect.Invalid:
+		return fmt.Sprint(v) == "<nil>"
+	default:
+		return false
+	}
+}

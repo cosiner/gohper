@@ -280,3 +280,25 @@ func MergeSpace(s string, trim bool) string {
 
 	return string(bs[:idx])
 }
+
+// IndexNonSpace find index of first non-space character, if not exist, -1 was returned
+func IndexNonSpace(s string) int {
+	for i := range s {
+		if !unibyte.IsSpace(s[i]) {
+			return i
+		}
+	}
+
+	return -1
+}
+
+// LastIndexNonSpace find index of last non-space character, if not exist, -1 was returned
+func LastIndexNonSpace(s string) int {
+	for i := len(s) - 1; i >= 0; i-- {
+		if !unibyte.IsSpace(s[i]) {
+			return i
+		}
+	}
+
+	return -1
+}
