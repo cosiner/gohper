@@ -10,8 +10,9 @@ func NewStack(unitsize uint) Stack {
 	}
 }
 
-func (s *Stack) Push(state uint) {
+func (s *Stack) Push(state uint) *Stack {
 	s.PushBack(state)
+	return s
 }
 
 func (s *Stack) Pop() uint {
@@ -28,8 +29,10 @@ func NewQueue(unitsize uint) Queue {
 	}
 }
 
-func (q *Queue) Push(state uint) {
+func (q *Queue) Push(state uint) *Queue {
 	q.PushFront(state)
+
+	return q
 }
 
 func (q *Queue) Pop() uint {

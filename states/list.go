@@ -7,6 +7,18 @@ type List struct {
 	states uint64
 }
 
+func UnitSize(count uint) uint {
+	var n = uint(1)
+	for i := uint(1); i <= 64; i++ {
+		n <<= 1
+		if count <= n {
+			return i
+		}
+	}
+
+	panic("too many states to store")
+}
+
 func NewList(unitsize uint) List {
 	return List{
 		unit: unitsize,

@@ -13,8 +13,22 @@ const (
 	FOURTH
 )
 
-func TestList(t *testing.T) {
+func TestUnitSize(t *testing.T) {
+	testing2.
+		Expect(uint(1)).Arg(uint(0)).
+		Expect(uint(1)).Arg(uint(1)).
+		Expect(uint(1)).Arg(uint(2)).
+		Expect(uint(2)).Arg(uint(3)).
+		Expect(uint(2)).Arg(uint(4)).
+		Expect(uint(3)).Arg(uint(5)).
+		Expect(uint(3)).Arg(uint(6)).
+		Expect(uint(3)).Arg(uint(7)).
+		Expect(uint(3)).Arg(uint(8)).
+		Expect(uint(4)).Arg(uint(9)).
+		Run(t, UnitSize)
+}
 
+func TestList(t *testing.T) {
 	tt := testing2.Wrap(t)
 
 	list := NewList(3)
@@ -32,10 +46,11 @@ func TestList(t *testing.T) {
 
 	// stack: back in, back out
 
-	list.PushBack(SECOND)
-	list.PushBack(THIRD)
-	list.PushBack(FOURTH)
-	list.PushBack(FIRST)
+	list.
+		PushBack(SECOND).
+		PushBack(THIRD).
+		PushBack(FOURTH).
+		PushBack(FIRST)
 
 	tt.
 		Eq(FIRST, list.PopBack()).
@@ -44,10 +59,11 @@ func TestList(t *testing.T) {
 		Eq(SECOND, list.PopBack())
 
 	// stack: front in, front out
-	list.PushFront(SECOND)
-	list.PushFront(THIRD)
-	list.PushFront(FOURTH)
-	list.PushFront(FIRST)
+	list.
+		PushFront(SECOND).
+		PushFront(THIRD).
+		PushFront(FOURTH).
+		PushFront(FIRST)
 
 	tt.
 		Eq(FIRST, list.PopFront()).
@@ -56,10 +72,11 @@ func TestList(t *testing.T) {
 		Eq(SECOND, list.PopFront())
 
 	// queue: front in, back out
-	list.PushFront(SECOND)
-	list.PushFront(THIRD)
-	list.PushFront(FOURTH)
-	list.PushFront(FIRST)
+	list.
+		PushFront(SECOND).
+		PushFront(THIRD).
+		PushFront(FOURTH).
+		PushFront(FIRST)
 
 	tt.
 		Eq(SECOND, list.PopBack()).
@@ -68,10 +85,11 @@ func TestList(t *testing.T) {
 		Eq(FIRST, list.PopBack())
 
 	// queue: back in, front out
-	list.PushBack(SECOND)
-	list.PushBack(THIRD)
-	list.PushBack(FOURTH)
-	list.PushBack(FIRST)
+	list.
+		PushBack(SECOND).
+		PushBack(THIRD).
+		PushBack(FOURTH).
+		PushBack(FIRST)
 
 	tt.
 		Eq(SECOND, list.PopFront()).

@@ -10,10 +10,11 @@ func TestStack(t *testing.T) {
 	tt := testing2.Wrap(t)
 	stack := NewStack(3)
 
-	stack.Push(SECOND)
-	stack.Push(THIRD)
-	stack.Push(FOURTH)
-	stack.Push(FIRST)
+	stack.
+		Push(SECOND).
+		Push(THIRD).
+		Push(FOURTH).
+		Push(FIRST)
 
 	tt.
 		Eq(FIRST, stack.Pop()).
@@ -26,10 +27,11 @@ func TestQueue(t *testing.T) {
 	tt := testing2.Wrap(t)
 	queue := NewQueue(3)
 
-	queue.Push(SECOND)
-	queue.Push(THIRD)
-	queue.Push(FOURTH)
-	queue.Push(FIRST)
+	queue.
+		Push(SECOND).
+		Push(THIRD).
+		Push(FOURTH).
+		Push(FIRST)
 
 	tt.
 		Eq(SECOND, queue.Pop()).
