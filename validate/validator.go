@@ -20,6 +20,14 @@ func (length Length) Validate(s string) error {
 	return nil
 }
 
+func ValidLength(min, max int, err error) Validator {
+	return Length{
+		Min: min,
+		Max: max,
+		Err: err,
+	}.Validate
+}
+
 type Chars struct {
 	// Chars should be sorted in ascending
 	Chars string
@@ -34,6 +42,13 @@ func (c Chars) Validate(s string) error {
 	return nil
 }
 
+func ValidChars(chars string, err error) Validator {
+	return Chars{
+		Chars: chars,
+		Err:   err,
+	}.Validate
+}
+
 type Regexp struct {
 	Regexp *regexp.Regexp
 	Err    error
@@ -45,6 +60,13 @@ func (r Regexp) Validate(s string) error {
 	}
 
 	return nil
+}
+
+func ValidRegexp(reg *regexp.Regexp, err error) Validator {
+	return Regexp{
+		Regexp: reg,
+		Err:    err,
+	}.Validate
 }
 
 // SimpleEmail only check '@'' and '.' character
@@ -65,4 +87,10 @@ func (e SimpleEmail) Validate(s string) error {
 	}
 
 	return nil
+}
+
+func ValidSimpleEmail(err error) Validator {
+	return SimpleEmail{
+		Err: err,
+	}.Validate
 }
