@@ -3,14 +3,42 @@ package httperrs
 
 import "github.com/cosiner/gohper/errors"
 
+type Error interface {
+	error
+	Code() int
+}
+
+type HTTPError struct {
+	error
+	code int
+}
+
+func (e HTTPError) Code() int {
+	return e.code
+}
+
 type Code int
 
 func (c Code) New(err error) Error {
-	return New(err, int(c))
+	if err == nil {
+		return nil
+	}
+
+	return HTTPError{
+		error: err,
+		code:  int(c),
+	}
 }
 
 func (c Code) NewS(err string) Error {
-	return NewS(err, int(c))
+	if err == "" {
+		return nil
+	}
+
+	return HTTPError{
+		error: errors.Err(err),
+		code:  int(c),
+	}
 }
 
 const (
@@ -33,16 +61,6 @@ const (
 	Service        Code = 503
 )
 
-type Error interface {
-	error
-	Code() int
-}
-
-type HTTPError struct {
-	error
-	code int
-}
-
 func Must(err error) Error {
 	if err == nil {
 		return nil
@@ -52,27 +70,9 @@ func Must(err error) Error {
 }
 
 func New(err error, code int) Error {
-	if err == nil {
-		return nil
-	}
-
-	return HTTPError{
-		error: err,
-		code:  code,
-	}
+	return Code(code).New(err)
 }
 
 func NewS(err string, code int) Error {
-	if err == "" {
-		return nil
-	}
-
-	return HTTPError{
-		error: errors.Err(err),
-		code:  code,
-	}
-}
-
-func (e HTTPError) Code() int {
-	return e.code
+	return Code(code).NewS(err)
 }

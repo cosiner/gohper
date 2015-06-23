@@ -1,8 +1,13 @@
 package sortedmap
 
+type Element struct {
+	Key   string
+	Value interface{}
+}
+
 type Map struct {
 	Indexes  map[string]int
-	Elements []interface{}
+	Elements []Element
 }
 
 func (m *Map) Set(key string, value interface{}) {
@@ -12,10 +17,16 @@ func (m *Map) Set(key string, value interface{}) {
 
 	index, has := m.Indexes[key]
 	if has {
-		m.Elements[index] = value
+		m.Elements[index] = Element{
+			Key:   key,
+			Value: value,
+		}
 	} else {
 		m.Indexes[key] = len(m.Elements)
-		m.Elements = append(m.Elements, value)
+		m.Elements = append(m.Elements, Element{
+			Key:   key,
+			Value: value,
+		})
 	}
 }
 
@@ -42,7 +53,7 @@ func (m *Map) Get(key string) interface{} {
 		return nil
 	}
 
-	return m.Elements[index]
+	return m.Elements[index].Value
 }
 
 func (m *Map) DefGet(key string, def interface{}) interface{} {
@@ -55,5 +66,5 @@ func (m *Map) DefGet(key string, def interface{}) interface{} {
 		return def
 	}
 
-	return m.Elements[index]
+	return m.Elements[index].Value
 }
