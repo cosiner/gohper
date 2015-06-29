@@ -38,9 +38,9 @@ func TestAbridgeString(t *testing.T) {
 
 func TestTrimQuote(t *testing.T) {
 	testing2.
-		Expect("aaa", nil).Arg("\"aaa\"").
-		Expect("aaa", nil).Arg("'aaa'").
-		Expect("aaa", nil).Arg("`aaa`").
+		Expect("aaa", true).Arg("\"aaa\"").
+		Expect("aaa", true).Arg("'aaa'").
+		Expect("aaa", true).Arg("`aaa`").
 		Expect("", testing2.NonNil).Arg("`aaa").
 		Run(t, TrimQuote)
 }
@@ -50,7 +50,7 @@ func TestSplitAtN(t *testing.T) {
 		Expect(3).Arg("123123123", "12", 2).
 		Expect(6).Arg("123123123", "12", 3).
 		Expect(-1).Arg("123123123", "12", 4).
-		Run(t, SplitAtN)
+		Run(t, IndexN)
 }
 
 func TestSplitAtLastN(t *testing.T) {
@@ -59,7 +59,7 @@ func TestSplitAtLastN(t *testing.T) {
 		Expect(3).Arg("123123123", "12", 2).
 		Expect(0).Arg("123123123", "12", 3).
 		Expect(-1).Arg("123123123", "12", 4).
-		Run(t, SplitAtLastN)
+		Run(t, LastIndexN)
 }
 
 func TestRepeatJoin(t *testing.T) {
@@ -98,4 +98,20 @@ func TestIndexNonSpace(t *testing.T) {
 		Expect(0).Arg("a   ").
 		Run(t, IndexNonSpace).
 		Run(t, LastIndexNonSpace)
+}
+
+func TestTrim(t *testing.T) {
+	tt := testing2.Wrap(t)
+
+	tt.
+		Eq("0123", TrimAfter("01234567", "45")).
+		Eq("4567", TrimBefore("01234567", "23"))
+
+	left, right := ("["), ("]")
+	testing2.
+		Expect("123", true).Arg("[123]", left, right, true).
+		Expect(testing2.NoCheck, false).Arg("[123", left, right, true).
+		Expect("123", true).Arg("[123", left, right, false).
+		Expect("123", true).Arg("123", left, right, true).
+		Run(t, TrimWrap)
 }

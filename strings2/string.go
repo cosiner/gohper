@@ -5,44 +5,64 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cosiner/gohper/errors"
 	"github.com/cosiner/gohper/index"
 	"github.com/cosiner/gohper/unibyte"
 )
 
-const ErrQuoteNotMatch = errors.Err("Quote don't match")
-
 // TrimQuote trim quote for string, return error if quote don't match
-func TrimQuote(str string) (string, error) {
+func TrimQuote(str string) (string, bool) {
 	str = strings.TrimSpace(str)
 	l := len(str)
 	if l == 0 {
-		return "", nil
+		return "", true
 	}
 
 	if c := str[0]; c == '\'' || c == '"' || c == '`' {
 		if str[l-1] == c {
 			str = str[1 : l-1]
 		} else {
-			return "", ErrQuoteNotMatch
+			return "", false
 		}
 	}
 
-	return str, nil
+	return str, true
 }
 
-// TrimUpper return the trim and upper format of a string
-func TrimUpper(str string) string {
+func TrimWrap(str, left, right string, strict bool) (string, bool) {
+	l := len(str)
+	lstr := l
+
+	if l == 0 {
+		return "", true
+	}
+
+	ll := len(left)
+	if strings.HasPrefix(str, left) {
+		str = str[ll:]
+		l -= ll
+	}
+
+	lr := len(right)
+	if strings.HasSuffix(str, right) {
+		str = str[:l-lr]
+		l -= lr
+	}
+
+	return str, lstr == l || lstr == l+ll+lr || !strict
+}
+
+// TrimAndToUpper return the trim and upper format of a string
+func TrimAndToUpper(str string) string {
 	return strings.ToUpper(strings.TrimSpace(str))
 }
 
-// TrimLower return the trim and lower format of a string
-func TrimLower(str string) string {
+// TrimAndToLower return the trim and lower format of a string
+func TrimAndToLower(str string) string {
 	return strings.ToLower(strings.TrimSpace(str))
 }
 
 // TrimSplit split string and return trim space string
-func TrimSplit(s, sep string) []string {
+func SplitAndTrim(s, sep string) []string {
 	sp := strings.Split(s, sep)
 	for i, n := 0, len(sp); i < n; i++ {
 		sp[i] = strings.TrimSpace(sp[i])
@@ -52,7 +72,7 @@ func TrimSplit(s, sep string) []string {
 }
 
 // TrimAfter trim string and remove the section after delimiter and delimiter itself
-func TrimAfter(s string, delimiter string) string {
+func TrimAfter(s, delimiter string) string {
 	if idx := strings.Index(s, delimiter); idx >= 0 {
 		s = s[:idx]
 	}
@@ -60,8 +80,16 @@ func TrimAfter(s string, delimiter string) string {
 	return strings.TrimSpace(s)
 }
 
-// SplitAtN find index of n-th sep string
-func SplitAtN(str, sep string, n int) (index int) {
+func TrimBefore(s, delimeter string) string {
+	if idx := strings.Index(s, delimeter); idx >= 0 {
+		s = s[idx+len(delimeter):]
+	}
+
+	return strings.TrimSpace(s)
+}
+
+// IndexN find index of n-th sep string
+func IndexN(str, sep string, n int) (index int) {
 	index, idx, seplen := 0, -1, len(sep)
 	for i := 0; i < n; i++ {
 		if idx = strings.Index(str, sep); idx == -1 {
@@ -80,8 +108,8 @@ func SplitAtN(str, sep string, n int) (index int) {
 	return
 }
 
-// SplitAtLastN find last index of n-th sep string
-func SplitAtLastN(str, sep string, n int) (index int) {
+// LastIndexN find last index of n-th sep string
+func LastIndexN(str, sep string, n int) (index int) {
 	for i := 0; i < n; i++ {
 		if index = strings.LastIndex(str, sep); index == -1 {
 			break

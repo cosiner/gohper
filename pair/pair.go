@@ -58,20 +58,20 @@ func (p *Pair) Trim() *Pair {
 }
 
 // TrimQuote trim quote for pair's key and value
-func (p *Pair) TrimQuote() error {
-	key, err := strings2.TrimQuote(p.Key)
-	if err != nil {
-		return err
+func (p *Pair) TrimQuote() bool {
+	key, match := strings2.TrimQuote(p.Key)
+	if !match {
+		return false
 	}
 
-	value, err := strings2.TrimQuote(p.Value)
-	if err != nil {
-		return err
+	value, match := strings2.TrimQuote(p.Value)
+	if !match {
+		return false
 	}
 
 	p.Key, p.Value = key, value
 
-	return nil
+	return true
 }
 
 // NoKey check whether pair has key or not
