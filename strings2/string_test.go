@@ -33,7 +33,14 @@ func TestAbridgeString(t *testing.T) {
 	testing2.
 		Expect("ABC").Arg("AaaBbbCcc").
 		Expect("ABC").Arg("AaaBbbCcc").
+		Expect("").Arg("").
 		Run(t, ToAbridge)
+
+	testing2.
+		Expect("abc").Arg("AaaBbbCcc").
+		Expect("abc").Arg("AaaBbbCcc").
+		Expect("").Arg("").
+		Run(t, ToLowerAbridge)
 }
 
 func TestTrimQuote(t *testing.T) {
@@ -41,6 +48,7 @@ func TestTrimQuote(t *testing.T) {
 		Expect("aaa", true).Arg("\"aaa\"").
 		Expect("aaa", true).Arg("'aaa'").
 		Expect("aaa", true).Arg("`aaa`").
+		Expect("", true).Arg("").
 		Expect("", testing2.NonNil).Arg("`aaa").
 		Run(t, TrimQuote)
 }
@@ -62,10 +70,30 @@ func TestSplitAtLastN(t *testing.T) {
 		Run(t, LastIndexN)
 }
 
-func TestRepeatJoin(t *testing.T) {
+func TestJoin(t *testing.T) {
 	testing2.
-		Expect("abc=?,abc=?,abc").Arg("abc", "=?,", 3).
+		Expect("abc,abc,abc").Arg("abc", ",", 3).
+		Expect("abc,abc").Arg("abc", ",", 2).
+		Expect("abc").Arg("abc", ",", 1).
+		Expect("").Arg("abc", ",", 0).
 		Run(t, RepeatJoin)
+
+	testing2.
+		Expect("").Arg([]int{}, ",").
+		Expect("1,2,3,4").Arg([]int{1, 2, 3, 4}, ",").
+		Run(t, JoinInt)
+
+	testing2.
+		Expect("").Arg([]uint{}, ",").
+		Expect("1,2,3,4").Arg([]uint{1, 2, 3, 4}, ",").
+		Run(t, JoinUint)
+
+	testing2.
+		Expect("").Arg([]string{}, "=?", ", ").
+		Expect("a=?").Arg([]string{"a"}, "=?", ", ").
+		Expect("a=?, b=?, c=?").Arg([]string{"a", "b", "c"}, "=?", ", ").
+		Run(t, SuffixJoin)
+
 }
 
 func TestValid(t *testing.T) {
@@ -113,5 +141,46 @@ func TestTrim(t *testing.T) {
 		Expect(testing2.NoCheck, false).Arg("[123", left, right, true).
 		Expect("123", true).Arg("[123", left, right, false).
 		Expect("123", true).Arg("123", left, right, true).
+		Expect("", true).Arg("", left, right, true).
 		Run(t, TrimWrap)
+
+	testing2.
+		Expect([]string{"1", "2", "3"}).Arg(" 1 , 2  , 3   ", ",").
+		Run(t, SplitAndTrim)
+
+	tt.Eq("abcde", TrimAndToLower("  ABCDE "))
+	tt.Eq("ABCDE", TrimAndToUpper("  abcde "))
+}
+
+func TestCompare(t *testing.T) {
+	testing2.
+		Expect(1).Arg("123", "012").
+		Expect(-1).Arg("123", "212").
+		Expect(0).Arg("123", "123").
+		Expect(-1).Arg("123", "1234").
+		Expect(1).Arg("123", "12").
+		Run(t, Compare)
+}
+
+func TestLastIndexByte(t *testing.T) {
+	testing2.
+		Expect(0).Arg("123", byte('1')).
+		Expect(-1).Arg("123", byte('4')).
+		Run(t, LastIndexByte)
+}
+
+func TestMidSep(t *testing.T) {
+	testing2.
+		Expect(-1).Arg("123", byte('1')).
+		Expect(-1).Arg("123", byte('3')).
+		Expect(-1).Arg("123", byte('4')).
+		Expect(1).Arg("123", byte('2')).
+		Run(t, MidIndex)
+
+	testing2.
+		Expect("", "").Arg("123", byte('1')).
+		Expect("", "").Arg("123", byte('3')).
+		Expect("", "").Arg("123", byte('4')).
+		Expect("1", "3").Arg("123", byte('2')).
+		Run(t, Seperate)
 }

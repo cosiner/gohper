@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cosiner/gohper/defval"
 	"github.com/cosiner/gohper/errors"
 	"github.com/cosiner/gohper/io2"
 )
@@ -35,7 +34,11 @@ func Open(fname string, flags int, fn FileOpFunc) error {
 
 // WriteFlag return os.O_APPEND if not delete content, else os.O_TRUNC
 func WriteFlag(trunc bool) int {
-	return defval.Cond(trunc).Int(os.O_TRUNC, os.O_APPEND)
+	if trunc {
+		return os.O_TRUNC
+	}
+
+	return os.O_APPEND
 }
 
 // FirstLine read first line from file

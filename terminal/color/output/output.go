@@ -3,8 +3,8 @@ package output
 import (
 	"io"
 	"os"
+	"runtime"
 
-	"github.com/cosiner/gohper/os2"
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
 )
@@ -18,7 +18,7 @@ var (
 func init() {
 	IsTTY = isatty.IsTerminal(os.Stdout.Fd())
 
-	if os2.IsWindows() {
+	if runtime.GOOS == "windows" {
 		Stdout = colorable.NewColorableStdout()
 		Stderr = colorable.NewColorableStderr()
 	} else {

@@ -15,4 +15,7 @@ func TestLetter(t *testing.T) {
 
 	tt.True('a' == ToLower('A'))
 	tt.True('A' == ToUpper('a'))
+
+	tt.Eq("a", ToLowerString('A'))
+	tt.Eq("A", ToUpperString('a'))
 }

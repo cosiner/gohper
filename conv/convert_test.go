@@ -44,3 +44,10 @@ func TestReverseByte(t *testing.T) {
 	tt.Eq(uint8(0x12), ReverseByte(0x48))
 	tt.Eq(uint8(0x3c), ReverseByte(0x3c))
 }
+
+func TestInt(t *testing.T) {
+	tt := testing2.Wrap(t)
+	tt.Eq(1, IntDef("", 1))
+	tt.Eq(1, IntDef("1", 2))
+	tt.Eq(2, IntDef("abc", 2))
+}

@@ -7,8 +7,8 @@ import (
 	"github.com/cosiner/gohper/index"
 )
 
-// TrimSplit split bytes array, and trim space on each section
-func TrimSplit(s, sep []byte) [][]byte {
+// SplitAndTrim split bytes array, and trim space on each section
+func SplitAndTrim(s, sep []byte) [][]byte {
 	sp := bytes.Split(s, sep)
 	for i, n := 0, len(sp); i < n; i++ {
 		sp[i] = bytes.TrimSpace(sp[i])
@@ -21,6 +21,14 @@ func TrimSplit(s, sep []byte) [][]byte {
 func TrimAfter(s []byte, delim []byte) []byte {
 	if idx := bytes.Index(s, delim); idx >= 0 {
 		s = s[:idx]
+	}
+
+	return bytes.TrimSpace(s)
+}
+
+func TrimBefore(s []byte, delim []byte) []byte {
+	if idx := bytes.Index(s, delim); idx >= 0 {
+		s = s[idx+len(delim):]
 	}
 
 	return bytes.TrimSpace(s)

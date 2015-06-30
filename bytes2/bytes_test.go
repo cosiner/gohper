@@ -10,10 +10,13 @@ func TestBytes(t *testing.T) {
 	tt := testing2.Wrap(t)
 
 	tt.DeepEq(TrimAfter([]byte("   ABCDE    # aaa"), []byte("#")), []byte("ABCDE"))
+	tt.DeepEq(TrimBefore([]byte("   ABCDE    # aaa"), []byte("#")), []byte("aaa"))
 
-	tt.DeepEq(TrimSplit([]byte(" A , B , C , D , E "), []byte(",")),
+	tt.DeepEq(SplitAndTrim([]byte(" A , B , C , D , E "), []byte(",")),
 		[][]byte{[]byte("A"), []byte("B"), []byte("C"), []byte("D"), []byte("E")})
 
 	tt.True(IsAllBytesIn([]byte("ABCDE"), []byte("ABCDEFG")))
 	tt.False(IsAllBytesIn([]byte("ABCDEZ"), []byte("ABCDEFG")))
+
+	tt.Eq(8, NewBuffer(8).Cap())
 }
