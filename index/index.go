@@ -61,8 +61,8 @@ func StringIn(str string, strs []string) int {
 	return -1
 }
 
-// NumberIn search index of number in sorted numbers with ascending order
-func NumberIn(n int, nums []int) int {
+// SortedNumberIn search index of number in sorted numbers with ascending order
+func SortedNumberIn(n int, nums ...int) int {
 	for l, h := 0, len(nums)-1; l <= h; {
 		m := l + (h-l)>>1
 
