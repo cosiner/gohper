@@ -28,6 +28,12 @@ func (s Strings) Keys() []string {
 	return keys
 }
 
+func (s Strings) Clear() {
+	for k := range s {
+		delete(s, k)
+	}
+}
+
 type Ints map[int]struct{}
 
 func (s Ints) Put(key int) {
@@ -52,4 +58,10 @@ func (s Ints) Keys() []int {
 	}
 
 	return keys
+}
+
+func (s Ints) Clear() {
+	for k := range s {
+		delete(s, k)
+	}
 }

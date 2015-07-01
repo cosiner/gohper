@@ -72,3 +72,11 @@ func (m *Map) DefGet(key string, def interface{}) interface{} {
 
 	return m.Values[index].Value
 }
+
+func (m *Map) Clear() {
+	for k := range m.Indexes {
+		delete(m.Indexes, k)
+	}
+
+	m.Values = m.Values[:0]
+}

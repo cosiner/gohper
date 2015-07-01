@@ -7,24 +7,8 @@ import (
 	"github.com/cosiner/gohper/testing2"
 )
 
-var stringKeys = []string{
-	"A",
-	"B",
-	"C",
-	"D",
-	"E",
-	"F",
-	"A",
-}
-var intKeys = []int{
-	'A',
-	'B',
-	'C',
-	'D',
-	'E',
-	'F',
-	'A',
-}
+var stringKeys = []string{"A", "B", "C", "D", "E", "F", "A"}
+var intKeys = []int{'A', 'B', 'C', 'D', 'E', 'F', 'A'}
 
 func TestStrings(t *testing.T) {
 	tt := testing2.Wrap(t)
@@ -47,6 +31,8 @@ func TestStrings(t *testing.T) {
 	sort.Strings(keys)
 	tt.DeepEq(stringKeys[1:len(stringKeys)-1], keys)
 
+	strings.Clear()
+	tt.DeepEq(make(Strings), strings)
 }
 
 func TestInts(t *testing.T) {
@@ -67,6 +53,9 @@ func TestInts(t *testing.T) {
 	keys := ints.Keys()
 	sort.Ints(keys)
 	tt.DeepEq(intKeys[1:len(intKeys)-1], keys)
+
+	ints.Clear()
+	tt.DeepEq(make(Ints), ints)
 }
 
 func TestSortedStrings(t *testing.T) {
@@ -80,6 +69,9 @@ func TestSortedStrings(t *testing.T) {
 	strings.Remove("G")
 	strings.Remove("A")
 	tt.DeepEq(stringKeys[1:len(stringKeys)-1], strings.Keys())
+
+	strings.Clear()
+	tt.DeepEq(NewSortedStrings(), strings)
 }
 
 func TestSortedInts(t *testing.T) {
@@ -93,4 +85,7 @@ func TestSortedInts(t *testing.T) {
 	ints.Remove('G')
 	ints.Remove('A')
 	tt.DeepEq(intKeys[1:len(intKeys)-1], ints.Keys())
+
+	ints.Clear()
+	tt.DeepEq(NewSortedInts(), ints)
 }

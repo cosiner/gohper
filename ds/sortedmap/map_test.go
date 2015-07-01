@@ -48,4 +48,8 @@ func TestMap(t *testing.T) {
 
 		tt.Eq(v, val)
 	}
+
+	mp.Clear()
+	tt.DeepEq(make(map[string]int), mp.Indexes)
+	tt.DeepEq([]Element{}, mp.Values)
 }

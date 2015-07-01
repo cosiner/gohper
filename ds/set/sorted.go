@@ -45,6 +45,14 @@ func (s *SortedStrings) Keys() []string {
 	return s.keys
 }
 
+func (s *SortedStrings) Clear() {
+	for k := range s.indexes {
+		delete(s.indexes, k)
+	}
+
+	s.keys = s.keys[:0]
+}
+
 type SortedInts struct {
 	indexes map[int]int
 	keys    []int
@@ -88,4 +96,12 @@ func NewSortedInts() SortedInts {
 		indexes: make(map[int]int),
 		keys:    make([]int, 0),
 	}
+}
+
+func (s *SortedInts) Clear() {
+	for k := range s.indexes {
+		delete(s.indexes, k)
+	}
+
+	s.keys = s.keys[:0]
 }
