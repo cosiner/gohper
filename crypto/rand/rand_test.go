@@ -24,6 +24,9 @@ func TestRandom(t *testing.T) {
 		testRandString(tt, sfs[i], cs[i])
 		testRandBytes(tt, bfs[i], cs[i])
 	}
+
+	defer tt.Recover()
+	B(10, "")
 }
 
 func testRandString(tt testing2.TB, f func(int) (string, error), charset string) {

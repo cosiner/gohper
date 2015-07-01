@@ -7,11 +7,11 @@ import (
 	"encoding/xml"
 	"os"
 
-	"github.com/cosiner/gohper/pair"
-
-	"github.com/cosiner/gohper/encoding2"
 	"github.com/cosiner/gohper/os2/file"
+	"github.com/cosiner/gohper/strings2"
 	"github.com/cosiner/gohper/unsafe2"
+	"github.com/cosiner/gohper/utils/encodeio"
+	"github.com/cosiner/gohper/utils/pair"
 )
 
 type WriteMode bool
@@ -19,9 +19,9 @@ type WriteMode bool
 const TRUNC WriteMode = true
 const APPEND WriteMode = false
 
-func (m WriteMode) Write(fname string, v interface{}, encoder encoding2.EncodeFunc) error {
+func (m WriteMode) Write(fname string, v interface{}, encoder encodeio.EncodeFunc) error {
 	return file.OpenOrCreate(fname, bool(m), func(fd *os.File) error {
-		return encoding2.Write(fd, v, encoder)
+		return encodeio.Write(fd, v, encoder)
 	})
 }
 
@@ -39,39 +39,39 @@ func (m WriteMode) WriteString(fname, str string) (c int, err error) {
 // WriteGOB write interface{} to writer use gob encoder
 func (m WriteMode) WriteGOB(fname string, v interface{}) error {
 	return file.OpenOrCreate(fname, bool(m), func(fd *os.File) error {
-		return encoding2.WriteGOB(fd, v)
+		return encodeio.WriteGOB(fd, v)
 	})
 }
 
 // WriteJSON write interface{} to writer use json encoder
 func (m WriteMode) WriteJSON(fname string, v interface{}) error {
 	return file.OpenOrCreate(fname, bool(m), func(fd *os.File) error {
-		return encoding2.WriteJSON(fd, v)
+		return encodeio.WriteJSON(fd, v)
 	})
 }
 
 // WriteXML write interface{} to writer use xml encoder
 func (m WriteMode) WriteXML(fname string, v interface{}) error {
 	return file.OpenOrCreate(fname, bool(m), func(fd *os.File) error {
-		return encoding2.WriteXML(fd, v)
+		return encodeio.WriteXML(fd, v)
 	})
 }
 
 func (m WriteMode) WriteGZIP(fname string, v interface{}) (err error) {
 	return file.OpenOrCreate(fname, bool(m), func(fd *os.File) error {
-		return encoding2.WriteGZIP(fd, v)
+		return encodeio.WriteGZIP(fd, v)
 	})
 }
 
-func Read(fname string, v interface{}, decoder encoding2.DecodeFunc) error {
+func Read(fname string, v interface{}, decoder encodeio.DecodeFunc) error {
 	return file.Read(fname, func(fd *os.File) error {
-		return encoding2.Read(fd, v, decoder)
+		return encodeio.Read(fd, v, decoder)
 	})
 }
 
 func ReadString(fname string) (s string, err error) {
 	err = file.Read(fname, func(fd *os.File) error {
-		s, err = encoding2.ReadString(fd)
+		s, err = encodeio.ReadString(fd)
 
 		return err
 	})
@@ -99,7 +99,7 @@ func ReadXML(fname string, v interface{}) error {
 
 func ReadGZIP(fname string) (data []byte, err error) {
 	err = file.Read(fname, func(fd *os.File) error {
-		data, err = encoding2.ReadGZIP(fd)
+		data, err = encodeio.ReadGZIP(fd)
 
 		return err
 	})
@@ -112,7 +112,7 @@ func ReadProperties(fname string) (map[string]string, error) {
 	err := file.Filter(fname, func(_ int, line []byte) ([]byte, error) {
 		p := pair.Parse(unsafe2.String(line), "=").Trim()
 		if p.HasKey() {
-			props[p.Key] = p.Value
+			props[p.Key] = strings2.TrimAfter(p.Value, "#")
 		}
 
 		return line, nil

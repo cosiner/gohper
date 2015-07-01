@@ -1,8 +1,9 @@
 package color
 
 import (
-	"os"
 	"testing"
+
+	"github.com/cosiner/gohper/bytes2"
 )
 
 func TestRender(t *testing.T) {
@@ -12,6 +13,7 @@ func TestRender(t *testing.T) {
 }
 
 func TestRenderTo(t *testing.T) {
-	LightRed.RenderTo(os.Stdout, "aaaaaaaaaaaaa\n")
-	LightRed.RenderTo(os.Stdout, "bbbbb\n")
+	buf := bytes2.NewBuffer(128)
+	LightRed.RenderTo(buf, "aaaaaaaaaaaaa\n")
+	LightRed.RenderTo(buf, "bbbbb\n")
 }

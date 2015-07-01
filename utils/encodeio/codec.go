@@ -1,5 +1,5 @@
-// Package encoding2 supply some utility functions for encoding
-package encoding2
+// Package encodeio supply some utility functions for encoding
+package encodeio
 
 import (
 	"compress/gzip"

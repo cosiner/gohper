@@ -4,7 +4,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/cosiner/gohper/defval"
+	"github.com/cosiner/gohper/utils/defval"
 )
 
 // CanPool is the default checker to check whether a buffer is reuseable, if

@@ -76,3 +76,12 @@ func TestNewValidator(t *testing.T) {
 	_ = ValidRegexp(nil, nil)
 	_ = ValidSimpleEmail(nil)
 }
+
+func TestValidateM(t *testing.T) {
+	tt := testing2.Wrap(t)
+
+	err := errors.Err("incorrect length")
+	v := ValidLength(3, 10, err).ValidateM
+	tt.Eq(err, v("a23", "a"))
+	tt.Nil(v("a23", "1234"))
+}

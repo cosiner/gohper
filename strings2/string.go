@@ -17,8 +17,8 @@ func TrimQuote(str string) (string, bool) {
 		return "", true
 	}
 
-	if c := str[0]; c == '\'' || c == '"' || c == '`' {
-		if str[l-1] == c {
+	if s, e := str[0], str[l-1]; s == '\'' || s == '"' || s == '`' || e == '\'' || e == '"' || e == '`' {
+		if l != 1 && s == e {
 			str = str[1 : l-1]
 		} else {
 			return "", false

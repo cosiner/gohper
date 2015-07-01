@@ -84,7 +84,7 @@ func (v *LockedValues) SetAttr(key string, val interface{}) {
 	v.Unlock()
 }
 
-func (v *LockedValues) GetSet(key string, val interface{}) interface{} {
+func (v *LockedValues) GetSetAttr(key string, val interface{}) interface{} {
 	v.Lock()
 	val = v.Values.GetSetAttr(key, val)
 	v.Unlock()

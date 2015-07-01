@@ -1,6 +1,6 @@
 package slices
 
-func FitCapToLenForString(slice []string) []string {
+func FitCapToLenString(slice []string) []string {
 	if l := len(slice); l != cap(slice) {
 		newslice := make([]string, l)
 		copy(newslice, slice)
@@ -10,7 +10,7 @@ func FitCapToLenForString(slice []string) []string {
 	return slice
 }
 
-func IncrAppendForString(slice []string, s string) []string {
+func IncrAppendString(slice []string, s string) []string {
 	l := len(slice)
 	newslice := make([]string, l+1)
 	copy(newslice, slice)

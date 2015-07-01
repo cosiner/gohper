@@ -13,7 +13,7 @@ type Pager struct {
 }
 
 func (p *Pager) Begin(page int) int {
-	if page <= 0 {
+	if page <= p.BeginPage {
 		return p.BeginIndex
 	}
 

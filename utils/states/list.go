@@ -16,7 +16,7 @@ func UnitSize(count uint) uint {
 		}
 	}
 
-	panic("too many states to store")
+	panic("unreachable")
 }
 
 func NewList(unitsize uint) List {

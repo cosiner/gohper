@@ -20,6 +20,8 @@ func TestPagerGroup(t *testing.T) {
 	testPager(pg.Add(1, 0, 10), t)
 	testPager(pg.Add(-1, -1, 10), t)
 	testPager(pg.Add(-1, -2, 10), t)
+	testPager(pg.Add(-1, -2, 10), t)
+	testPager(pg.Add(-1, -2, 10), t)
 }
 
 func testPager(p *Pager, t *testing.T) {

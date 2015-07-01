@@ -36,7 +36,7 @@ func parse(str string, index int) *Pair {
 	if index > 0 {
 		key, value = str[:index], str[index+1:]
 	} else if index == 0 {
-		key, value = "", str
+		key, value = "", str[1:]
 	} else if index < 0 {
 		key, value = str, ""
 	}
@@ -63,8 +63,9 @@ func (p *Pair) TrimQuote() bool {
 	if !match {
 		return false
 	}
-
+	fmt.Println(p.Value)
 	value, match := strings2.TrimQuote(p.Value)
+	fmt.Println(value, match)
 	if !match {
 		return false
 	}

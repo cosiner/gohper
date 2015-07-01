@@ -1,6 +1,6 @@
 package slices
 
-func FitCapToLenForUint(slice []uint) []uint {
+func FitCapToLenUint(slice []uint) []uint {
 	if l := len(slice); l != cap(slice) {
 		newslice := make([]uint, l)
 		copy(newslice, slice)
@@ -10,7 +10,7 @@ func FitCapToLenForUint(slice []uint) []uint {
 	return slice
 }
 
-func IncrAppendForUint(slice []uint, s uint) []uint {
+func IncrAppendUint(slice []uint, s uint) []uint {
 	l := len(slice)
 	newslice := make([]uint, l+1)
 	copy(newslice, slice)
