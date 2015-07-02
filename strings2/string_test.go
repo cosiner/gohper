@@ -1,6 +1,7 @@
 package strings2
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/cosiner/gohper/testing2"
@@ -183,4 +184,11 @@ func TestMidSep(t *testing.T) {
 		Expect("", "").Arg("123", byte('4')).
 		Expect("1", "3").Arg("123", byte('2')).
 		Run(t, Seperate)
+}
+
+func TestWriteBuffer(t *testing.T) {
+	tt := testing2.Wrap(t)
+	buf := bytes.NewBuffer(make([]byte, 0, 10))
+	WriteStringsToBuffer(buf, []string{"a", "b", "c"}, ",")
+	tt.Eq("a,b,c", buf.String())
 }

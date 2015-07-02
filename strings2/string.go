@@ -330,3 +330,17 @@ func LastIndexNonSpace(s string) int {
 
 	return -1
 }
+
+// WriteStringsToBuffer write strings to buffer, it avoid memory allocaton of join
+// strings
+func WriteStringsToBuffer(buffer *bytes.Buffer, strings []string, sep string) {
+	i, last := 0, len(strings)-1
+	for ; i < last; i++ {
+		buffer.WriteString(strings[i])
+		buffer.WriteString(sep)
+	}
+
+	if last != -1 {
+		buffer.WriteString(strings[last])
+	}
+}
