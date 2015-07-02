@@ -37,6 +37,7 @@ type Attrs struct {
 		Doc         []string
 		Field, Type string // if type is empty, means anonymous field
 		Tag         reflect.StructTag
+		Anonymous   bool
 	}
 
 	// Const
@@ -163,6 +164,9 @@ func (p Parser) parseType(decl *ast.GenDecl, attrs *Attrs) error {
 
 func (p Parser) parseStruct(spec *ast.StructType, attrs *Attrs) (err error) {
 	defer nonTypeEnd(&err)
+	defer func(attrs *Attrs) {
+		attrs.S.Anonymous = false
+	}(attrs)
 
 	for _, f := range spec.Fields.List {
 		attrs.S.Type = ""
@@ -172,15 +176,21 @@ func (p Parser) parseStruct(spec *ast.StructType, attrs *Attrs) (err error) {
 			attrs.S.Type = fmt.Sprint(f.Type)
 		}
 
+		attrs.S.Tag = ""
+		if f.Tag != nil {
+			tag, _ := strings2.TrimQuote(f.Tag.Value)
+			attrs.S.Tag = reflect.StructTag(tag)
+		}
+
+		attrs.S.Anonymous = len(f.Names) == 0
 		for _, n := range f.Names {
 			attrs.S.Field = n.Name
-			attrs.S.Tag = ""
-
-			if f.Tag != nil {
-				tag, _ := strings2.TrimQuote(f.Tag.Value)
-				attrs.S.Tag = reflect.StructTag(tag)
+			if err = p.Struct(attrs); err != nil {
+				return
 			}
+		}
 
+		if attrs.S.Anonymous {
 			if err = p.Struct(attrs); err != nil {
 				return
 			}
