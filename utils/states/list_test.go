@@ -33,7 +33,10 @@ func TestList(t *testing.T) {
 
 	list := NewList(3)
 
+	tt.True(3 == list.UnitSize())
+	tt.True(0 == list.Size())
 	tt.True(21 == list.MaxSize())
+
 	for i := 0; i < 21; i++ {
 		list.PushBack(FIRST)
 	}

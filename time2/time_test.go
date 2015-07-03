@@ -1,15 +1,11 @@
 package time2
 
 import (
-	"github.com/cosiner/gohper/testing2"
-
 	"testing"
-)
+	"time"
 
-func TestFormatLayout(t *testing.T) {
-	tt := testing2.Wrap(t)
-	tt.Eq("20060102-150405", FormatLayout("yyyymmdd-HHMMSS"))
-}
+	"github.com/cosiner/gohper/testing2"
+)
 
 func TestFunc(t *testing.T) {
 	tt := testing2.Wrap(t)
@@ -40,4 +36,12 @@ func TestFunc(t *testing.T) {
 	for _, test := range tests {
 		tt.Eq(test.Human, ToHuman(test.Time))
 	}
+}
+
+func TestTiming(t *testing.T) {
+	tt := testing2.Wrap(t)
+
+	tt.True(Timing(func() {
+		time.Sleep(time.Millisecond)
+	})/int64(time.Millisecond) == 1)
 }

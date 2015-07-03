@@ -8,15 +8,13 @@ type List struct {
 }
 
 func UnitSize(count uint) uint {
-	var n = uint(1)
-	for i := uint(1); i <= 64; i++ {
+	var n uint = 1
+	for i := uint(1); ; i++ { // uint 64 or 32 bits
 		n <<= 1
 		if count <= n {
 			return i
 		}
 	}
-
-	panic("unreachable")
 }
 
 func NewList(unitsize uint) List {
