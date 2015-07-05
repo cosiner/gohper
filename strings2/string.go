@@ -344,3 +344,23 @@ func WriteStringsToBuffer(buffer *bytes.Buffer, strings []string, sep string) {
 		buffer.WriteString(strings[last])
 	}
 }
+
+func IsEmpty(s string) bool {
+	return s == ""
+}
+
+func IsNotEmpty(s string) bool {
+	return s != ""
+}
+
+// NumMatched return number of strings matched by matcher
+func NumMatched(matcher func(string) bool, strings ...string) int {
+	var m int
+	for i := 0; i < len(strings); i++ {
+		if matcher(strings[i]) {
+			m++
+		}
+	}
+
+	return m
+}

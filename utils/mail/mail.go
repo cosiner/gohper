@@ -2,6 +2,7 @@ package mail
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"net/smtp"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/cosiner/gohper/bytes2"
 	"github.com/cosiner/gohper/errors"
 	"github.com/cosiner/gohper/strings2"
+	"github.com/cosiner/gohper/unsafe2"
 )
 
 const (
@@ -32,6 +34,8 @@ type Mail struct {
 }
 
 type Mailer struct {
+	PrintMail bool
+
 	addr     string
 	auth     smtp.Auth
 	username string
@@ -104,6 +108,9 @@ func (m *Mailer) Send(mail *Mail) (err error) {
 	}
 
 	data := buffer.Bytes()
+	if m.PrintMail {
+		fmt.Println(unsafe2.String(data))
+	}
 	if err == nil {
 		err = smtp.SendMail(m.addr, m.auth, from, mail.To, data)
 	}

@@ -38,14 +38,6 @@ func TestToHuman(t *testing.T) {
 	}
 }
 
-func TestTiming(t *testing.T) {
-	tt := testing2.Wrap(t)
-
-	tt.True(Timing(func() {
-		time.Sleep(time.Millisecond)
-	})/int64(time.Millisecond) == 1)
-}
-
 func TestParseHuman(t *testing.T) {
 	testing2.
 		Expect(time.Hour, nil).Arg("1H").

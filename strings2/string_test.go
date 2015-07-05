@@ -192,3 +192,17 @@ func TestWriteBuffer(t *testing.T) {
 	WriteStringsToBuffer(buf, []string{"a", "b", "c"}, ",")
 	tt.Eq("a,b,c", buf.String())
 }
+
+func TestNumMatched(t *testing.T) {
+	testing2.
+		Expect(0).Arg(IsNotEmpty, "", "", "", "").
+		Expect(1).Arg(IsNotEmpty, "1", "", "", "").
+		Expect(2).Arg(IsNotEmpty, "1", "2", "", "").
+		Run(t, NumMatched)
+
+	testing2.
+		Expect(4).Arg(IsEmpty, "", "", "", "").
+		Expect(3).Arg(IsEmpty, "1", "", "", "").
+		Expect(2).Arg(IsEmpty, "1", "2", "", "").
+		Run(t, NumMatched)
+}
