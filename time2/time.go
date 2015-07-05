@@ -3,6 +3,8 @@ package time2
 import (
 	"strconv"
 	"time"
+
+	"github.com/cosiner/gohper/errors"
 )
 
 const DATETIME_FMT = "2006/01/02 15:04:05"
@@ -81,4 +83,47 @@ func ToHuman(nano int64) string {
 		s++
 	}
 	return strconv.Itoa(s) + "s"
+}
+
+const (
+	ErrWrongHumanTimeFormat = errors.Err("wrong human time format")
+)
+
+// ParseHuman convert human time format to duration.
+// support:
+// 	'H': hour,
+// 	'M': minute,
+// 	'S': second,
+// 	'm': millsecond,
+// 	'u': microsecond,
+// 	'n': nanosecond
+func ParseHuman(timestr string) (time.Duration, error) {
+	var t, counter time.Duration
+	for i, l := 0, len(timestr); i < l; i++ {
+		c := timestr[i]
+		if c >= '0' && c <= '9' {
+			counter = counter*10 + time.Duration(c-'0')
+			continue
+		}
+
+		switch c {
+		case 'H':
+			t += counter * time.Hour
+		case 'M':
+			t += counter * time.Minute
+		case 'S':
+			t += counter * time.Second
+		case 'm':
+			t += counter * time.Millisecond
+		case 'u':
+			t += counter * time.Microsecond
+		case 'n':
+			t += counter * time.Nanosecond
+		default:
+			return 0, ErrWrongHumanTimeFormat
+		}
+		counter = 0
+	}
+
+	return t, nil
 }

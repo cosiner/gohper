@@ -7,7 +7,7 @@ import (
 	"github.com/cosiner/gohper/testing2"
 )
 
-func TestFunc(t *testing.T) {
+func TestToHuman(t *testing.T) {
 	tt := testing2.Wrap(t)
 	type Test struct {
 		Time  int64
@@ -44,4 +44,16 @@ func TestTiming(t *testing.T) {
 	tt.True(Timing(func() {
 		time.Sleep(time.Millisecond)
 	})/int64(time.Millisecond) == 1)
+}
+
+func TestParseHuman(t *testing.T) {
+	testing2.
+		Expect(time.Hour, nil).Arg("1H").
+		Expect(time.Minute, nil).Arg("1M").
+		Expect(time.Second, nil).Arg("1S").
+		Expect(time.Millisecond, nil).Arg("1m").
+		Expect(time.Microsecond, nil).Arg("1u").
+		Expect(time.Nanosecond, nil).Arg("1n").
+		Expect(time.Duration(0), testing2.NonNil).Arg("1z").
+		Run(t, ParseHuman)
 }
