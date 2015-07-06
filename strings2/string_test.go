@@ -206,3 +206,18 @@ func TestNumMatched(t *testing.T) {
 		Expect(2).Arg(IsEmpty, "1", "2", "", "").
 		Run(t, NumMatched)
 }
+
+func TestFilterMap(t *testing.T) {
+	tt := testing2.Wrap(t)
+	tt.DeepEq([]string{"1"}, Filter(IsNotEmpty, "", "", "1", ""))
+	tt.DeepEq([]string{"", "", ""}, Filter(IsEmpty, "", "", "1", ""))
+
+	tt.DeepEq([]string{"empty", "empty", "1", "empty"},
+		Map(func(s string) string {
+			if s == "" {
+				return "empty"
+			}
+			return s
+		}, "", "", "1", ""))
+
+}

@@ -364,3 +364,25 @@ func NumMatched(matcher func(string) bool, strings ...string) int {
 
 	return m
 }
+
+// Filter strings matched by matcher
+func Filter(matcher func(string) bool, strings ...string) []string {
+	filtered := make([]string, 0, len(strings))
+
+	for i, l := 0, len(strings); i < l; i++ {
+		if s := strings[i]; matcher(s) {
+			filtered = append(filtered, s)
+		}
+	}
+
+	return filtered
+}
+
+// Map convert string using the mapper
+func Map(mapper func(string) string, strings ...string) []string {
+	for i, l := 0, len(strings); i < l; i++ {
+		strings[i] = mapper(strings[i])
+	}
+
+	return strings
+}
