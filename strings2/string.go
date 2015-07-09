@@ -386,3 +386,15 @@ func Map(mapper func(string) string, strings ...string) []string {
 
 	return strings
 }
+
+func FilterInPlace(matcher func(string) bool, strings ...string) []string {
+	pos := 0
+	for i, l := 0, len(strings); i < l; i++ {
+		if s := strings[i]; matcher(s) {
+			strings[pos] = s
+			pos++
+		}
+	}
+
+	return strings[:pos]
+}

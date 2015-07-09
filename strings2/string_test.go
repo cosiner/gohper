@@ -221,3 +221,12 @@ func TestFilterMap(t *testing.T) {
 		}, "", "", "1", ""))
 
 }
+
+func TestFilterInStrings(t *testing.T) {
+	tt := testing2.Wrap(t)
+
+	strings := []string{"", "A", "", "B", "", "C"}
+	strings2 := FilterInPlace(IsNotEmpty, strings...)
+	tt.DeepEq([]string{"A", "B", "C"}, strings2)
+	tt.DeepEq([]string{"A", "B", "C", "B", "", "C"}, strings)
+}
