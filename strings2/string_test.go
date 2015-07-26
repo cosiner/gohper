@@ -230,3 +230,18 @@ func TestFilterInStrings(t *testing.T) {
 	tt.DeepEq([]string{"A", "B", "C"}, strings2)
 	tt.DeepEq([]string{"A", "B", "C", "B", "", "C"}, strings)
 }
+
+func TestMultipleLineOperate(t *testing.T) {
+	tt := testing2.Wrap(t)
+	json := `{
+	"aa":"bb", //ddd
+	"ba":"bb", //ccc
+	"ca":"bb" //zzz
+}`
+	json = MultipleLineOperate(json, "//", TrimAfter)
+	tt.Eq(`{
+"aa":"bb",
+"ba":"bb",
+"ca":"bb"
+}`, json)
+}

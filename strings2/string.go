@@ -398,3 +398,12 @@ func FilterInPlace(matcher func(string) bool, strings ...string) []string {
 
 	return strings[:pos]
 }
+
+func MultipleLineOperate(s, delim string, operate func(line, delim string) string) string {
+	lines := strings.Split(s, "\n")
+	for i := len(lines) - 1; i >= 0; i-- {
+		lines[i] = operate(lines[i], delim)
+	}
+
+	return strings.Join(lines, "\n")
+}
