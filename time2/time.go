@@ -1,6 +1,7 @@
 package time2
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -23,6 +24,11 @@ func NowTimeUnix() uint64 {
 // NowTimeUnixNano is a wrapper of time.Now().UnixNano()
 func NowTimeUnixNano() uint64 {
 	return uint64(time.Now().UnixNano())
+}
+
+func DateAndTime() (string, string) {
+	now := time.Now()
+	return now.Format(DATE_FMT), now.Format(TIME_FMT)
 }
 
 // DateTime return curremt datetime in format yyyy/mm/dd HH:MM:SS
@@ -126,4 +132,30 @@ func ParseHuman(timestr string) (time.Duration, error) {
 	}
 
 	return t, nil
+}
+
+// MonthDays return days of the month/year
+func MonthDays(year, month int) int {
+	switch month {
+	case 1, 3, 5, 7, 8, 10, 12:
+		return 31
+	case 4, 6, 9, 11:
+		return 30
+	case 2:
+		if IsLeapYear(year) {
+			return 29
+		}
+		return 28
+	default:
+		panic(fmt.Sprintf("Illegal month:%d", month))
+	}
+}
+
+// IsLeapYear check whether a year is leay
+func IsLeapYear(year int) bool {
+	if year%100 == 0 {
+		return year%400 == 0
+	}
+
+	return year%4 == 0
 }

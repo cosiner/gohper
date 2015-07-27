@@ -245,3 +245,10 @@ func TestMultipleLineOperate(t *testing.T) {
 "ca":"bb"
 }`, json)
 }
+
+func TestMakeSlice(t *testing.T) {
+	tt := testing2.Wrap(t)
+	tt.DeepEq([]string{}, MakeSlice("0", 0))
+	tt.DeepEq([]string{"0"}, MakeSlice("0", 1))
+	tt.DeepEq([]string{"0", "0"}, MakeSlice("0", 2))
+}

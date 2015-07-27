@@ -407,3 +407,12 @@ func MultipleLineOperate(s, delim string, operate func(line, delim string) strin
 
 	return strings.Join(lines, "\n")
 }
+
+// MakeSlice create a string slice with given size
+func MakeSlice(element string, size int) []string {
+	slice := make([]string, size)
+	for i := 0; i < size; i++ {
+		slice[i] = element
+	}
+	return slice
+}

@@ -70,39 +70,36 @@ func (p *Pool) Do(job Job) bool {
 }
 
 func (p *Pool) routine() {
-	for {
-		select {
-		case job, ok := <-p.jobs:
-			if !ok {
-				return
-			}
-
-			p.lock.Lock()
-			p.numIdle--
-			p.lock.Unlock()
-
-			p.processor(job)
-
-			p.lock.Lock()
-			closeCond := p.closeCond
-			jobs := len(p.jobs)
-
-			if jobs == 0 && closeCond != nil {
-				closeCond.Signal()
-				p.numActive--
-				p.lock.Unlock()
-				return
-			}
-
-			if p.numIdle+1 > p.maxIdle {
-				p.numActive--
-				p.lock.Unlock()
-				return
-			}
-
-			p.numIdle++
-			p.lock.Unlock()
+	for job, ok := range p.jobs {
+		if !ok {
+			return
 		}
+
+		p.lock.Lock()
+		p.numIdle--
+		p.lock.Unlock()
+
+		p.processor(job)
+
+		p.lock.Lock()
+		closeCond := p.closeCond
+		jobs := len(p.jobs)
+
+		if jobs == 0 && closeCond != nil {
+			closeCond.Signal()
+			p.numActive--
+			p.lock.Unlock()
+			return
+		}
+
+		if p.numIdle+1 > p.maxIdle {
+			p.numActive--
+			p.lock.Unlock()
+			return
+		}
+
+		p.numIdle++
+		p.lock.Unlock()
 	}
 }
 
