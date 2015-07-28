@@ -70,7 +70,8 @@ func (p *Pool) Do(job Job) bool {
 }
 
 func (p *Pool) routine() {
-	for job, ok := range p.jobs {
+	for {
+		job, ok := <-p.jobs
 		if !ok {
 			return
 		}

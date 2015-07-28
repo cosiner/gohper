@@ -229,6 +229,9 @@ func TestFilterInStrings(t *testing.T) {
 	strings2 := FilterInPlace(IsNotEmpty, strings...)
 	tt.DeepEq([]string{"A", "B", "C"}, strings2)
 	tt.DeepEq([]string{"A", "B", "C", "B", "", "C"}, strings)
+
+	strings2 = ClearEmpty(strings)
+	tt.DeepEq([]string{"A", "B", "C", "B", "C"}, strings2)
 }
 
 func TestMultipleLineOperate(t *testing.T) {

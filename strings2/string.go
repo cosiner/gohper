@@ -416,3 +416,7 @@ func MakeSlice(element string, size int) []string {
 	}
 	return slice
 }
+
+func ClearEmpty(strings []string) []string {
+	return FilterInPlace(IsNotEmpty, strings...)
+}
