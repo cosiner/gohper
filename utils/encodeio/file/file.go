@@ -5,8 +5,10 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"encoding/xml"
+	"io/ioutil"
 	"os"
 
+	"github.com/cosiner/gohper/bytes2"
 	"github.com/cosiner/gohper/os2/file"
 	"github.com/cosiner/gohper/strings2"
 	"github.com/cosiner/gohper/unsafe2"
@@ -88,6 +90,18 @@ func ReadGOB(fname string, v interface{}) error {
 func ReadJSON(fname string, v interface{}) error {
 	return file.Read(fname, func(fd *os.File) error {
 		return json.NewDecoder(fd).Decode(v)
+	})
+}
+
+func ReadCommenttedJSON(fname, comment string, v interface{}) error {
+	return file.Read(fname, func(fd *os.File) error {
+		bs, err := ioutil.ReadAll(fd)
+		if err != nil {
+			return err
+		}
+		bs = bytes2.MultipleLineOperate(bs, unsafe2.Bytes(comment), bytes2.TrimBefore)
+
+		return json.Unmarshal(bs, v)
 	})
 }
 

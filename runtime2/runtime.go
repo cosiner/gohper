@@ -6,14 +6,37 @@ import (
 	"strconv"
 )
 
+type Pos struct {
+	File string
+	Pc   uintptr
+	Line int
+}
+
+func (c Pos) String() string {
+	return filepath.Base(c.File) +
+		":" +
+		filepath.Base(runtime.FuncForPC(c.Pc).Name()) +
+		":" +
+		strconv.Itoa(c.Line)
+}
+
+func CallerPos(depth int) Pos {
+	pc, file, line, _ := runtime.Caller(depth + 1)
+	return Pos{
+		File: file,
+		Pc:   pc,
+		Line: line,
+	}
+}
+
 // Caller report caller's position with file:function:line format
 // depth means which caller, 0 means yourself, 1 means your caller
 func Caller(depth int) string {
-	pc, file, line, _ := runtime.Caller(depth + 1)
+	return CallerPos(depth + 1).String()
+}
 
-	return filepath.Base(file) +
-		":" +
-		filepath.Base(runtime.FuncForPC(pc).Name()) +
-		":" +
-		strconv.Itoa(line)
+func Stack(bufsize int, all bool) []byte {
+	buf := make([]byte, 0, bufsize)
+	n := runtime.Stack(buf, all)
+	return buf[:n]
 }

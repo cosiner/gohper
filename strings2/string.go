@@ -2,6 +2,7 @@ package strings2
 
 import (
 	"bytes"
+	"math/rand"
 	"strconv"
 	"strings"
 
@@ -419,4 +420,38 @@ func MakeSlice(element string, size int) []string {
 
 func ClearEmpty(strings []string) []string {
 	return FilterInPlace(IsNotEmpty, strings...)
+}
+
+func RandIn(strings []string) string {
+	len := len(strings)
+	if len == 0 {
+		return ""
+	}
+
+	return strings[rand.Intn(len)]
+}
+
+func TrimLastN(s, delim string, n int) string {
+	if n <= 0 {
+		n = -1
+	}
+	sl, dl := len(s), len(delim)
+	for n != 0 && strings.HasSuffix(s, delim) {
+		s = s[:sl-dl]
+		sl = len(s)
+		n--
+	}
+	return s
+}
+
+func TrimFirstN(s, delim string, n int) string {
+	if n <= 0 {
+		n = -1
+	}
+	dl := len(delim)
+	for n != 0 && strings.HasPrefix(s, delim) {
+		s = s[dl:]
+		n--
+	}
+	return s
 }

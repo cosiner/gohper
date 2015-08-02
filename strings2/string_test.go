@@ -2,6 +2,7 @@ package strings2
 
 import (
 	"bytes"
+	"sort"
 	"testing"
 
 	"github.com/cosiner/gohper/testing2"
@@ -254,4 +255,29 @@ func TestMakeSlice(t *testing.T) {
 	tt.DeepEq([]string{}, MakeSlice("0", 0))
 	tt.DeepEq([]string{"0"}, MakeSlice("0", 1))
 	tt.DeepEq([]string{"0", "0"}, MakeSlice("0", 2))
+}
+
+func TestRandString(t *testing.T) {
+	tt := testing2.Wrap(t)
+	slice := []string{"1", "2", "3", "4"}
+	tt.True(sort.SearchStrings(slice, RandIn(slice)) >= 0)
+	tt.True(sort.SearchStrings(slice, RandIn(slice)) >= 0)
+	tt.True(sort.SearchStrings(slice, RandIn(slice)) >= 0)
+	tt.True(sort.SearchStrings(slice, RandIn(slice)) >= 0)
+	tt.True(RandIn(nil) == "")
+	tt.True(RandIn([]string{}) == "")
+}
+
+func TestTrimN(t *testing.T) {
+	tt := testing2.Wrap(t)
+	tt.Eq("aaa", TrimFirstN("///aaa", "/", 0))
+	tt.Eq("aaa", TrimFirstN("///aaa", "/", -1))
+	tt.Eq("//aaa", TrimFirstN("///aaa", "/", 1))
+
+	tt.Eq("aaa", TrimLastN("aaa///", "/", 0))
+	tt.Eq("aaa", TrimLastN("aaa///", "/", -1))
+	tt.Eq("aaa//", TrimLastN("aaa///", "/", 1))
+	tt.Eq("aaa/", TrimLastN("aaa///", "/", 2))
+	tt.Eq("aaa", TrimLastN("aaa///", "/", 3))
+	tt.Eq("aaa", TrimLastN("aaa///", "/", 4))
 }

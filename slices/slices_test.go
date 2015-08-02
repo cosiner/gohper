@@ -59,3 +59,13 @@ func TestUints(t *testing.T) {
 	slice = FitCapToLenUint(slice)
 	tt.Eq(len(slice), cap(slice))
 }
+
+func TestRemoveElement(t *testing.T) {
+	tt := testing2.Wrap(t)
+	eles := []interface{}{1, 2, 3, 4, 5, 6}
+	tt.DeepEq([]interface{}{1, 3, 4, 5, 6}, RemoveElement(eles, 1))
+	eles = []interface{}{1, 2, 3, 4, 5, 6}
+	tt.DeepEq([]interface{}{1, 2, 3, 4, 6}, RemoveElement(eles, 4))
+	eles = []interface{}{1, 2, 3, 4, 5, 6}
+	tt.DeepEq([]interface{}{1, 2, 3, 4, 5, 6}, RemoveElement(eles, 6))
+}

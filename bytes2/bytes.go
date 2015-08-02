@@ -18,7 +18,7 @@ func SplitAndTrim(s, sep []byte) [][]byte {
 }
 
 // TrimAfter remove  bytes after delimeter, and trim space on remains
-func TrimAfter(s []byte, delim []byte) []byte {
+func TrimAfter(s, delim []byte) []byte {
 	if idx := bytes.Index(s, delim); idx >= 0 {
 		s = s[:idx]
 	}
@@ -26,7 +26,7 @@ func TrimAfter(s []byte, delim []byte) []byte {
 	return bytes.TrimSpace(s)
 }
 
-func TrimBefore(s []byte, delim []byte) []byte {
+func TrimBefore(s, delim []byte) []byte {
 	if idx := bytes.Index(s, delim); idx >= 0 {
 		s = s[idx+len(delim):]
 	}
@@ -35,11 +35,46 @@ func TrimBefore(s []byte, delim []byte) []byte {
 }
 
 // IsAllBytesIn check whether all bytes is in given encoding bytes
-func IsAllBytesIn(bs []byte, encoding []byte) bool {
+func IsAllBytesIn(bs, encoding []byte) bool {
 	var is = true
 	for i := 0; i < len(bs) && is; i++ {
 		is = index.ByteIn(bs[i], encoding...) >= 0
 	}
 
 	return is
+}
+
+func MultipleLineOperate(s, delim []byte, operate func(line, delim []byte) []byte) []byte {
+	var NEWLINE = []byte("\n")
+	lines := bytes.Split(s, NEWLINE)
+	for i := len(lines) - 1; i >= 0; i-- {
+		lines[i] = operate(lines[i], delim)
+	}
+
+	return bytes.Join(lines, NEWLINE)
+}
+
+func TrimLastN(s, delim []byte, n int) []byte {
+	if n <= 0 {
+		n = -1
+	}
+	sl, dl := len(s), len(delim)
+	for n != 0 && bytes.HasSuffix(s, delim) {
+		s = s[:sl-dl]
+		sl = len(s)
+		n--
+	}
+	return s
+}
+
+func TrimFirstN(s, delim []byte, n int) []byte {
+	if n <= 0 {
+		n = -1
+	}
+	dl := len(delim)
+	for n != 0 && bytes.HasPrefix(s, delim) {
+		s = s[dl:]
+		n--
+	}
+	return s
 }
