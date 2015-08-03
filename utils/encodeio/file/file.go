@@ -99,7 +99,7 @@ func ReadCommenttedJSON(fname, comment string, v interface{}) error {
 		if err != nil {
 			return err
 		}
-		bs = bytes2.MultipleLineOperate(bs, unsafe2.Bytes(comment), bytes2.TrimBefore)
+		bs = bytes2.MultipleLineOperate(bs, unsafe2.Bytes(comment), bytes2.TrimAfter)
 
 		return json.Unmarshal(bs, v)
 	})

@@ -3,6 +3,7 @@ package strings2
 import (
 	"bytes"
 	"math/rand"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -432,6 +433,8 @@ func RandIn(strings []string) string {
 }
 
 func TrimLastN(s, delim string, n int) string {
+	s = strings.TrimSpace(s)
+
 	if n <= 0 {
 		n = -1
 	}
@@ -445,6 +448,8 @@ func TrimLastN(s, delim string, n int) string {
 }
 
 func TrimFirstN(s, delim string, n int) string {
+	s = strings.TrimSpace(s)
+
 	if n <= 0 {
 		n = -1
 	}
@@ -454,4 +459,22 @@ func TrimFirstN(s, delim string, n int) string {
 		n--
 	}
 	return s
+}
+
+func RemoveDuplicate(slice []string) []string {
+	len := len(slice)
+	if len == 0 {
+		return slice
+	}
+
+	sort.Strings(slice)
+	prev := 0
+	for i := 1; i < len; i++ {
+		if s := slice[i]; s != slice[prev] {
+			prev++
+			slice[prev] = s
+		}
+	}
+
+	return slice[:prev+1]
 }

@@ -18,3 +18,34 @@ func IncrAppendUint(slice []uint, s uint) []uint {
 
 	return newslice
 }
+
+func UintsMap(eles []uint, mapper func(uint) uint) []uint {
+	for i, l := 0, len(eles); i < l; i++ {
+		eles[i] = mapper(eles[i])
+	}
+	return eles
+}
+
+func UintsFilter(eles []uint, filter func(uint) bool) []uint {
+	var newEles []uint
+	for i, l := 0, len(eles); i < l; i++ {
+		if e := eles[i]; filter(e) {
+			newEles = append(newEles, e)
+		}
+	}
+
+	return newEles
+}
+
+func UintsFilterInplace(eles []uint, filter func(uint) bool) []uint {
+	var prev = -1
+
+	for i, l := 0, len(eles); i < l; i++ {
+		if e := eles[i]; filter(e) {
+			prev++
+			eles[prev] = e
+		}
+	}
+
+	return eles[:prev+1]
+}

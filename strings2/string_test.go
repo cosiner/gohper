@@ -281,3 +281,10 @@ func TestTrimN(t *testing.T) {
 	tt.Eq("aaa", TrimLastN("aaa///", "/", 3))
 	tt.Eq("aaa", TrimLastN("aaa///", "/", 4))
 }
+
+func TestRemoveDuplicate(t *testing.T) {
+	tt := testing2.Wrap(t)
+
+	tt.DeepEq([]string{"aa", "bb", "cc"}, RemoveDuplicate([]string{"cc", "aa", "cc", "bb", "aa"}))
+	tt.DeepEq([]string{}, RemoveDuplicate([]string{}))
+}
