@@ -43,6 +43,10 @@ func (p FakePool) TryPut([]byte) bool {
 	return false
 }
 
+func NewFakePool() Pool {
+	return FakePool{}
+}
+
 // SyncPool is based on sync.Pool
 type SyncPool struct {
 	pool       sync.Pool
