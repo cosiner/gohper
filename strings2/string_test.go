@@ -288,3 +288,11 @@ func TestRemoveDuplicate(t *testing.T) {
 	tt.DeepEq([]string{"aa", "bb", "cc"}, RemoveDuplicate([]string{"cc", "aa", "cc", "bb", "aa"}))
 	tt.DeepEq([]string{}, RemoveDuplicate([]string{}))
 }
+
+func TestSearch(t *testing.T) {
+	tt := testing2.Wrap(t)
+
+	strings := []string{"a", "b", "c", "d", "e"}
+	tt.Eq(1, Search(strings, "b", 0))
+	tt.Eq(-1, Search(strings, "b", 1))
+}

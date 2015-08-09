@@ -478,3 +478,12 @@ func RemoveDuplicate(slice []string) []string {
 
 	return slice[:prev+1]
 }
+
+func Search(strings []string, str string, skip int) int {
+	for i, len := 0, len(strings); i < len; i = i + 1 + skip {
+		if strings[i] == str {
+			return i
+		}
+	}
+	return -1
+}
