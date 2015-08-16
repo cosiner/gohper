@@ -94,3 +94,7 @@ func ValidSimpleEmail(err error) Validator {
 		Err: err,
 	}.Validate
 }
+
+func Nop(string) error {
+	return nil
+}

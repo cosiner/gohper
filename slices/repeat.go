@@ -26,3 +26,12 @@ func RepeatInts(i int, n int) []int {
 
 	return bs
 }
+
+func RepeatBools(i bool, n int) []bool {
+	bs := make([]bool, n)
+	for n = n - 1; n >= 0; n-- {
+		bs[n] = i
+	}
+
+	return bs
+}

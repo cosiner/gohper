@@ -36,6 +36,16 @@ func UseStrictMul(vc ...Validator) func(...string) error {
 	return New(vc...).StrictValidateM
 }
 
+func (v Validator) CanbeEmpty() Validator {
+	return func(s string) error {
+		if s == "" {
+			return nil
+		}
+
+		return v(s)
+	}
+}
+
 // Validate string with validators, return first error or nil
 func (vc ValidChain) Validate(s string) error {
 	for _, v := range vc {
