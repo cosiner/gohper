@@ -7,6 +7,7 @@ type (
 	// Attrs is a common container store attribute
 	Attrs interface {
 		Attr(name string) interface{}
+		AttrDef(name string, defVal interface{}) interface{}
 		// if value is nil, remove it
 		SetAttr(name string, value interface{})
 		GetSetAttr(name string, value interface{}) interface{}
@@ -35,10 +36,15 @@ func NewLocked() Attrs {
 }
 
 func (v Values) Attr(key string) interface{} {
-	val, has := v[key]
-	if !has {
-		return nil
+	return v[key]
+}
+
+func (v Values) AttrDef(key string, def interface{}) interface{} {
+	val := v[key]
+	if val == nil {
+		return def
 	}
+
 	return val
 }
 
@@ -74,6 +80,13 @@ func (v Values) Clear() {
 func (v *LockedValues) Attr(key string) interface{} {
 	v.RLock()
 	val := v.Values.Attr(key)
+	v.RUnlock()
+	return val
+}
+
+func (v *LockedValues) AttrDef(key string, def interface{}) interface{} {
+	v.RLock()
+	val := v.Values.AttrDef(key, def)
 	v.RUnlock()
 	return val
 }

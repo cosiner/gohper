@@ -2,6 +2,7 @@ package bytesize
 
 import (
 	"bytes"
+	"fmt"
 	"strconv"
 )
 
@@ -68,4 +69,24 @@ func MustSize(size string) (s uint64) {
 	}
 
 	return s
+}
+
+func ToHuman(size uint64) string {
+	if size < KB {
+		return fmt.Sprintf("%.2fB", float64(size))
+	}
+	if size < MB {
+		return fmt.Sprintf("%.2fKB", float64(size)/float64(KB))
+	}
+	if size < GB {
+		return fmt.Sprintf("%.2fMB", float64(size)/float64(MB))
+	}
+	if size < TB {
+		return fmt.Sprintf("%.2fGB", float64(size)/float64(GB))
+	}
+	if size < PB {
+		return fmt.Sprintf("%.2fTB", float64(size)/float64(TB))
+	}
+
+	return fmt.Sprintf("%.2fPB", float64(size)/float64(PB))
 }

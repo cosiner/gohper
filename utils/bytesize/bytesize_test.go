@@ -21,3 +21,9 @@ func TestSize(t *testing.T) {
 	defer tt.Recover()
 	MustSize("abcde")
 }
+
+func TestToHuman(t *testing.T) {
+	tt := testing2.Wrap(t)
+
+	tt.Log(ToHuman(10240 * PB))
+}

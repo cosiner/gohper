@@ -11,7 +11,7 @@ const (
 type Validator func(string) error
 type ValidChain []Validator
 
-func (v Validator) ValidateM(s ...string) error {
+func (v Validator) ValidateV(s ...string) error {
 	var err error
 	for i, l := 0, len(s); err == nil && i < l; i++ {
 		err = v(s[i])
