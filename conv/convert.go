@@ -16,25 +16,25 @@ const (
 func Uint2Hex(u uint64) []byte {
 	s := make([]byte, 16)
 
-	var idx int
-	for idx = 15; idx > -1 && u > 0; idx-- {
-		s[idx] = HEX[u&0xF]
-		u = u >> 4
+	var i int
+	for i = 15; i > -1 && u > 0; i-- {
+		s[i] = HEX[u&0xF]
+		u >>= 4
 	}
 
-	return s[idx+1:]
+	return s[i+1:]
 }
 
 func Uint2LowerHex(u uint64) []byte {
 	s := make([]byte, 16)
 
-	var idx int
-	for idx = 15; idx > -1 && u > 0; idx-- {
-		s[idx] = LHEX[u&0xF]
-		u = u >> 4
+	var i int
+	for i = 15; i > -1 && u > 0; i-- {
+		s[i] = LHEX[u&0xF]
+		u >>= 4
 	}
 
-	return s[idx+1:]
+	return s[i+1:]
 }
 
 // Hex2Uint convert a hexadecimal string to uint

@@ -151,11 +151,14 @@ func MonthDays(year, month int) int {
 	}
 }
 
+func YearDays(year int) int {
+	if IsLeapYear(year) {
+		return 366
+	}
+	return 365
+}
+
 // IsLeapYear check whether a year is leay
 func IsLeapYear(year int) bool {
-	if year%100 == 0 {
-		return year%400 == 0
-	}
-
-	return year%4 == 0
+	return year%4 == 0 && (year%100 != 0 || year%400 == 0)
 }

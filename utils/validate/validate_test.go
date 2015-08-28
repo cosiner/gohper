@@ -81,7 +81,7 @@ func TestValidateM(t *testing.T) {
 	tt := testing2.Wrap(t)
 
 	err := errors.Err("incorrect length")
-	v := ValidLength(3, 10, err).ValidateM
+	v := ValidLength(3, 10, err).ValidateV
 	tt.Eq(err, v("a23", "a"))
 	tt.Nil(v("a23", "1234"))
 }
