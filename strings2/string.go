@@ -487,3 +487,15 @@ func Search(strings []string, str string, skip int) int {
 	}
 	return -1
 }
+
+func JoinKVs(kvs map[string]string, eq, sep string) string {
+	var s string
+	for k, v := range kvs {
+		if s != "" {
+			s += sep
+		}
+		s += (k + eq + v)
+	}
+
+	return s
+}

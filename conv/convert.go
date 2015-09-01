@@ -105,7 +105,7 @@ func ReverseByte(num byte) byte {
 	return n
 }
 
-func IntDef(val string, def int) int {
+func AtoiDef(val string, def int) int {
 	if val == "" {
 		return def
 	}
@@ -116,4 +116,38 @@ func IntDef(val string, def int) int {
 	}
 
 	return i
+}
+
+func IfaceToInt64(v interface{}) (int64, error) {
+	switch v := v.(type) {
+	case int8:
+		return int64(v), nil
+	case int16:
+		return int64(v), nil
+	case int32:
+		return int64(v), nil
+	case int64:
+		return int64(v), nil
+	case int:
+		return int64(v), nil
+	case uint8:
+		return int64(v), nil
+	case uint16:
+		return int64(v), nil
+	case uint32:
+		return int64(v), nil
+	case uint64:
+		return int64(v), nil
+	case uint:
+		return int64(v), nil
+	}
+	return 0, errors.Newf("%v(%T) is not an integer", v, v)
+}
+
+func IfaceToInt(v interface{}) (int, error) {
+	val, err := IfaceToInt64(v)
+	if err != nil {
+		return 0, err
+	}
+	return int(val), nil
 }

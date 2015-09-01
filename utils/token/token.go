@@ -22,7 +22,6 @@ type Cipher struct {
 	SecretKey string
 	TTL       time.Duration
 	Hash      func() hash.Hash
-	Timefmt   string
 	Seperator string
 }
 
@@ -38,7 +37,7 @@ func (c *Cipher) encrypt(now int64, str string) string {
 	hash := hmac.New(c.Hash, unsafe2.Bytes(c.SecretKey))
 
 	if now == 0 {
-		now = time.Now().UnixNano()
+		now = time.Now().Add(c.TTL).UnixNano()
 	}
 	hash.Write(unsafe2.Bytes(str))
 	hash.Write(unsafe2.Bytes(c.segSep()))
@@ -62,18 +61,18 @@ func (c *Cipher) Decrypt(str string) (string, error) {
 		return "", ErrBadKey
 	}
 
-	tm, err := strconv.ParseInt(segs[0], 10, 64)
+	tm, err := strconv.ParseInt(segs[1], 10, 64)
 	if err != nil {
 		return "", ErrBadKey
 	}
-	if time.Now().UnixNano() > (tm + int64(c.TTL)) {
+	if time.Now().UnixNano() > tm {
 		return "", ErrExpiredKey
 	}
 
-	sig := c.encrypt(tm, segs[1])
+	sig := c.encrypt(tm, segs[0])
 	if sig != str {
 		return "", ErrInvalidSignature
 	}
 
-	return segs[1], nil
+	return segs[0], nil
 }

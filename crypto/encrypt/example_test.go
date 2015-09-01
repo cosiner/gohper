@@ -9,9 +9,9 @@ import (
 func ExampleSaltEncode() {
 	password := []byte("abcdefg")
 	salt := []byte("123456")
-	enc, randSalt, _ := encrypt.Encode(password, salt)
+	enc, randSalt, _ := encrypt.Encode(nil, password, salt)
 
-	if encrypt.Verify(password, salt, randSalt, enc) {
+	if encrypt.Verify(nil, password, salt, randSalt, enc) {
 		fmt.Println("Password Match")
 	} else {
 		fmt.Println("Password don't match")

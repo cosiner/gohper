@@ -47,7 +47,7 @@ func TestReverseByte(t *testing.T) {
 
 func TestInt(t *testing.T) {
 	tt := testing2.Wrap(t)
-	tt.Eq(1, IntDef("", 1))
-	tt.Eq(1, IntDef("1", 2))
-	tt.Eq(2, IntDef("abc", 2))
+	tt.Eq(1, AtoiDef("", 1))
+	tt.Eq(1, AtoiDef("1", 2))
+	tt.Eq(2, AtoiDef("abc", 2))
 }
