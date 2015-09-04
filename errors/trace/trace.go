@@ -13,6 +13,9 @@ type traceError struct {
 	err error
 }
 
+func (e traceError) Pos() string {
+	return e.pos
+}
 func (e traceError) Error() string {
 	return e.pos + ":" + e.err.Error()
 }
@@ -21,7 +24,7 @@ func (e traceError) Unwrap() error {
 	return e.err
 }
 
-func Trace(err error) error {
+func TraceDepth(err error, depth int) error {
 	if err == nil {
 		return nil
 	}
@@ -34,7 +37,11 @@ func Trace(err error) error {
 		return err
 	}
 	return traceError{
-		pos: runtime2.Caller(1),
+		pos: runtime2.Caller(depth + 1),
 		err: err,
 	}
+}
+
+func Trace(err error) error {
+	return TraceDepth(err, 1)
 }
