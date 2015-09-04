@@ -31,7 +31,7 @@ func (v *Values) String(name string) (string, error) {
 func (v *Values) Int(name string) (int, error) {
 	val, err := v.String(name)
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 
 	return strconv.Atoi(val)
@@ -40,45 +40,43 @@ func (v *Values) Int(name string) (int, error) {
 func (v *Values) Int64(name string) (int64, error) {
 	val, err := v.String(name)
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 
-	return strconv.ParseInt(val, 10, 64)
+	return Atoi64(val)
 }
 
 func (v *Values) Uint(name string) (uint, error) {
 	val, err := v.String(name)
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 
 	return Atou(val)
 }
 
-func (v *Values) Uint64(name string) (uint, error) {
+func (v *Values) Uint64(name string) (uint64, error) {
 	val, err := v.String(name)
 	if err != nil {
-		return "", err
+		return 0, err
 	}
-
-	u64, err := strconv.ParseUint(val, 10, 64)
-	return uint(u64), err
+	return Atou64(val)
 }
 
-func (v *Values) Bool(name string) (uint, error) {
+func (v *Values) Bool(name string) (bool, error) {
 	val, err := v.String(name)
 	if err != nil {
 		return false, err
 	}
-	return strconv.ParseBool(val)
+	return Atob(val)
 }
 
 func (v *Values) Float64(name string) (float64, error) {
 	val, err := v.String(name)
 	if err != nil {
-		return false, err
+		return 0, err
 	}
-	return strconv.ParseFloats(val)
+	return Atof(val)
 }
 
 func Atoi64(s string) (int64, error) {
@@ -94,7 +92,7 @@ func Atou64(s string) (uint64, error) {
 	return strconv.ParseUint(s, 10, 64)
 }
 
-func Atob(s string) (bool, err) {
+func Atob(s string) (bool, error) {
 	return strconv.ParseBool(s)
 }
 
