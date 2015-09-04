@@ -1,8 +1,12 @@
-package errors
+package trace
 
-import "github.com/cosiner/gohper/runtime2"
+import (
+	"fmt"
 
-var EnableTrace = true
+	"github.com/cosiner/gohper/runtime2"
+)
+
+var TraceEnabled = true
 
 type traceError struct {
 	pos string
@@ -13,11 +17,16 @@ func (e traceError) Error() string {
 	return e.pos + ":" + e.err.Error()
 }
 
+func (e traceError) Unwrap() error {
+	return e.err
+}
+
 func Trace(err error) error {
 	if err == nil {
 		return nil
 	}
-	if !EnableTrace {
+	if !TraceEnabled {
+		fmt.Println(err)
 		return err
 	}
 

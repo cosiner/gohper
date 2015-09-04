@@ -13,9 +13,9 @@ type Pos struct {
 }
 
 func (c Pos) String() string {
-	return filepath.Base(c.File) +
+	return runtime.FuncForPC(c.Pc).Name() +
 		":" +
-		filepath.Base(runtime.FuncForPC(c.Pc).Name()) +
+		filepath.Base(c.File) +
 		":" +
 		strconv.Itoa(c.Line)
 }
