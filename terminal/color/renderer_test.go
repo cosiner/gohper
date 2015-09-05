@@ -13,7 +13,7 @@ func TestRender(t *testing.T) {
 }
 
 func TestRenderTo(t *testing.T) {
-	buf := bytes2.NewBuffer(128)
+	buf := bytes2.MakeBuffer(0, 128)
 	LightRed.RenderTo(buf, "aaaaaaaaaaaaa\n")
 	LightRed.RenderTo(buf, "bbbbb\n")
 }

@@ -18,5 +18,5 @@ func TestBytes(t *testing.T) {
 	tt.True(IsAllBytesIn([]byte("ABCDE"), []byte("ABCDEFG")))
 	tt.False(IsAllBytesIn([]byte("ABCDEZ"), []byte("ABCDEFG")))
 
-	tt.Eq(0, NewBuffer(8).Len())
+	tt.Eq(0, MakeBuffer(0, 8).Len())
 }
