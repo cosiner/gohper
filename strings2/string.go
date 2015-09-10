@@ -420,7 +420,13 @@ func MakeSlice(element string, size int) []string {
 }
 
 func ClearEmpty(strings []string) []string {
-	return FilterInPlace(IsNotEmpty, strings...)
+	return Clear(strings, "")
+}
+
+func Clear(strings []string, ele string) []string {
+	return FilterInPlace(func(s string) bool {
+		return s != ele
+	}, strings...)
 }
 
 func RandIn(strings []string) string {
@@ -488,9 +494,9 @@ func Search(strings []string, str string, skip int) int {
 	return -1
 }
 
-func JoinKVs(kvs map[string]string, eq, sep string) string {
+func JoinPairs(pairs map[string]string, eq, sep string) string {
 	var s string
-	for k, v := range kvs {
+	for k, v := range pairs {
 		if s != "" {
 			s += sep
 		}

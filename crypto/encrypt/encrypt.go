@@ -17,7 +17,7 @@ func Encode(hash hash.Hash, msg, salt []byte) ([]byte, []byte, error) {
 	if hash == nil {
 		hash = sha256.New()
 	}
-	rand, err := rand.B.Alphanumeric(hash.BlockSize())
+	rand, err := rand.B.Alphanumeric(hash.Size())
 	if err != nil {
 		return nil, nil, err
 	}
