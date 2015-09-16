@@ -13,11 +13,8 @@ type Pos struct {
 }
 
 func (c Pos) String() string {
-	return runtime.FuncForPC(c.Pc).Name() +
-		":" +
-		filepath.Base(c.File) +
-		":" +
-		strconv.Itoa(c.Line)
+	// filepath.Base(runtime.FuncForPC(c.Pc).Name()) +
+	return filepath.Base(c.File) + ":" + strconv.Itoa(c.Line)
 }
 
 func CallerPos(depth int) Pos {

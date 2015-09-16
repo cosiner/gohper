@@ -7,7 +7,7 @@ import (
 )
 
 func TestCaller(t *testing.T) {
-	exp := "github.com/cosiner/gohper/runtime2.TestCaller:runtime_test.go:11"
+	exp := "runtime_test.go:11"
 	if p := strings2.RemoveSpace(Caller(0)); p != exp {
 		t.Fatalf("Error: expect %s, but get %s", exp, p)
 	}

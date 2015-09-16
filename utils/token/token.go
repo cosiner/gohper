@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cosiner/gohper/errors"
+	"github.com/cosiner/gohper/time2"
 	"github.com/cosiner/gohper/unsafe2"
 )
 
@@ -37,7 +38,7 @@ func (c *Cipher) encrypt(now int64, str string) string {
 	hash := hmac.New(c.Hash, unsafe2.Bytes(c.SecretKey))
 
 	if now == 0 {
-		now = time.Now().Add(c.TTL).UnixNano()
+		now = time2.Now().Add(c.TTL).UnixNano()
 	}
 	hash.Write(unsafe2.Bytes(str))
 	hash.Write(unsafe2.Bytes(c.segSep()))
@@ -65,7 +66,7 @@ func (c *Cipher) Decrypt(str string) (string, error) {
 	if err != nil {
 		return "", ErrBadKey
 	}
-	if time.Now().UnixNano() > tm {
+	if time2.Now().UnixNano() > tm {
 		return "", ErrExpiredKey
 	}
 

@@ -2,23 +2,31 @@ package time2
 
 import "time"
 
-type Timer struct {
+type Ticker struct {
 	C      <-chan time.Time
 	timer  *time.Timer
 	ticker *time.Ticker
 	tick   time.Duration
 }
 
-func NewTimer(first time.Time, tick time.Duration) *Timer {
-	t := &Timer{
+func NewTicker(first time.Time, tick time.Duration) *Ticker {
+	now := time.Now()
+	sub := now.Sub(first)
+	sub2 := sub / tick * tick
+	if sub2 < sub {
+		sub2 += tick
+	}
+
+	first = first.Add(sub2)
+	t := &Ticker{
 		tick:  tick,
-		timer: time.NewTimer(first.Sub(time.Now())),
+		timer: time.NewTimer(sub2 - sub),
 	}
 	t.C = t.timer.C
 	return t
 }
 
-func (t *Timer) Wait() (time.Time, bool) {
+func (t *Ticker) Wait() (time.Time, bool) {
 	var now time.Time
 	var ok bool
 
@@ -34,7 +42,7 @@ func (t *Timer) Wait() (time.Time, bool) {
 	return now, ok
 }
 
-func (t *Timer) Switch() {
+func (t *Ticker) Switch() {
 	if t.ticker != nil {
 		return
 	}
@@ -45,7 +53,7 @@ func (t *Timer) Switch() {
 	t.C = t.ticker.C
 }
 
-func (t *Timer) Stop() {
+func (t *Ticker) Stop() {
 	if t.ticker == nil {
 		t.timer.Stop()
 	} else {

@@ -8,50 +8,74 @@ import (
 	"github.com/cosiner/gohper/errors"
 )
 
-const DATETIME_FMT = "2006/01/02 15:04:05"
-const DATE_FMT = "2006/01/02"
-const TIME_FMT = "15:04:05"
+var (
+	Location     = time.Local
+	DATETIME_FMT = "2006/01/02 15:04:05"
+	DATE_FMT     = "2006/01/02"
+	TIME_FMT     = "15:04:05"
+)
 
-func UnixNanoSinceNow(sec int) int64 {
-	return time.Now().Add(time.Duration(sec) * time.Second).UnixNano()
-}
-
-// NowTimeUnix is a wrapper of time.Now().Unix()
-func NowTimeUnix() uint64 {
-	return uint64(time.Now().Unix())
-}
-
-// NowTimeUnixNano is a wrapper of time.Now().UnixNano()
-func NowTimeUnixNano() uint64 {
-	return uint64(time.Now().UnixNano())
-}
-
-func DateAndTime() (string, string) {
+func Now() time.Time {
 	now := time.Now()
+	if Location == time.Local {
+		return now
+	}
+
+	return now.In(Location)
+}
+
+func DateString() string {
+	return Now().Format(DATE_FMT)
+}
+
+func TimeString() string {
+	return Now().Format(TIME_FMT)
+}
+
+func DateTimeString() string {
+	return Now().Format(DATETIME_FMT)
+}
+
+func DateAndTimeString() (string, string) {
+	now := Now()
 	return now.Format(DATE_FMT), now.Format(TIME_FMT)
 }
 
-// DateTime return curremt datetime in format yyyy/mm/dd HH:MM:SS
-func DateTime() string {
-	return time.Now().Format(DATETIME_FMT)
+func Parse(layout, value string) (time.Time, error) {
+	return time.ParseInLocation(layout, value, Location)
 }
 
-// Time return current time in format HH:MM:SS
-func Time() string {
-	return time.Now().Format(TIME_FMT)
+func ParseDate(value string) (time.Time, error) {
+	return Parse(DATE_FMT, value)
 }
 
-// Date return current date in format: yyyy/mm/dd
-func Date() string {
-	return time.Now().Format(DATE_FMT)
+func ParseTime(value string) (time.Time, error) {
+	return Parse(TIME_FMT, value)
+}
+func ParseDateTime(value string) (time.Time, error) {
+	return Parse(DATETIME_FMT, value)
+}
+
+func UnixNanoSinceNow(sec int) int64 {
+	return Now().Add(time.Duration(sec) * time.Second).UnixNano()
+}
+
+// NowTimeUnix is a wrapper of Now().Unix()
+func NowTimeUnix() uint64 {
+	return uint64(Now().Unix())
+}
+
+// NowTimeUnixNano is a wrapper of Now().UnixNano()
+func NowTimeUnixNano() uint64 {
+	return uint64(Now().UnixNano())
 }
 
 // Timing the cost of function call, unix nano was returned
 func Timing(f func()) int64 {
-	now := time.Now().UnixNano()
+	now := Now().UnixNano()
 	f()
 
-	return time.Now().UnixNano() - now
+	return Now().UnixNano() - now
 }
 
 // ToHuman convert nano to human time size, insufficient portion will be discarded
@@ -161,4 +185,30 @@ func YearDays(year int) int {
 // IsLeapYear check whether a year is leay
 func IsLeapYear(year int) bool {
 	return year%4 == 0 && (year%100 != 0 || year%400 == 0)
+}
+
+func NowDate(year, month, day, hour, minute, sec, nsec int) time.Time {
+	now := Now()
+	nyear, nmonth, nday := now.Date()
+	nhour, nminute, nsec := now.Clock()
+	if year < 0 {
+		year = nyear
+	}
+	if month < 0 {
+		month = int(nmonth)
+	}
+	if day < 0 {
+		day = nday
+	}
+	if hour < 0 {
+		hour = nhour
+	}
+	if minute < 0 {
+		minute = nminute
+	}
+	if sec < 0 {
+		sec = nsec
+	}
+
+	return time.Date(year, time.Month(month), day, hour, minute, sec, nsec, Location)
 }

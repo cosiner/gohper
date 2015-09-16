@@ -7,20 +7,20 @@ import (
 
 func TestTimer(t *testing.T) {
 	now := time.Now()
-	timer := NewTimer(now.Add(time.Millisecond), time.Millisecond)
+	ticker := NewTicker(now.Add(time.Millisecond), time.Millisecond)
 	go func() {
 		// for {
 		// 	select {
-		// 	case tnow, ok := <-timer.C:
+		// 	case tnow, ok := <-ticker.C:
 		// 		if !ok {
 		// 			return
 		// 		}
-		// 		timer.Switch()
+		// 		ticker.Switch()
 		// 		tt.Eq(time.Millisecond, tnow.Sub(now))
 		// 	}
 		// }
 		for {
-			timer.Wait()
+			ticker.Wait()
 		}
 	}()
 	time.Sleep(time.Millisecond * 100)

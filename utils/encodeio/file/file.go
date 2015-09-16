@@ -2,6 +2,7 @@
 package file
 
 import (
+	"bytes"
 	"encoding/gob"
 	"encoding/json"
 	"encoding/xml"
@@ -94,12 +95,20 @@ func ReadJSON(fname string, v interface{}) error {
 }
 
 func ReadCommenttedJSON(fname, comment string, v interface{}) error {
+	var trim = func(line, delim []byte) []byte {
+		if len(delim) > 0 && bytes.HasPrefix(bytes.TrimSpace(line), delim) {
+			return nil
+		}
+
+		return line
+	}
+
 	return file.Read(fname, func(fd *os.File) error {
 		bs, err := ioutil.ReadAll(fd)
 		if err != nil {
 			return err
 		}
-		bs = bytes2.MultipleLineOperate(bs, unsafe2.Bytes(comment), bytes2.TrimAfter)
+		bs = bytes2.MultipleLineOperate(bs, unsafe2.Bytes(comment), trim)
 
 		return json.Unmarshal(bs, v)
 	})

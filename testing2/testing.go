@@ -3,17 +3,13 @@ package testing2
 
 import (
 	"fmt"
-	"os"
 	"reflect"
 	"testing"
 
 	"github.com/cosiner/gohper/runtime2"
 	"github.com/cosiner/gohper/terminal/ansi"
 	"github.com/cosiner/gohper/terminal/color/output"
-	"github.com/mattn/go-isatty"
 )
-
-var isTTY = isatty.IsTerminal(os.Stdout.Fd())
 
 // TB is a wrapper of testing.testing.TB
 type TB struct {
