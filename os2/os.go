@@ -1,6 +1,8 @@
 package os2
 
 import (
+	"os"
+
 	"runtime"
 )
 
@@ -40,4 +42,13 @@ func IsSolaris() bool {
 
 func IsAndroid() bool {
 	return OS() == ANDROID
+}
+
+func EnvDef(env, def string) string {
+	val := os.Getenv(env)
+	if val == "" {
+		return def
+	}
+
+	return val
 }

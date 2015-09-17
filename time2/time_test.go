@@ -75,3 +75,14 @@ func TestMonthDays(t *testing.T) {
 	defer tt.Recover()
 	MonthDays(2014, 13)
 }
+
+func TestTiming(t *testing.T) {
+	tt := testing2.Wrap(t)
+	timing := Timing()
+
+	tt.Log(timing())
+	tt.Log(timing())
+	tt.Log(timing())
+	tt.Log(timing())
+	tt.Log(timing())
+}

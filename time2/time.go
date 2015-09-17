@@ -70,14 +70,6 @@ func NowTimeUnixNano() uint64 {
 	return uint64(Now().UnixNano())
 }
 
-// Timing the cost of function call, unix nano was returned
-func Timing(f func()) int64 {
-	now := Now().UnixNano()
-	f()
-
-	return Now().UnixNano() - now
-}
-
 // ToHuman convert nano to human time size, insufficient portion will be discarded
 // performs rounding.
 //
