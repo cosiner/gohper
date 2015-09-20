@@ -5,21 +5,27 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cosiner/gohper/encoding"
 	"github.com/cosiner/gohper/testing2"
+	"github.com/cosiner/gohper/unsafe2"
 )
 
 func TestCipher(t *testing.T) {
 	tt := testing2.Wrap(t)
-	c := Cipher{
-		SecretKey: "123456dddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-		TTL:       time.Second * 3600,
-		Hash:      md5.New,
-		Seperator: ".",
-	}
+	c := NewCipher([]byte("12345"), time.Second*100, md5.New, encoding.Hex{})
 
 	for _, s := range []string{"a", "b", "c", "d", ""} {
-		tok := c.Encrypt(s)
-		ds, err := c.Decrypt(tok)
-		tt.Eq(s, ds).Nil(err)
+		tok := c.Encode(unsafe2.Bytes(s))
+		tt.Log(string(tok))
+		ds, err := c.Decode(tok)
+		tt.DeepEq(unsafe2.Bytes(s), ds).Nil(err)
+	}
+
+	tt.Log()
+
+	for _, s := range []string{"a", "b", "c", "d", ""} {
+		tok := c.Encode(unsafe2.Bytes(s))
+		ds, err := c.Decode(tok)
+		tt.DeepEq(unsafe2.Bytes(s), ds).Nil(err)
 	}
 }

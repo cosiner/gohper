@@ -1,16 +1,15 @@
 package session
 
 import (
+	"bytes"
 	"crypto/hmac"
-	"encoding/hex"
+	"encoding/binary"
 	"hash"
-	"strconv"
-	"strings"
 	"time"
 
+	"github.com/cosiner/gohper/encoding"
 	"github.com/cosiner/gohper/errors"
 	"github.com/cosiner/gohper/time2"
-	"github.com/cosiner/gohper/unsafe2"
 )
 
 const (
@@ -19,61 +18,62 @@ const (
 	ErrInvalidSignature = errors.Err("invalid signature")
 )
 
+func NewCipher(signKey []byte, ttl time.Duration, hash func() hash.Hash, encs ...encoding.Encoding) encoding.Encoding {
+	return encoding.Pipe(encs).Prepend(&Cipher{
+		signKey:      signKey,
+		ttl:          ttl,
+		hash:         hash,
+		sigLen:       hash().Size() / 2,
+		timestampLen: 8,
+	})
+}
+
 type Cipher struct {
-	SecretKey string
-	TTL       time.Duration
-	Hash      func() hash.Hash
-	Seperator string
+	signKey      []byte
+	ttl          time.Duration
+	hash         func() hash.Hash
+	sigLen       int
+	timestampLen int
 }
 
-func (c *Cipher) segSep() string {
-	if c.Seperator == "" {
-		return "."
-	}
+func (c *Cipher) encrypt(now uint64, str []byte) []byte {
+	hash := hmac.New(c.hash, c.signKey)
 
-	return c.Seperator
+	hash.Write(str)
+	timestamp := make([]byte, c.timestampLen)
+	binary.BigEndian.PutUint64(timestamp, now)
+	hash.Write(c.signKey)
+
+	sig := hash.Sum(nil)[:c.sigLen]
+	result := make([]byte, c.sigLen+c.timestampLen+len(str))
+	copy(result, sig)
+	copy(result[c.sigLen:], timestamp)
+	copy(result[c.sigLen+c.timestampLen:], str)
+
+	return result
 }
 
-func (c *Cipher) encrypt(now int64, str string) string {
-	hash := hmac.New(c.Hash, unsafe2.Bytes(c.SecretKey))
-
-	if now == 0 {
-		now = time2.Now().Add(c.TTL).UnixNano()
-	}
-	hash.Write(unsafe2.Bytes(str))
-	hash.Write(unsafe2.Bytes(c.segSep()))
-	nows := strconv.FormatInt(now, 10)
-	hash.Write(unsafe2.Bytes(nows))
-	hash.Write(unsafe2.Bytes(c.segSep()))
-	hash.Write(unsafe2.Bytes(c.SecretKey))
-	sig := hash.Sum(nil)
-
-	sigStr := hex.EncodeToString(sig[:hash.Size()/2])
-	return str + c.segSep() + nows + c.segSep() + sigStr[:len(sigStr)/2]
+func (c *Cipher) Encode(str []byte) []byte {
+	n := uint64(time2.Now().Add(c.ttl).UnixNano())
+	return c.encrypt(n, str)
 }
 
-func (c *Cipher) Encrypt(str string) string {
-	return c.encrypt(0, str)
-}
-
-func (c *Cipher) Decrypt(str string) (string, error) {
-	segs := strings.Split(str, c.segSep())
-	if len(segs) != 3 {
-		return "", ErrBadKey
+func (c *Cipher) Decode(str []byte) ([]byte, error) {
+	hdrLen := c.sigLen + c.timestampLen
+	if len(str) < hdrLen {
+		return nil, ErrBadKey
 	}
 
-	tm, err := strconv.ParseInt(segs[1], 10, 64)
-	if err != nil {
-		return "", ErrBadKey
-	}
-	if time2.Now().UnixNano() > tm {
-		return "", ErrExpiredKey
+	tm := binary.BigEndian.Uint64(str[c.sigLen:])
+	if c.ttl != 0 && uint64(time2.Now().UnixNano()) > tm {
+		return nil, ErrExpiredKey
 	}
 
-	sig := c.encrypt(tm, segs[0])
-	if sig != str {
-		return "", ErrInvalidSignature
+	data := str[hdrLen:]
+	sig := c.encrypt(tm, data)
+	if !bytes.Equal(sig, str) {
+		return nil, ErrInvalidSignature
 	}
 
-	return segs[0], nil
+	return data, nil
 }
