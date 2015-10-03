@@ -2,58 +2,41 @@ package time2
 
 import "time"
 
-type Ticker struct {
-	C      <-chan time.Time
+type TimeTicker struct {
 	timer  *time.Timer
 	ticker *time.Ticker
-	tick   time.Duration
+
+	tm time.Time
+	tk time.Duration
 }
 
-func NewTicker(first time.Time, tick time.Duration) *Ticker {
-	now := time.Now()
-	sub := now.Sub(first)
-	sub2 := sub / tick * tick
-	if sub2 < sub {
-		sub2 += tick
+func NewTimeTicker(first time.Time, tick time.Duration) *TimeTicker {
+	now := Now()
+	sub := first.Sub(now)
+	for sub < 0 {
+		sub += tick
 	}
 
-	first = first.Add(sub2)
-	t := &Ticker{
-		tick:  tick,
-		timer: time.NewTimer(sub2 - sub),
+	t := &TimeTicker{
+		timer: time.NewTimer(sub),
+
+		tm: now.Add(sub),
+		tk: tick,
 	}
-	t.C = t.timer.C
 	return t
 }
 
-func (t *Ticker) Wait() (time.Time, bool) {
-	var now time.Time
-	var ok bool
-
+func (t *TimeTicker) C() <-chan time.Time {
+	if Now().Before(t.tm) {
+		return t.timer.C
+	}
 	if t.ticker == nil {
-		now, ok = <-t.timer.C
-	} else {
-		now, ok = <-t.ticker.C
+		t.ticker = time.NewTicker(t.tk)
 	}
-	if ok {
-		t.Switch()
-	}
-
-	return now, ok
+	return t.ticker.C
 }
 
-func (t *Ticker) Switch() {
-	if t.ticker != nil {
-		return
-	}
-
-	t.timer.Stop()
-	t.timer = nil
-	t.ticker = time.NewTicker(t.tick)
-	t.C = t.ticker.C
-}
-
-func (t *Ticker) Stop() {
+func (t *TimeTicker) Stop() {
 	if t.ticker == nil {
 		t.timer.Stop()
 	} else {

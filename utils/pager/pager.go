@@ -46,7 +46,7 @@ type PagerGroup struct {
 	lock   sync.Mutex
 }
 
-func (pg *PagerGroup) Add(beginPage, beginIndex, pageSize int) (p *Pager) {
+func (pg *PagerGroup) Add(beginPage, beginIndex, pageSize int) *Pager {
 	if beginPage < 0 {
 		beginPage = 1
 	}
@@ -56,22 +56,13 @@ func (pg *PagerGroup) Add(beginPage, beginIndex, pageSize int) (p *Pager) {
 	}
 
 	pg.lock.Lock()
-	if l := len(pg.pagers); l < cap(pg.pagers) {
-		pg.pagers = pg.pagers[:l+1]
-
-		p = &pg.pagers[l]
-		p.BeginPage = beginPage
-		p.BeginIndex = beginIndex
-		p.PageSize = pageSize
-	} else {
-		pg.pagers = append(pg.pagers, Pager{
-			BeginPage:  beginPage,
-			BeginIndex: beginIndex,
-			PageSize:   pageSize,
-		})
-		p = &pg.pagers[l]
-	}
-
+	l := len(pg.pagers)
+	pg.pagers = append(pg.pagers, Pager{
+		BeginPage:  beginPage,
+		BeginIndex: beginIndex,
+		PageSize:   pageSize,
+	})
+	p := &pg.pagers[l]
 	pg.lock.Unlock()
-	return
+	return p
 }

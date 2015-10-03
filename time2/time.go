@@ -2,7 +2,6 @@ package time2
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/cosiner/gohper/errors"
@@ -24,21 +23,33 @@ func Now() time.Time {
 	return now.In(Location)
 }
 
-func DateString() string {
-	return Now().Format(DATE_FMT)
+func CurrDate() string {
+	return Date(Now())
 }
 
-func TimeString() string {
-	return Now().Format(TIME_FMT)
+func Date(t time.Time) string {
+	return t.Format(DATE_FMT)
 }
 
-func DateTimeString() string {
-	return Now().Format(DATETIME_FMT)
+func CurrTime() string {
+	return Time(Now())
 }
 
-func DateAndTimeString() (string, string) {
+func Time(t time.Time) string {
+	return t.Format(TIME_FMT)
+}
+
+func CurrDateTime() string {
+	return DateTime(Now())
+}
+
+func DateTime(t time.Time) string {
+	return t.Format(DATETIME_FMT)
+}
+
+func CurrDateAndTime() (string, string) {
 	now := Now()
-	return now.Format(DATE_FMT), now.Format(TIME_FMT)
+	return Date(now), Time(now)
 }
 
 func Parse(layout, value string) (time.Time, error) {
@@ -68,43 +79,6 @@ func NowTimeUnix() uint64 {
 // NowTimeUnixNano is a wrapper of Now().UnixNano()
 func NowTimeUnixNano() uint64 {
 	return uint64(Now().UnixNano())
-}
-
-// ToHuman convert nano to human time size, insufficient portion will be discarded
-// performs rounding.
-//
-// support 0-999ns, 0-999us, 0-999ms, 0-Maxs,
-func ToHuman(nano int64) string {
-	var base int64 = 1
-	if nano < 1000*base {
-		return strconv.Itoa(int(nano/base)) + "ns"
-	}
-
-	base *= 1000
-	if nano < 1000*base {
-		var us = int(nano / base)
-		if nano%base >= base/2 {
-			us++
-		}
-
-		return strconv.Itoa(us) + "us"
-	}
-
-	base *= 1000
-	if nano < 1000*base {
-		var ms = int(nano / base)
-		if nano%base >= base/2 {
-			ms++
-		}
-		return strconv.Itoa(ms) + "ms"
-	}
-
-	base *= 1000
-	var s = int(nano / base)
-	if nano%base >= base/2 {
-		s++
-	}
-	return strconv.Itoa(s) + "s"
 }
 
 const (
@@ -179,7 +153,9 @@ func IsLeapYear(year int) bool {
 	return year%4 == 0 && (year%100 != 0 || year%400 == 0)
 }
 
-func NowDate(year, month, day, hour, minute, sec, nsec int) time.Time {
+// DateDefNow create a timestamp with given field, default use value of now if a
+// field is less than 0
+func DateDefNow(year, month, day, hour, minute, sec, nsec int) time.Time {
 	now := Now()
 	nyear, nmonth, nday := now.Date()
 	nhour, nminute, nsec := now.Clock()

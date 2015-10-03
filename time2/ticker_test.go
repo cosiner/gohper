@@ -3,25 +3,20 @@ package time2
 import (
 	"testing"
 	"time"
+	"fmt"
+	"sync"
 )
 
 func TestTimer(t *testing.T) {
-	now := time.Now()
-	ticker := NewTicker(now.Add(time.Millisecond), time.Millisecond)
+	ticker := NewTimeTicker(DateDefNow(-1, -1, -1, 15, 41, 0, 0), time.Second)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
-		// for {
-		// 	select {
-		// 	case tnow, ok := <-ticker.C:
-		// 		if !ok {
-		// 			return
-		// 		}
-		// 		ticker.Switch()
-		// 		tt.Eq(time.Millisecond, tnow.Sub(now))
-		// 	}
-		// }
-		for {
-			ticker.Wait()
+		for i := 0; i < 5; i++ {
+			tm := <-ticker.C()
+			fmt.Println(DateTime(tm))
 		}
+		wg.Done()
 	}()
-	time.Sleep(time.Millisecond * 100)
+	wg.Wait()
 }

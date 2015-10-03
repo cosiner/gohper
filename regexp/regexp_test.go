@@ -26,8 +26,6 @@ func Parse2() {
 
 `
 
-//TODO: remove t.Log
-
 func TestMatch(t *testing.T) {
 	tt := testing2.Wrap(t)
 
