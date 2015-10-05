@@ -5,9 +5,15 @@ import (
 	"unsafe"
 )
 
+var Enable = true
+
 // String bring a no copy convert from byte slice to string
 // consider the risk
 func String(b []byte) (s string) {
+	if !Enable {
+		return string(b)
+	}
+
 	pbytes := (*reflect.SliceHeader)(unsafe.Pointer(&b))
 	pstring := (*reflect.StringHeader)(unsafe.Pointer(&s))
 
@@ -20,6 +26,9 @@ func String(b []byte) (s string) {
 // Bytes bring a no copy convert from string to byte slice
 // consider the risk
 func Bytes(s string) (b []byte) {
+	if !Enable {
+		return []byte(s)
+	}
 	pbytes := (*reflect.SliceHeader)(unsafe.Pointer(&b))
 	pstring := (*reflect.StringHeader)(unsafe.Pointer(&s))
 

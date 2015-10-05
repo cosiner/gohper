@@ -1,6 +1,7 @@
 package io2
 
 import (
+	"bufio"
 	"io"
 
 	"github.com/cosiner/gohper/unsafe2"
@@ -92,4 +93,22 @@ func (w *ErrorWriter) WriteDo(data []byte, f func([]byte)) (int, error) {
 
 func (w *ErrorWriter) ClearError() {
 	w.Error = nil
+}
+
+func ErrWriteByte(err *error, w *bufio.Writer, b byte) {
+	if *err == nil {
+		*err = w.WriteByte(b)
+	}
+}
+
+func ErrWrite(err *error, w io.Writer, b []byte) {
+	if *err == nil {
+		_, *err = w.Write(b)
+	}
+}
+
+func ErrWriteString(err *error, w io.Writer, s string) {
+	if *err == nil {
+		_, *err = w.Write(unsafe2.Bytes(s))
+	}
 }

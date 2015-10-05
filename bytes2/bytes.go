@@ -78,3 +78,12 @@ func TrimFirstN(s, delim []byte, n int) []byte {
 	}
 	return s
 }
+
+func LastIndexByte(bytes []byte, b byte) int {
+	for i := len(bytes)-1; i >= 0; i-- {
+		if bytes[i] == b {
+			return i
+		}
+	}
+	return -1
+}
