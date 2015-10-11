@@ -27,7 +27,7 @@ func NewTimeTicker(first time.Time, tick time.Duration) *TimeTicker {
 }
 
 func (t *TimeTicker) C() <-chan time.Time {
-	if Now().Before(t.tm) {
+	if Now().Before(t.tm) || len(t.timer.C) > 0 {
 		return t.timer.C
 	}
 	if t.ticker == nil {
