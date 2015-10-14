@@ -7,8 +7,7 @@ import (
 	"testing"
 
 	"github.com/cosiner/gohper/runtime2"
-	"github.com/cosiner/gohper/terminal/ansi"
-	"github.com/cosiner/gohper/terminal/color/output"
+	"github.com/cosiner/gohper/terminal/color"
 )
 
 // TB is a wrapper of testing.testing.TB
@@ -190,6 +189,13 @@ func errorInfo(t testing.TB, skip int, expect, got interface{}, withType bool) {
 	indexErrorInfo(t, skip+1, "", expect, got, withType)
 }
 
+var (
+	red = color.New(color.Highlight, color.FgRed)
+	green = color.New(color.Highlight, color.FgGreen)
+	blue = color.New(color.Highlight, color.FgBlue)
+	yellow = color.New(color.Highlight, color.FgYellow)
+)
+
 func indexErrorInfo(t testing.TB, skip int, index string, expect, got interface{}, withType bool) {
 	var (
 		pos        = runtime2.Caller(skip + 1)
@@ -199,7 +205,7 @@ func indexErrorInfo(t testing.TB, skip int, index string, expect, got interface{
 	const formatT = "%+v(%T)"
 	const format = "%+v"
 
-	if !output.IsTTY {
+	if !color.IsTTY {
 		if withType {
 			exps = fmt.Sprintf(formatT, expect, expect)
 			gots = fmt.Sprintf(formatT, got, got)
@@ -208,22 +214,18 @@ func indexErrorInfo(t testing.TB, skip int, index string, expect, got interface{
 			gots = fmt.Sprintf(format, got)
 		}
 	} else {
-		var red = ansi.Begin(ansi.Highlight, ansi.FgRed)
-		var green = ansi.Begin(ansi.Highlight, ansi.FgGreen)
-		var end = ansi.End()
-
-		pos = ansi.Render(pos, ansi.Highlight, ansi.FgBlue)
+		pos = blue.RenderString(pos)
 		if withType {
-			exps = fmt.Sprintf(green+formatT+end, expect, expect)
-			gots = fmt.Sprintf(red+formatT+end, got, got)
+			exps = green.Sprintf(formatT, expect, expect)
+			gots = red.Sprintf(formatT, got, got)
 		} else {
-			exps = fmt.Sprintf(green+format+end, expect)
-			gots = fmt.Sprintf(red+format+end, got)
+			exps = green.Sprintf(format, expect)
+			gots = red.Sprintf(format, got)
 		}
 	}
 	if index != "" {
-		if output.IsTTY {
-			index = ansi.Render(index, ansi.Highlight, ansi.FgYellow)
+		if color.IsTTY {
+			index = yellow.RenderString(index)
 		}
 
 		pos += ": " + index

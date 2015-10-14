@@ -13,7 +13,6 @@ type Pos struct {
 }
 
 func (c Pos) String() string {
-	// filepath.Base(runtime.FuncForPC(c.Pc).Name()) +
 	return filepath.Base(c.File) + ":" + strconv.Itoa(c.Line)
 }
 

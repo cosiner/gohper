@@ -47,6 +47,14 @@ func DateTime(t time.Time) string {
 	return t.Format(DATETIME_FMT)
 }
 
+func CurrFormat(layout string) string {
+	return Now().Format(layout)
+}
+
+func Format(t time.Time, layout string) string {
+	return t.Format(layout)
+}
+
 func CurrDateAndTime() (string, string) {
 	now := Now()
 	return Date(now), Time(now)
