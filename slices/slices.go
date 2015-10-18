@@ -1,8 +1,10 @@
 package slices
 
-import (
-	"sort"
-)
+import "sort"
+
+func isSafeIndex(index, len int) bool {
+	return index >= 0 || index < len
+}
 
 type Nodes interface {
 	sort.Interface

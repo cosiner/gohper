@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cosiner/gohper/strings2"
+	"github.com/cosiner/gohper/slices"
 )
 
 var Bufsize = 128
@@ -69,11 +69,11 @@ func Param(i interface{}) string {
 	case int:
 		return strconv.Itoa(v)
 	case []int:
-		return strings2.JoinInt(v, ",")
+		return slices.Ints(v).Join("", ",")
 	case uint:
 		return strconv.FormatUint(uint64(v), 10)
 	case []uint:
-		return strings2.JoinUint(v, ",")
+		return slices.Uints(v).Join("", ",")
 	case []byte:
 		return string(v)
 	}

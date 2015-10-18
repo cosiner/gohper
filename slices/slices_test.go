@@ -3,73 +3,33 @@ package slices
 import (
 	"testing"
 
-	"github.com/cosiner/gohper/strings2"
-
 	"github.com/cosiner/gohper/testing2"
 )
 
 func TestStrings(t *testing.T) {
 	tt := testing2.Wrap(t)
 
-	slice := []string{}
-	strings := []string{"1", "2", "3", "4", "5", "6", "7", "8"}
+	slice := Strings{}
+	strings := Strings{"1", "2", "3", "4", "5", "6", "7", "8"}
 	for _, s := range strings {
-		slice = IncrAppendString(slice, s)
+		slice = slice.IncrAppend(s)
 		tt.Eq(len(slice), cap(slice))
 	}
-	slice = FitCapToLenString(slice)
+	slice = slice.FitCapToLen()
 	tt.Eq(len(slice), cap(slice))
 
 	slice = append(slice, "9", "10")
 	tt.NE(len(slice), cap(slice))
-	slice = FitCapToLenString(slice)
+	slice = slice.FitCapToLen()
 	tt.Eq(len(slice), cap(slice))
-}
 
-func TestInts(t *testing.T) {
-	tt := testing2.Wrap(t)
+	slice = slice.Remove(0)
+	tt.DeepEq(Strings{"2", "3", "4", "5", "6", "7", "8", "9", "10"}, slice)
+	slice = slice.Remove(slice.Len() - 1)
+	tt.DeepEq(Strings{"2", "3", "4", "5", "6", "7", "8", "9"}, slice.Append("2").RmDups())
 
-	slice := []int{}
-	strings := []int{1, 2, 3, 4, 5, 6, 7, 8}
-	for _, s := range strings {
-		slice = IncrAppendInt(slice, s)
-		tt.Eq(len(slice), cap(slice))
-	}
-
-	slice = FitCapToLenInt(slice)
-	tt.Eq(len(slice), cap(slice))
-	slice = append(slice, 9, 10)
-	tt.NE(len(slice), cap(slice))
-	slice = FitCapToLenInt(slice)
-	tt.Eq(len(slice), cap(slice))
-}
-
-func TestUints(t *testing.T) {
-	tt := testing2.Wrap(t)
-
-	slice := []uint{}
-	strings := []uint{1, 2, 3, 4, 5, 6, 7, 8}
-	for _, s := range strings {
-		slice = IncrAppendUint(slice, s)
-		tt.Eq(len(slice), cap(slice))
-	}
-
-	slice = FitCapToLenUint(slice)
-	tt.Eq(len(slice), cap(slice))
-	slice = append(slice, 9, 10)
-	tt.NE(len(slice), cap(slice))
-	slice = FitCapToLenUint(slice)
-	tt.Eq(len(slice), cap(slice))
-}
-
-func TestRemoveElement(t *testing.T) {
-	tt := testing2.Wrap(t)
-	eles := []interface{}{1, 2, 3, 4, 5, 6}
-	tt.DeepEq([]interface{}{1, 3, 4, 5, 6}, RemoveElement(eles, 1))
-	eles = []interface{}{1, 2, 3, 4, 5, 6}
-	tt.DeepEq([]interface{}{1, 2, 3, 4, 6}, RemoveElement(eles, 4))
-	eles = []interface{}{1, 2, 3, 4, 5, 6}
-	tt.DeepEq([]interface{}{1, 2, 3, 4, 5, 6}, RemoveElement(eles, 6))
+	tt.Eq("23456789", slice.Join("", ""))
+	tt.Eq("2=?, 3=?, 4=?, 5=?, 6=?, 7=?, 8=?, 9=?", slice.Join("=?", ", "))
 }
 
 type IdNode struct {
@@ -89,7 +49,7 @@ func (nodes IdNodes) Swap(i, j int) {
 }
 
 func (nodes IdNodes) Less(i, j int) bool {
-	return strings2.Compare(nodes[i].Id, nodes[j].Id) < 0
+	return nodes[i].Id < nodes[j].Id
 }
 func (nodes IdNodes) IsSame(i, j int) bool {
 	return nodes[i].Id == nodes[j].Id

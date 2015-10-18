@@ -8,6 +8,17 @@ import (
 	"github.com/cosiner/gohper/unsafe2"
 )
 
+var (
+	Black   = New(FgBlack, Highlight)
+	Red     = New(FgRed, Highlight)
+	Green   = New(FgGreen, Highlight)
+	Yellow  = New(FgYellow, Highlight)
+	Blue    = New(FgBlue, Highlight)
+	Magenta = New(FgMagenta, Highlight)
+	Cyan    = New(FgCyan, Highlight)
+	White   = New(FgWhite, Highlight)
+)
+
 // Renderer is a render for terminal string
 type Renderer struct {
 	begin []byte

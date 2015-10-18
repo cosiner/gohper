@@ -2,9 +2,6 @@ package strings2
 
 import (
 	"bytes"
-	"math/rand"
-	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/cosiner/gohper/index"
@@ -163,110 +160,6 @@ func MidIndex(s string, sep byte) int {
 	return i
 }
 
-// RepeatJoin repeat s count times as a string slice, then join with sep
-func RepeatJoin(s, sep string, count int) string {
-	switch {
-	case count <= 0:
-		return ""
-	case count == 1:
-		return s
-	case count == 2:
-		return s + sep + s
-	default:
-		bs := make([]byte, 0, (len(s)+len(sep))*count-len(sep))
-		buf := bytes.NewBuffer(bs)
-		buf.WriteString(s)
-
-		for i := 1; i < count; i++ {
-			buf.WriteString(sep)
-			buf.WriteString(s)
-		}
-
-		return buf.String()
-	}
-}
-
-// SuffixJoin join string slice with suffix
-func SuffixJoin(s []string, suffix, sep string) string {
-	if len(s) == 0 {
-		return ""
-	}
-
-	if len(s) == 1 {
-		return s[0] + suffix
-	}
-
-	n := len(sep) * (len(s) - 1)
-	for i, sl := 0, len(suffix); i < len(s); i++ {
-		n += len(s[i]) + sl
-	}
-
-	b := make([]byte, n)
-	bp := copy(b, s[0])
-	bp += copy(b[bp:], suffix)
-	for _, s := range s[1:] {
-		bp += copy(b[bp:], sep)
-		bp += copy(b[bp:], s)
-		bp += copy(b[bp:], suffix)
-	}
-
-	return string(b)
-}
-
-// JoinInt join int slice as string
-func JoinInt(v []int, sep string) string {
-	if len(v) == 0 {
-		return ""
-	}
-
-	buf := bytes.NewBuffer([]byte{})
-	buf.WriteString(strconv.Itoa(v[0]))
-	for _, s := range v[1:] {
-		buf.WriteString(sep)
-		buf.WriteString(strconv.Itoa(s))
-	}
-
-	return buf.String()
-}
-
-// JoinInt join int slice as string
-func JoinUint(v []uint, sep string) string {
-	if len(v) == 0 {
-		return ""
-	}
-
-	buf := bytes.NewBuffer([]byte{})
-	buf.WriteString(strconv.FormatUint(uint64(v[0]), 10))
-	for _, s := range v[1:] {
-		buf.WriteString(sep)
-		buf.WriteString(strconv.FormatUint(uint64(s), 10))
-	}
-
-	return buf.String()
-}
-
-// Compare compare two string, if equal, 0 was returned, if s1 > s2, 1 was returned,
-// otherwise -1 was returned
-func Compare(s1, s2 string) int {
-	l1, l2 := len(s1), len(s2)
-	for i := 0; i < l1 && i < l2; i++ {
-		if s1[i] < s2[i] {
-			return -1
-		} else if s1[i] > s2[i] {
-			return 1
-		}
-	}
-
-	switch {
-	case l1 < l2:
-		return -1
-	case l1 == l2:
-		return 0
-	default:
-		return 1
-	}
-}
-
 // RemoveSpace remove all space characters from string by unibyte.IsSpace
 func RemoveSpace(s string) string {
 	idx, end := 0, len(s)
@@ -347,60 +240,6 @@ func WriteStringsToBuffer(buffer *bytes.Buffer, strings []string, sep string) {
 	}
 }
 
-func IsEmpty(s string) bool {
-	return s == ""
-}
-
-func IsNotEmpty(s string) bool {
-	return s != ""
-}
-
-// NumMatched return number of strings matched by matcher
-func NumMatched(matcher func(string) bool, strings ...string) int {
-	var m int
-	for i := 0; i < len(strings); i++ {
-		if matcher(strings[i]) {
-			m++
-		}
-	}
-
-	return m
-}
-
-// Filter strings matched by matcher
-func Filter(matcher func(string) bool, strings ...string) []string {
-	filtered := make([]string, 0, len(strings))
-
-	for i, l := 0, len(strings); i < l; i++ {
-		if s := strings[i]; matcher(s) {
-			filtered = append(filtered, s)
-		}
-	}
-
-	return filtered
-}
-
-// Map convert string using the mapper
-func Map(mapper func(string) string, strings ...string) []string {
-	for i, l := 0, len(strings); i < l; i++ {
-		strings[i] = mapper(strings[i])
-	}
-
-	return strings
-}
-
-func FilterInPlace(matcher func(string) bool, strings ...string) []string {
-	pos := 0
-	for i, l := 0, len(strings); i < l; i++ {
-		if s := strings[i]; matcher(s) {
-			strings[pos] = s
-			pos++
-		}
-	}
-
-	return strings[:pos]
-}
-
 func MultipleLineOperate(s, delim string, operate func(line, delim string) string) string {
 	lines := strings.Split(s, "\n")
 	for i := len(lines) - 1; i >= 0; i-- {
@@ -408,34 +247,6 @@ func MultipleLineOperate(s, delim string, operate func(line, delim string) strin
 	}
 
 	return strings.Join(lines, "\n")
-}
-
-// MakeSlice create a string slice with given size
-func MakeSlice(element string, size int) []string {
-	slice := make([]string, size)
-	for i := 0; i < size; i++ {
-		slice[i] = element
-	}
-	return slice
-}
-
-func ClearEmpty(strings []string) []string {
-	return Clear(strings, "")
-}
-
-func Clear(strings []string, ele string) []string {
-	return FilterInPlace(func(s string) bool {
-		return s != ele
-	}, strings...)
-}
-
-func RandIn(strings []string) string {
-	len := len(strings)
-	if len == 0 {
-		return ""
-	}
-
-	return strings[rand.Intn(len)]
 }
 
 func TrimLastN(s, delim string, n int) string {
@@ -465,33 +276,6 @@ func TrimFirstN(s, delim string, n int) string {
 		n--
 	}
 	return s
-}
-
-func RemoveDuplicate(slice []string) []string {
-	len := len(slice)
-	if len == 0 {
-		return slice
-	}
-
-	sort.Strings(slice)
-	prev := 0
-	for i := 1; i < len; i++ {
-		if s := slice[i]; s != slice[prev] {
-			prev++
-			slice[prev] = s
-		}
-	}
-
-	return slice[:prev+1]
-}
-
-func Search(strings []string, str string, skip int) int {
-	for i, len := 0, len(strings); i < len; i = i + 1 + skip {
-		if strings[i] == str {
-			return i
-		}
-	}
-	return -1
 }
 
 func JoinPairs(pairs map[string]string, eq, sep string) string {

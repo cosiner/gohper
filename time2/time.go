@@ -79,13 +79,13 @@ func UnixNanoSinceNow(sec int) int64 {
 	return Now().Add(time.Duration(sec) * time.Second).UnixNano()
 }
 
-// NowTimeUnix is a wrapper of Now().Unix()
-func NowTimeUnix() uint64 {
+// Unix is a wrapper of Now().Unix()
+func Unix() uint64 {
 	return uint64(Now().Unix())
 }
 
-// NowTimeUnixNano is a wrapper of Now().UnixNano()
-func NowTimeUnixNano() uint64 {
+// UnixNano is a wrapper of Now().UnixNano()
+func UnixNano() uint64 {
 	return uint64(Now().UnixNano())
 }
 

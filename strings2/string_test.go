@@ -2,7 +2,6 @@ package strings2
 
 import (
 	"bytes"
-	"sort"
 	"testing"
 
 	"github.com/cosiner/gohper/testing2"
@@ -72,32 +71,6 @@ func TestSplitAtLastN(t *testing.T) {
 		Run(t, LastIndexN)
 }
 
-func TestJoin(t *testing.T) {
-	testing2.
-		Expect("abc,abc,abc").Arg("abc", ",", 3).
-		Expect("abc,abc").Arg("abc", ",", 2).
-		Expect("abc").Arg("abc", ",", 1).
-		Expect("").Arg("abc", ",", 0).
-		Run(t, RepeatJoin)
-
-	testing2.
-		Expect("").Arg([]int{}, ",").
-		Expect("1,2,3,4").Arg([]int{1, 2, 3, 4}, ",").
-		Run(t, JoinInt)
-
-	testing2.
-		Expect("").Arg([]uint{}, ",").
-		Expect("1,2,3,4").Arg([]uint{1, 2, 3, 4}, ",").
-		Run(t, JoinUint)
-
-	testing2.
-		Expect("").Arg([]string{}, "=?", ", ").
-		Expect("a=?").Arg([]string{"a"}, "=?", ", ").
-		Expect("a=?, b=?, c=?").Arg([]string{"a", "b", "c"}, "=?", ", ").
-		Run(t, SuffixJoin)
-
-}
-
 func TestValid(t *testing.T) {
 	testing2.Tests().
 		True().Arg("", "abcdefghijklmn").
@@ -154,16 +127,6 @@ func TestTrim(t *testing.T) {
 	tt.Eq("ABCDE", TrimAndToUpper("  abcde "))
 }
 
-func TestCompare(t *testing.T) {
-	testing2.
-		Expect(1).Arg("123", "012").
-		Expect(-1).Arg("123", "212").
-		Expect(0).Arg("123", "123").
-		Expect(-1).Arg("123", "1234").
-		Expect(1).Arg("123", "12").
-		Run(t, Compare)
-}
-
 func TestLastIndexByte(t *testing.T) {
 	testing2.
 		Expect(0).Arg("123", byte('1')).
@@ -194,47 +157,6 @@ func TestWriteBuffer(t *testing.T) {
 	tt.Eq("a,b,c", buf.String())
 }
 
-func TestNumMatched(t *testing.T) {
-	testing2.
-		Expect(0).Arg(IsNotEmpty, "", "", "", "").
-		Expect(1).Arg(IsNotEmpty, "1", "", "", "").
-		Expect(2).Arg(IsNotEmpty, "1", "2", "", "").
-		Run(t, NumMatched)
-
-	testing2.
-		Expect(4).Arg(IsEmpty, "", "", "", "").
-		Expect(3).Arg(IsEmpty, "1", "", "", "").
-		Expect(2).Arg(IsEmpty, "1", "2", "", "").
-		Run(t, NumMatched)
-}
-
-func TestFilterMap(t *testing.T) {
-	tt := testing2.Wrap(t)
-	tt.DeepEq([]string{"1"}, Filter(IsNotEmpty, "", "", "1", ""))
-	tt.DeepEq([]string{"", "", ""}, Filter(IsEmpty, "", "", "1", ""))
-
-	tt.DeepEq([]string{"empty", "empty", "1", "empty"},
-		Map(func(s string) string {
-			if s == "" {
-				return "empty"
-			}
-			return s
-		}, "", "", "1", ""))
-
-}
-
-func TestFilterInStrings(t *testing.T) {
-	tt := testing2.Wrap(t)
-
-	strings := []string{"", "A", "", "B", "", "C"}
-	strings2 := FilterInPlace(IsNotEmpty, strings...)
-	tt.DeepEq([]string{"A", "B", "C"}, strings2)
-	tt.DeepEq([]string{"A", "B", "C", "B", "", "C"}, strings)
-
-	strings2 = ClearEmpty(strings)
-	tt.DeepEq([]string{"A", "B", "C", "B", "C"}, strings2)
-}
-
 func TestMultipleLineOperate(t *testing.T) {
 	tt := testing2.Wrap(t)
 	json := `{
@@ -250,24 +172,6 @@ func TestMultipleLineOperate(t *testing.T) {
 }`, json)
 }
 
-func TestMakeSlice(t *testing.T) {
-	tt := testing2.Wrap(t)
-	tt.DeepEq([]string{}, MakeSlice("0", 0))
-	tt.DeepEq([]string{"0"}, MakeSlice("0", 1))
-	tt.DeepEq([]string{"0", "0"}, MakeSlice("0", 2))
-}
-
-func TestRandString(t *testing.T) {
-	tt := testing2.Wrap(t)
-	slice := []string{"1", "2", "3", "4"}
-	tt.True(sort.SearchStrings(slice, RandIn(slice)) >= 0)
-	tt.True(sort.SearchStrings(slice, RandIn(slice)) >= 0)
-	tt.True(sort.SearchStrings(slice, RandIn(slice)) >= 0)
-	tt.True(sort.SearchStrings(slice, RandIn(slice)) >= 0)
-	tt.True(RandIn(nil) == "")
-	tt.True(RandIn([]string{}) == "")
-}
-
 func TestTrimN(t *testing.T) {
 	tt := testing2.Wrap(t)
 	tt.Eq("aaa", TrimFirstN("///aaa", "/", 0))
@@ -280,19 +184,4 @@ func TestTrimN(t *testing.T) {
 	tt.Eq("aaa/", TrimLastN("aaa///", "/", 2))
 	tt.Eq("aaa", TrimLastN("aaa///", "/", 3))
 	tt.Eq("aaa", TrimLastN("aaa///", "/", 4))
-}
-
-func TestRemoveDuplicate(t *testing.T) {
-	tt := testing2.Wrap(t)
-
-	tt.DeepEq([]string{"aa", "bb", "cc"}, RemoveDuplicate([]string{"cc", "aa", "cc", "bb", "aa"}))
-	tt.DeepEq([]string{}, RemoveDuplicate([]string{}))
-}
-
-func TestSearch(t *testing.T) {
-	tt := testing2.Wrap(t)
-
-	strings := []string{"a", "b", "c", "d", "e"}
-	tt.Eq(1, Search(strings, "b", 0))
-	tt.Eq(-1, Search(strings, "b", 1))
 }
