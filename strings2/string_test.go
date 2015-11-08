@@ -147,7 +147,7 @@ func TestMidSep(t *testing.T) {
 		Expect("", "").Arg("123", byte('3')).
 		Expect("", "").Arg("123", byte('4')).
 		Expect("1", "3").Arg("123", byte('2')).
-		Run(t, Seperate)
+		Run(t, Separate)
 }
 
 func TestWriteBuffer(t *testing.T) {

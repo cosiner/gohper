@@ -79,9 +79,9 @@ func TrimAfter(s, delimiter string) string {
 	return strings.TrimSpace(s)
 }
 
-func TrimBefore(s, delimeter string) string {
-	if idx := strings.Index(s, delimeter); idx >= 0 {
-		s = s[idx+len(delimeter):]
+func TrimBefore(s, delimiter string) string {
+	if idx := strings.Index(s, delimiter); idx >= 0 {
+		s = s[idx+len(delimiter):]
 	}
 
 	return strings.TrimSpace(s)
@@ -89,19 +89,19 @@ func TrimBefore(s, delimeter string) string {
 
 // IndexN find index of n-th sep string
 func IndexN(str, sep string, n int) (index int) {
-	index, idx, seplen := 0, -1, len(sep)
+	index, idx, sepLen := 0, -1, len(sep)
 	for i := 0; i < n; i++ {
 		if idx = strings.Index(str, sep); idx == -1 {
 			break
 		}
-		str = str[idx+seplen:]
+		str = str[idx+sepLen:]
 		index += idx
 	}
 
 	if idx == -1 {
 		index = -1
 	} else {
-		index += (n - 1) * seplen
+		index += (n - 1) * sepLen
 	}
 
 	return
@@ -119,9 +119,9 @@ func LastIndexN(str, sep string, n int) (index int) {
 	return
 }
 
-// Seperate string by seperator, the seperator must in the middle of string,
+// Separate string by separator, the separator must in the middle of string,
 // not first and last
-func Seperate(s string, sep byte) (string, string) {
+func Separate(s string, sep byte) (string, string) {
 	i := MidIndex(s, sep)
 	if i < 0 {
 		return "", ""
@@ -150,7 +150,7 @@ func IsAllCharsIn(s, encoding string) bool {
 	return is
 }
 
-// MidIndex find middle seperator index of string, not first and last
+// MidIndex find middle separator index of string, not first and last
 func MidIndex(s string, sep byte) int {
 	i := strings.IndexByte(s, sep)
 	if i <= 0 || i == len(s)-1 {
@@ -174,7 +174,7 @@ func RemoveSpace(s string) string {
 	return string(bs[:idx])
 }
 
-// MergeSpace merge mutiple space to one, trim determin whether remove space at prefix and suffix
+// MergeSpace merge multiple space to one, trim determine whether remove space at prefix and suffix
 func MergeSpace(s string, trim bool) string {
 	space := false
 
@@ -226,7 +226,7 @@ func LastIndexNonSpace(s string) int {
 	return -1
 }
 
-// WriteStringsToBuffer write strings to buffer, it avoid memory allocaton of join
+// WriteStringsToBuffer write strings to buffer, it avoid memory allocation of join
 // strings
 func WriteStringsToBuffer(buffer *bytes.Buffer, strings []string, sep string) {
 	i, last := 0, len(strings)-1

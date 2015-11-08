@@ -1,46 +1,55 @@
 package encoding
 
-import "encoding/json"
-
-type UnmarshalFunc func([]byte, interface{}) error
-
-func (u UnmarshalFunc) Unmarshal(b []byte, v interface{}) error {
-	return u(b, v)
-}
-
-type MarshalFunc func(interface{}) ([]byte, error)
-
-func (m MarshalFunc) Marshal(v interface{}) ([]byte, error) {
-	return m(v)
-}
-
-type PoolFunc func([]byte)
-
-func (p PoolFunc) Pool(b []byte) {
-	p(b)
-}
+import (
+	"encoding/json"
+	"io"
+)
 
 type Codec interface {
-	Unmarshal([]byte, interface{}) error
+	Encode(io.Writer, interface{}) error
 	Marshal(interface{}) ([]byte, error)
+	Decode(io.Reader, interface{}) error
+	Unmarshal([]byte, interface{}) error
 	Pool([]byte)
 }
 
-type funcCodec struct {
-	UnmarshalFunc
-	MarshalFunc
-	PoolFunc
+type JSON struct{}
+
+func (JSON) Encode(w io.Writer, v interface{}) error {
+	return json.NewEncoder(w).Encode(v)
 }
 
-func NewFuncCodec(unmarshal UnmarshalFunc, marshal MarshalFunc, pool PoolFunc) Codec {
-	if pool == nil {
-		pool = func([]byte) {}
-	}
-	return funcCodec{
-		UnmarshalFunc: unmarshal,
-		MarshalFunc:   marshal,
-		PoolFunc:      pool,
-	}
+func (JSON) Marshal(v interface{}) ([]byte, error) {
+	return json.Marshal(v)
 }
 
-var JSON = NewFuncCodec(json.Unmarshal, json.Marshal, nil)
+func (JSON) Decode(r io.Reader, v interface{}) error {
+	return json.NewDecoder(r).Decode(v)
+}
+
+func (JSON) Unmarshal(data []byte, v interface{}) error {
+	return json.Unmarshal(data, v)
+}
+
+func (JSON) Pool([]byte) {}
+
+var DefaultCodec Codec = JSON{}
+
+func Encode(w io.Writer, v interface{}) error {
+	return DefaultCodec.Encode(w, v)
+}
+
+func Marshal(v interface{}) ([]byte, error) {
+	return DefaultCodec.Marshal(v)
+}
+
+func Decode(r io.Reader, v interface{}) error {
+	return DefaultCodec.Decode(r, v)
+}
+
+func Unmarshal(data []byte, v interface{}) error {
+	return DefaultCodec.Unmarshal(data, v)
+}
+func Pool(data []byte) {
+	DefaultCodec.Pool(data)
+}
