@@ -10,7 +10,7 @@ import (
 	"github.com/cosiner/gohper/io2"
 )
 
-const ErrDestIsFile = errors.Err("destnation is a file")
+const ErrDestIsFile = errors.Err("destination is a file")
 
 // FileOpFunc accept a file descriptor, return an error or nil
 type FileOpFunc func(*os.File) error
