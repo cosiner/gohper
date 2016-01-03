@@ -34,6 +34,10 @@ func (s Strings) Clear() {
 	}
 }
 
+func (s Strings) Size() int {
+	return len(s)
+}
+
 type Ints map[int]struct{}
 
 func (s Ints) Put(key int) {
@@ -64,4 +68,44 @@ func (s Ints) Clear() {
 	for k := range s {
 		delete(s, k)
 	}
+}
+
+func (s Ints) Size() int {
+	return len(s)
+}
+
+type Bytes map[byte]struct{}
+
+func (s Bytes) Put(key byte) {
+	s[key] = exist
+}
+
+func (s Bytes) Remove(key byte) {
+	delete(s, key)
+}
+
+func (s Bytes) HasKey(key byte) bool {
+	_, has := s[key]
+	return has
+}
+
+func (s Bytes) Keys() []byte {
+	keys := make([]byte, len(s))
+	i := 0
+	for k := range s {
+		keys[i] = k
+		i++
+	}
+
+	return keys
+}
+
+func (s Bytes) Clear() {
+	for k := range s {
+		delete(s, k)
+	}
+}
+
+func (s Bytes) Size() int {
+	return len(s)
 }
