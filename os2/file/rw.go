@@ -43,19 +43,19 @@ func WriteFlag(trunc bool) int {
 
 // FirstLine read first line from file
 func FirstLine(src string) (line string, err error) {
-	err = Filter(src, func(_ int, l []byte) ([]byte, error) {
+	err = Filter(src, func(_ int, l []byte) (error) {
 		line = string(l)
 
-		return nil, io.EOF
+		return io.EOF
 	})
 
 	return
 }
 
 // Filter file content with given filter, file is in ReadOnly mode
-func Filter(src string, filter io2.LineFilterFunc) error {
+func Filter(src string, filter func(int, []byte) error) error {
 	return Read(src, func(fd *os.File) (err error) {
-		return io2.Filter(fd, nil, false, filter)
+		return io2.FilterRead(fd, filter)
 	})
 }
 
