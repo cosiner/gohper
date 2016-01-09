@@ -13,43 +13,24 @@ type Codec interface {
 	Pool([]byte)
 }
 
-type JSON struct{}
+var JSON = Json{}
 
-func (JSON) Encode(w io.Writer, v interface{}) error {
+type Json struct{}
+
+func (Json) Encode(w io.Writer, v interface{}) error {
 	return json.NewEncoder(w).Encode(v)
 }
 
-func (JSON) Marshal(v interface{}) ([]byte, error) {
+func (Json) Marshal(v interface{}) ([]byte, error) {
 	return json.Marshal(v)
 }
 
-func (JSON) Decode(r io.Reader, v interface{}) error {
+func (Json) Decode(r io.Reader, v interface{}) error {
 	return json.NewDecoder(r).Decode(v)
 }
 
-func (JSON) Unmarshal(data []byte, v interface{}) error {
+func (Json) Unmarshal(data []byte, v interface{}) error {
 	return json.Unmarshal(data, v)
 }
 
-func (JSON) Pool([]byte) {}
-
-var DefaultCodec Codec = JSON{}
-
-func Encode(w io.Writer, v interface{}) error {
-	return DefaultCodec.Encode(w, v)
-}
-
-func Marshal(v interface{}) ([]byte, error) {
-	return DefaultCodec.Marshal(v)
-}
-
-func Decode(r io.Reader, v interface{}) error {
-	return DefaultCodec.Decode(r, v)
-}
-
-func Unmarshal(data []byte, v interface{}) error {
-	return DefaultCodec.Unmarshal(data, v)
-}
-func Pool(data []byte) {
-	DefaultCodec.Pool(data)
-}
+func (Json) Pool([]byte) {}

@@ -22,7 +22,7 @@ func Read(fname string, v interface{}, codec encoding.Codec) error {
 }
 
 func ReadJSON(fname string, v interface{}) error {
-	return Read(fname, v, encoding.JSON{})
+	return Read(fname, v, encoding.JSON)
 }
 
 func ReadJSONWithComment(fname string, v interface{}) error {
@@ -44,7 +44,7 @@ func ReadJSONWithComment(fname string, v interface{}) error {
 				buf.Write(line)
 			}
 		}
-		return encoding.JSON{}.Unmarshal(buf.Bytes(), v)
+		return encoding.JSON.Unmarshal(buf.Bytes(), v)
 	})
 }
 
