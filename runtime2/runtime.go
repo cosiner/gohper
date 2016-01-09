@@ -1,9 +1,10 @@
 package runtime2
 
 import (
-	"path/filepath"
+	"fmt"
+	"os"
 	"runtime"
-	"strconv"
+	"strings"
 )
 
 type Pos struct {
@@ -12,23 +13,23 @@ type Pos struct {
 	Line int
 }
 
-func (c Pos) String() string {
-	return filepath.Base(c.File) + ":" + strconv.Itoa(c.Line)
-}
-
-func CallerPos(depth int) Pos {
-	pc, file, line, _ := runtime.Caller(depth + 1)
-	return Pos{
-		File: file,
-		Pc:   pc,
-		Line: line,
-	}
+func pathSepFunc(r rune) bool {
+	return r == '/' || r == os.PathSeparator
 }
 
 // Caller report caller's position with file:function:line format
 // depth means which caller, 0 means yourself, 1 means your caller
 func Caller(depth int) string {
-	return CallerPos(depth + 1).String()
+	_, file, line, _ := runtime.Caller(depth + 1)
+	i := strings.LastIndexFunc(file, pathSepFunc)
+	if i >= 0 {
+		j := strings.LastIndexFunc(file[:i], pathSepFunc)
+		if j >= 0 {
+			i = j
+		}
+		file = file[i+1:]
+	}
+	return fmt.Sprintf("%s:%d", file, line)
 }
 
 func Stack(bufsize int, all bool) []byte {

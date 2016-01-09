@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"io"
 
+	"bytes"
+
 	"github.com/cosiner/gohper/unsafe2"
 )
 
@@ -49,17 +51,14 @@ func WriteIfString(w io.Writer, v interface{}) (bool, error) {
 
 // Writeln write bytes to writer and append a newline character
 func Writeln(w io.Writer, bs []byte) (int, error) {
-	c, err := w.Write(bs)
-	if err != nil {
-		return 0, err
-	}
-
-	_, err = w.Write(_newLine)
+	n, err := w.Write(bs)
 	if err == nil {
-		c++
+		if !bytes.HasSuffix(bs, _newLine) {
+			_, err = w.Write(_newLine)
+		}
 	}
 
-	return c, err
+	return n, err
 }
 
 // WriteStringln write string to writer and append a newline character

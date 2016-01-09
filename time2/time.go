@@ -14,6 +14,11 @@ var (
 	TIME_FMT     = "15:04:05"
 )
 
+const (
+	Day        = time.Hour * 24
+	DaySeconds = 24 * 3600
+)
+
 func Now() time.Time {
 	now := time.Now()
 	if Location == time.Local {

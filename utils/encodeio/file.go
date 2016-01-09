@@ -2,11 +2,10 @@
 package encodeio
 
 import (
-	"os"
-
 	"bufio"
 	"bytes"
 	"io"
+	"os"
 
 	"github.com/cosiner/gohper/encoding"
 	"github.com/cosiner/gohper/os2/file"
@@ -45,7 +44,6 @@ func ReadJSONWithComment(fname string, v interface{}) error {
 				buf.Write(line)
 			}
 		}
-
 		return encoding.JSON{}.Unmarshal(buf.Bytes(), v)
 	})
 }
