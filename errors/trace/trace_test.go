@@ -14,7 +14,7 @@ func TestTrace(t *testing.T) {
 	var e error = errors.Err("Error")
 
 	e2 := Trace(e)
-	es := "trace_test.go:16:" + e.Error()
+	es := "trace/trace_test.go:16:" + e.Error()
 	tt.Eq(es, e2.Error())
 
 	e2 = Trace(e2)
