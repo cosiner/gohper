@@ -1,4 +1,4 @@
-package session
+package token
 
 import (
 	"bytes"
@@ -18,60 +18,57 @@ const (
 	ErrInvalidSignature = errors.Err("invalid signature")
 )
 
+type Cipher struct {
+	signKey []byte
+	ttl     time.Duration
+	hash    func() hash.Hash
+	sigLen  int
+	hdrLen  int
+}
+
 func NewCipher(signKey []byte, ttl time.Duration, hash func() hash.Hash, encs ...encoding.Encoding) encoding.Encoding {
+	sigLen := hash().Size() / 3
 	return encoding.Pipe(encs).Prepend(&Cipher{
-		signKey:      signKey,
-		ttl:          ttl,
-		hash:         hash,
-		sigLen:       hash().Size() / 2,
-		timestampLen: 8,
+		signKey: signKey,
+		ttl:     ttl,
+		hash:    hash,
+		sigLen:  sigLen,
+		hdrLen:  sigLen + 8,
 	})
 }
 
-type Cipher struct {
-	signKey      []byte
-	ttl          time.Duration
-	hash         func() hash.Hash
-	sigLen       int
-	timestampLen int
-}
+// | signature | deadline | str
+func (c *Cipher) encrypt(deadline uint64, b []byte) []byte {
+	result := make([]byte, c.hdrLen+len(b))
+	binary.BigEndian.PutUint64(result[c.sigLen:c.hdrLen], deadline)
+	copy(result[c.hdrLen:], b)
 
-func (c *Cipher) encrypt(now uint64, str []byte) []byte {
 	hash := hmac.New(c.hash, c.signKey)
-
-	hash.Write(str)
-	timestamp := make([]byte, c.timestampLen)
-	binary.BigEndian.PutUint64(timestamp, now)
-	hash.Write(c.signKey)
-
-	sig := hash.Sum(nil)[:c.sigLen]
-	result := make([]byte, c.sigLen+c.timestampLen+len(str))
-	copy(result, sig)
-	copy(result[c.sigLen:], timestamp)
-	copy(result[c.sigLen+c.timestampLen:], str)
+	hash.Write(b)
+	hash.Write(result[c.sigLen : c.hdrLen])
+	copy(result, hash.Sum(nil)[:c.sigLen])
 
 	return result
 }
 
-func (c *Cipher) Encode(str []byte) []byte {
-	n := uint64(time2.Now().Add(c.ttl).UnixNano())
-	return c.encrypt(n, str)
+func (c *Cipher) Encode(b []byte) []byte {
+	deadline := uint64(time2.Now().Add(c.ttl).Unix())
+	return c.encrypt(deadline, b)
 }
 
-func (c *Cipher) Decode(str []byte) ([]byte, error) {
-	hdrLen := c.sigLen + c.timestampLen
-	if len(str) < hdrLen {
+func (c *Cipher) Decode(b []byte) ([]byte, error) {
+	if len(b) < c.hdrLen {
 		return nil, ErrBadKey
 	}
 
-	tm := binary.BigEndian.Uint64(str[c.sigLen:])
-	if c.ttl != 0 && uint64(time2.Now().UnixNano()) > tm {
+	deadline := binary.BigEndian.Uint64(b[c.sigLen:c.hdrLen])
+	if c.ttl != 0 && uint64(time2.Now().Unix()) > deadline {
 		return nil, ErrExpiredKey
 	}
 
-	data := str[hdrLen:]
-	sig := c.encrypt(tm, data)
-	if !bytes.Equal(sig, str) {
+	data := b[c.hdrLen:]
+	encData := c.encrypt(deadline, data)
+	if !bytes.Equal(encData, b) {
 		return nil, ErrInvalidSignature
 	}
 
