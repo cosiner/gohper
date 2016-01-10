@@ -4,6 +4,14 @@ var exist = struct{}{}
 
 type Strings map[string]struct{}
 
+func NewStrings(keys ...string) Strings {
+	set := make(Strings)
+	for _, k := range keys {
+		set.Put(k)
+	}
+	return set
+}
+
 func (s Strings) Put(key string) {
 	s[key] = exist
 }
@@ -40,6 +48,14 @@ func (s Strings) Size() int {
 
 type Ints map[int]struct{}
 
+func NewInts(keys ...int) Ints {
+	set := make(Ints)
+	for _, k := range keys {
+		set.Put(k)
+	}
+	return set
+}
+
 func (s Ints) Put(key int) {
 	s[key] = exist
 }
@@ -75,6 +91,14 @@ func (s Ints) Size() int {
 }
 
 type Bytes map[byte]struct{}
+
+func NewBytes(keys ...byte) Bytes {
+	set := make(Bytes)
+	for _, k := range keys {
+		set.Put(k)
+	}
+	return set
+}
 
 func (s Bytes) Put(key byte) {
 	s[key] = exist
