@@ -10,10 +10,10 @@ type Codec interface {
 	Marshal(interface{}) ([]byte, error)
 	Decode(io.Reader, interface{}) error
 	Unmarshal([]byte, interface{}) error
-	Pool([]byte)
+	Pool(...[]byte)
 }
 
-var JSON = Json{}
+var JSON Codec = Json{}
 
 type Json struct{}
 
@@ -33,4 +33,4 @@ func (Json) Unmarshal(data []byte, v interface{}) error {
 	return json.Unmarshal(data, v)
 }
 
-func (Json) Pool([]byte) {}
+func (Json) Pool(...[]byte) {}

@@ -28,6 +28,14 @@ func Now() time.Time {
 	return now.In(Location)
 }
 
+func After(d time.Duration) time.Time {
+	return Now().Add(d)
+}
+
+func Since(t time.Time) time.Duration {
+	return Now().Sub(t)
+}
+
 func CurrDate() string {
 	return Date(Now())
 }
