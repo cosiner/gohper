@@ -9,16 +9,21 @@ import (
 
 type Flag int32
 
+const (
+	FLAG_FALSE Flag = 0
+	FLAG_TRUE  Flag = 1
+)
+
 func (f *Flag) IsTrue() bool {
-	return atomic.LoadInt32((*int32)(f)) == 1
+	return atomic.LoadInt32((*int32)(f)) == int32(FLAG_TRUE)
 }
 
 func (f *Flag) MakeTrue() bool {
-	return atomic.CompareAndSwapInt32((*int32)(f), 0, 1)
+	return atomic.CompareAndSwapInt32((*int32)(f), int32(FLAG_FALSE), int32(FLAG_TRUE))
 }
 
 func (f *Flag) MakeFalse() bool {
-	return atomic.CompareAndSwapInt32((*int32)(f), 1, 0)
+	return atomic.CompareAndSwapInt32((*int32)(f), int32(FLAG_TRUE), int32(FLAG_FALSE))
 }
 
 type Flags struct {
