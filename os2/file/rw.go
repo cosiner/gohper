@@ -71,7 +71,7 @@ func FilterTo(dst, src string, trunc bool, filter io2.LineFilterFunc) error {
 
 // Copy src file to dest file
 func Copy(dst, src string) error {
-	return FilterTo(dst, src, true, io2.NopLineFilte)
+	return FilterTo(dst, src, true, nil)
 }
 
 // CopyDir copy directory from source to destination

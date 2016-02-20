@@ -1,6 +1,8 @@
 package file
 
-import "os"
+import (
+	"os"
+)
 
 const (
 	FilePerm = 0644
@@ -11,7 +13,7 @@ const (
 func IsExist(fname string) bool {
 	_, err := os.Stat(fname)
 
-	return err == nil || os.IsExist(err)
+	return !os.IsNotExist(err)
 }
 
 // IsFile check whether or not file exist
