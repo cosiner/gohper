@@ -1,7 +1,6 @@
 package sync2
 
 import (
-	"fmt"
 	"math/rand"
 	"runtime"
 	"sync"
@@ -46,11 +45,11 @@ func TestAutorefMutex(t *testing.T) {
 	for i := 0; i < routine; i++ {
 		n := i + 1
 		go func() {
-			time.Sleep(time.Duration(n%3)*time.Millisecond)
+			time.Sleep(time.Duration(n%3) * time.Millisecond)
 			key := keys[rand.Intn(keyNum)]
 			mu.Lock(key)
 			t.Logf("routine %d locked %s", n, key)
-			time.Sleep(time.Duration(n%3)*time.Millisecond)
+			time.Sleep(time.Duration(n%3) * time.Millisecond)
 			mu.Unlock(key)
 			t.Logf("routine %d unlocked %s", n, key)
 
