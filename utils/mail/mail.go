@@ -98,9 +98,7 @@ func (m *Mailer) Send(mail *Mail) (err error) {
 		subject = tmpl.Subject
 	}
 	buffer.WriteString("Subject:" + subject + "\r\n")
-
 	buffer.WriteString("Content-Type: text/html;charset=UTF-8\r\n\r\n")
-
 	if mail.RawContent != "" {
 		buffer.WriteString(mail.RawContent)
 	} else {
