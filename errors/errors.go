@@ -148,3 +148,12 @@ func CondDo(val bool, err error, fn func(error)) {
 		fn(err)
 	}
 }
+
+func Nil(err error, errs ...error) error {
+	for _, e := range errs {
+		if err == e {
+			return nil
+		}
+	}
+	return err
+}
