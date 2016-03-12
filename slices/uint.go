@@ -215,3 +215,11 @@ func (v Uints) Join(suffix, sep string) string {
 func (v Uints) Contains(u uint) bool {
 	return v.Find(EqualUint(u)) > 0
 }
+
+func (v Uints) ToInterfaces() []interface{} {
+	ifs := make([]interface{}, len(v))
+	for i, s := range v {
+		ifs[i] = s
+	}
+	return ifs
+}

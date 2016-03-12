@@ -215,3 +215,11 @@ func (v Ints) Join(suffix, sep string) string {
 func (v Ints) Contains(i int) bool {
 	return v.Find(EqualInt(i)) > 0
 }
+
+func (v Ints) ToInterfaces() []interface{} {
+	ifs := make([]interface{}, len(v))
+	for i, s := range v {
+		ifs[i] = s
+	}
+	return ifs
+}

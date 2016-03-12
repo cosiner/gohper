@@ -219,3 +219,11 @@ func (v Strings) Join(suffix, sep string) string {
 func (v Strings) Contains(s string) bool {
 	return v.Find(EqualString(s)) > 0
 }
+
+func (v Strings) ToInterfaces() []interface{} {
+	ifs := make([]interface{}, len(v))
+	for i, s := range v {
+		ifs[i] = s
+	}
+	return ifs
+}
