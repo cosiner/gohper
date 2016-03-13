@@ -19,6 +19,10 @@ func MergeNodes(nodes Nodes, isSorted bool) int {
 	}
 
 	prev, size := 0, nodes.Len()
+	if size <= 1 {
+		return size
+	}
+
 	for i := prev + 1; i < size; i++ {
 		if nodes.IsSame(prev, i) {
 			nodes.Merge(prev, i)

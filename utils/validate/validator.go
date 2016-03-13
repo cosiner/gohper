@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/cosiner/gohper/sort2"
 	"github.com/cosiner/gohper/strings2"
 )
 
@@ -43,6 +44,10 @@ func (c Chars) Validate(s string) error {
 }
 
 func ValidChars(chars string, err error) Validator {
+	bytes := []byte(chars)
+	sort2.Bytes(bytes)
+	chars = string(bytes)
+
 	return Chars{
 		Chars: chars,
 		Err:   err,

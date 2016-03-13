@@ -183,7 +183,9 @@ func (v Strings) Rand() string {
 }
 
 func (v Strings) Clear(i string) Strings {
-	return v.FilterInplace(func(vi string) bool { return vi != i })
+	return v.FilterInplace(func(vi string) bool {
+		return vi != i
+	})
 }
 
 func (v Strings) Replace(old, new string) Strings {
@@ -226,4 +228,14 @@ func (v Strings) ToInterfaces() []interface{} {
 		ifs[i] = s
 	}
 	return ifs
+}
+
+func (v Strings) IsSame(i, j int) bool {
+	return v[i] == v[j]
+}
+
+func (v Strings) Merge(dst, src int) {}
+
+func (v Strings) Move(dst, src int) {
+	v[dst] = v[src]
 }

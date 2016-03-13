@@ -223,3 +223,13 @@ func (v Uints) ToInterfaces() []interface{} {
 	}
 	return ifs
 }
+
+func (v Uints) IsSame(i, j int) bool {
+	return v[i] == v[j]
+}
+
+func (v Uints) Merge(dst, src int) {}
+
+func (v Uints) Move(dst, src int) {
+	v[dst] = v[src]
+}

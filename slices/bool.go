@@ -17,3 +17,13 @@ func MakeBools(i bool, n int) Bools {
 func (v Bools) Bools() []bool {
 	return []bool(v)
 }
+
+func (v Bools) IsSame(i, j int) bool {
+	return v[i] == v[j]
+}
+
+func (v Bools) Merge(dst, src int) {}
+
+func (v Bools) Move(dst, src int) {
+	v[dst] = v[src]
+}
