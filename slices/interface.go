@@ -163,7 +163,7 @@ func (v Interfaces) Remove(index int) Interfaces {
 }
 
 func (v Interfaces) Append(i ...interface{}) Interfaces {
-	return append(v, i..)
+	return append(v, i...)
 }
 
 func (v Interfaces) Rand() interface{} {
