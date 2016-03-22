@@ -166,6 +166,13 @@ func (v Interfaces) Append(i ...interface{}) Interfaces {
 	return append(v, i...)
 }
 
+func (v Interfaces) AppendStrings(ss ...string) Interfaces {
+	for _, s := range ss {
+		v = append(v, s)
+	}
+	return v
+}
+
 func (v Interfaces) Rand() interface{} {
 	l := len(v)
 	if l == 0 {
