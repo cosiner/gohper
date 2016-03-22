@@ -162,8 +162,8 @@ func (v Interfaces) Remove(index int) Interfaces {
 	return v
 }
 
-func (v Interfaces) Append(i interface{}) Interfaces {
-	return append(v, i)
+func (v Interfaces) Append(i ...interface{}) Interfaces {
+	return append(v, i..)
 }
 
 func (v Interfaces) Rand() interface{} {
