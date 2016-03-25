@@ -17,11 +17,11 @@ func TestPager(t *testing.T) {
 
 func TestPagerGroup(t *testing.T) {
 	pg := PagerGroup{}
-	testPager(pg.Add(1, 0, 10), t)
-	testPager(pg.Add(-1, -1, 10), t)
-	testPager(pg.Add(-1, -2, 10), t)
-	testPager(pg.Add(-1, -2, 10), t)
-	testPager(pg.Add(-1, -2, 10), t)
+	testPager(pg.Add(1, 0, 10, 0), t)
+	testPager(pg.Add(-1, -1, 10, 0), t)
+	testPager(pg.Add(-1, -2, 10, 0), t)
+	testPager(pg.Add(-1, -2, 10, 0), t)
+	testPager(pg.Add(-1, -2, 10, 0), t)
 }
 
 func testPager(p *Pager, t *testing.T) {

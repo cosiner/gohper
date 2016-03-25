@@ -10,6 +10,8 @@ type Pager struct {
 	BeginPage  int
 	BeginIndex int
 	PageSize   int
+
+	MaxPage int
 }
 
 func (p *Pager) Begin(page int) int {
@@ -37,6 +39,13 @@ func (p *Pager) BeginByString(page string) int {
 	return p.Begin(val)
 }
 
+func (p *Pager) IsOverRange(start, count, maxPage int) bool {
+	if p.MaxPage > 0 {
+		return (start + count) >= p.PageSize*maxPage
+	}
+	return false
+}
+
 func (p *Pager) EndByString(page string) int {
 	return p.BeginByString(page) + p.PageSize
 }
@@ -46,7 +55,7 @@ type PagerGroup struct {
 	lock   sync.Mutex
 }
 
-func (pg *PagerGroup) Add(beginPage, beginIndex, pageSize int) *Pager {
+func (pg *PagerGroup) Add(beginPage, beginIndex, pageSize, maxPage int) *Pager {
 	if beginPage < 0 {
 		beginPage = 1
 	}
@@ -61,6 +70,7 @@ func (pg *PagerGroup) Add(beginPage, beginIndex, pageSize int) *Pager {
 		BeginPage:  beginPage,
 		BeginIndex: beginIndex,
 		PageSize:   pageSize,
+		MaxPage:    maxPage,
 	})
 	p := &pg.pagers[l]
 	pg.lock.Unlock()
