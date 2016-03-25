@@ -39,9 +39,9 @@ func (p *Pager) BeginByString(page string) int {
 	return p.Begin(val)
 }
 
-func (p *Pager) IsOverRange(start, count, maxPage int) bool {
+func (p *Pager) IsOverRange(start, count int) bool {
 	if p.MaxPage > 0 {
-		return (start + count) >= p.PageSize*maxPage
+		return (start + count) >= p.PageSize*p.MaxPage
 	}
 	return false
 }
