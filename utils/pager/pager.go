@@ -41,7 +41,19 @@ func (p *Pager) BeginByString(page string) int {
 
 func (p *Pager) IsOverRange(start, count int) bool {
 	if p.MaxPage > 0 {
-		return (start + count) >= p.PageSize*p.MaxPage
+		return (start + count) > p.PageSize*p.MaxPage
+	}
+	return false
+}
+
+func (p *Pager) IsReachBottom(start, count, maxPage int) bool {
+	if maxPage <= 0 {
+		maxPage = p.MaxPage
+	} else if p.MaxPage > 0 && p.MaxPage < maxPage {
+		maxPage = p.MaxPage
+	}
+	if maxPage > 0 {
+		return (start + count) >= p.PageSize*maxPage
 	}
 	return false
 }
