@@ -37,3 +37,10 @@ func Stack(bufsize int, all bool) []byte {
 	n := runtime.Stack(buf, all)
 	return buf[:n]
 }
+
+func Recover(bufsize int) []byte {
+	if err := recover(); err != nil {
+		return Stack(bufsize, false)
+	}
+	return nil
+}
