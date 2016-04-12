@@ -40,3 +40,19 @@ func TestMarshalStruct(t *testing.T) {
 	tt.Eq("bbb", st.Name)
 	tt.Eq(123, st.Age)
 }
+
+func TestTruncSliceCapToLen(t *testing.T) {
+	val1 := make([]int, 1, 2)
+	val2 := make([]int, 2, 4)
+	val3 := make([]int, 4, 8)
+	TruncSliceCapToLen(&val1, &val2, &val3)
+	if len(val1) != 1 || cap(val1) != 1 {
+		t.Fail()
+	}
+	if len(val2) != 2 || cap(val2) != 2 {
+		t.Fail()
+	}
+	if len(val3) != 4 || cap(val3) != 4 {
+		t.Fail()
+	}
+}

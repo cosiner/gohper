@@ -1,1 +1,3 @@
 gohper.iml
+vendor/**
+!vendor/manifest

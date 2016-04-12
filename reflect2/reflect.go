@@ -173,3 +173,23 @@ func IsNil(v interface{}) bool {
 		return false
 	}
 }
+
+func TruncSliceCapToLen(vals ...interface{}) {
+	for _, val := range vals {
+		ptrVal := reflect.ValueOf(val)
+		if kind := ptrVal.Kind(); kind != reflect.Ptr {
+			panic(errors.Newf("expect pointer to slice, but got %s", kind.String()))
+		}
+		sliVal := ptrVal.Elem()
+		if kind := sliVal.Kind(); kind != reflect.Slice {
+			panic(errors.Newf("expect pointer to slice, but got pointer of %s", kind.String()))
+		}
+		len, cap := sliVal.Len(), sliVal.Cap()
+		if len == cap {
+			continue
+		}
+		newVal := reflect.MakeSlice(sliVal.Type(), len, len)
+		reflect.Copy(newVal, sliVal)
+		sliVal.Set(newVal)
+	}
+}
