@@ -33,7 +33,7 @@ func Caller(depth int) string {
 }
 
 func Stack(bufsize int, all bool) []byte {
-	buf := make([]byte, 0, bufsize)
+	buf := make([]byte, bufsize)
 	n := runtime.Stack(buf, all)
 	return buf[:n]
 }

@@ -31,7 +31,7 @@ func (r *RawBytes) UnmarshalJSON(data []byte) error {
 type RawString string
 
 func (r RawString) Marshal() ([]byte, error) {
-	return unsafe2.Bytes(r), nil
+	return unsafe2.Bytes(string(r)), nil
 }
 
 func (r RawString) Unmarshal(data []byte) error {
