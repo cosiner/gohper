@@ -213,7 +213,7 @@ func (v Uints) Join(suffix, sep string) string {
 }
 
 func (v Uints) Contains(u uint) bool {
-	return v.Find(EqualUint(u)) > 0
+	return v.Find(EqualUint(u)) >= 0
 }
 
 func (v Uints) ToInterfaces() []interface{} {

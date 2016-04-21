@@ -196,5 +196,5 @@ func (v Interfaces) Replace(old, new interface{}) Interfaces {
 }
 
 func (v Interfaces) Contains(i interface{}) bool {
-	return v.Find(EqualInterface(i)) > 0
+	return v.Find(EqualInterface(i)) >= 0
 }
