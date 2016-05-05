@@ -17,7 +17,7 @@ func NewBarrier(n uint32) *Barrier {
 }
 
 func (b *Barrier) Wait() {
-	if atomic.AddInt32(&b.curr, 1) >= b.n {
+	if atomic.AddUint32(&b.curr, 1) >= b.n {
 		close(b.c)
 	} else {
 		<-b.c
