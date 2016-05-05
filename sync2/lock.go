@@ -6,13 +6,15 @@ import (
 	"sync/atomic"
 )
 
-// Spinlock should not be used on single cpu(core) machines.
-// if one goroute take out the lock, the programm will be died if another goroutine
-// try to take out the lock again
 type Spinlock int32
 
 func (s *Spinlock) Lock() {
-	for !atomic.CompareAndSwapInt32((*int32)(s), 0, 1) {
+	for {
+		for atomic.LoadInt32((*int32)(s)) != 0 {
+		}
+		if atomic.CompareAndSwapInt32((*int32)(s), 0, 1) {
+			return
+		}
 	}
 }
 

@@ -38,9 +38,13 @@ func Stack(bufsize int, all bool) []byte {
 	return buf[:n]
 }
 
-func Recover(bufsize int) []byte {
+func Recover(bufsize int, logger func(...interface{})) {
 	if err := recover(); err != nil {
-		return Stack(bufsize, false)
+		logger(err, string(Stack(bufsize, false)))
 	}
-	return nil
+}
+
+func RecoverRun(bufsize int, fn func(), logger func(...interface{})) {
+	defer Recover(bufsize, logger)
+	fn()
 }

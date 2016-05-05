@@ -1,6 +1,7 @@
 package runtime2
 
 import (
+	"log"
 	"testing"
 
 	"github.com/cosiner/gohper/strings2"
@@ -11,4 +12,17 @@ func TestCaller(t *testing.T) {
 	if p := strings2.RemoveSpace(Caller(0)); p != exp {
 		t.Fatalf("Error: expect %s, but get %s", exp, p)
 	}
+}
+
+func panicFn() {
+	panic("error")
+}
+
+func TestRecover(t *testing.T) {
+	RecoverRun(2048, panicFn, log.Println)
+
+	defer func() {
+		defer Recover(2048, log.Println)
+		panicFn()
+	}()
 }
