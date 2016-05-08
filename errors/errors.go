@@ -17,6 +17,15 @@ func Assert(val bool, err error) {
 	}
 }
 
+func Exclude(err error, errors ...error) error {
+	for _, e := range errors {
+		if err == e {
+			return nil
+		}
+	}
+	return err
+}
+
 func New(v ...interface{}) error {
 	return Err(fmt.Sprint(v...))
 }
