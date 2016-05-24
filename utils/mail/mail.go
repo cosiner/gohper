@@ -2,8 +2,11 @@ package mail
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"html/template"
+	"net"
+	netmail "net/mail"
 	"net/smtp"
 	"strings"
 
@@ -23,6 +26,7 @@ type mailTemplate struct {
 }
 
 type Mail struct {
+	Sender  string
 	From    string
 	To      []string
 	Subject string
@@ -35,26 +39,40 @@ type Mail struct {
 
 type Mailer struct {
 	PrintMail bool
+	DoHelo    bool
 
-	addr     string
-	auth     smtp.Auth
-	username string
+	addr string
+	host string
+	auth smtp.Auth
+
+	from   string
+	sender string
 
 	Templates  map[string]mailTemplate
 	bufferPool bytes2.Pool
+	tls        bool
 }
 
-func NewMailer(username, password, addr string) *Mailer {
+func NewMailer(from, sender, username, password, addr string, tls bool) (*Mailer, error) {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return nil, err
+	}
+	if sender == "" {
+		sender = from
+	}
 	mailer := &Mailer{
 		addr:       addr,
-		username:   username,
+		host:       host,
+		from:       from,
+		sender:     sender,
 		bufferPool: bytes2.NewSyncPool(1024, false),
 	}
 	auth := smtp.PlainAuth("", username, password, strings.Split(addr, ":")[0])
 	mailer.auth = auth
 	mailer.Templates = make(map[string]mailTemplate)
-
-	return mailer
+	mailer.tls = tls
+	return mailer, nil
 }
 
 func (m *Mailer) AddTemplateFile(typ, filename, subject string) error {
@@ -82,7 +100,11 @@ func (m *Mailer) Send(mail *Mail) (err error) {
 
 	from := mail.From
 	if from == "" {
-		from = m.username
+		from = m.from
+	}
+	sender := mail.Sender
+	if sender == "" {
+		sender = m.sender
 	}
 
 	buffer := bytes.NewBuffer(m.bufferPool.Get(1024, false))
@@ -91,7 +113,11 @@ func (m *Mailer) Send(mail *Mail) (err error) {
 	strings2.WriteStringsToBuffer(buffer, mail.To, ";")
 
 	buffer.WriteString("\r\n")
-	buffer.WriteString("From:" + from + "\r\n")
+	nm := netmail.Address{
+		Address: from,
+		Name:    sender,
+	}
+	buffer.WriteString("From:" + nm.String() + "\r\n")
 
 	subject := mail.Subject
 	if has && subject == "" {
@@ -110,9 +136,62 @@ func (m *Mailer) Send(mail *Mail) (err error) {
 		fmt.Println(unsafe2.String(data))
 	}
 	if err == nil {
-		err = smtp.SendMail(m.addr, m.auth, from, mail.To, data)
+		err = m.send(from, mail.To, data)
 	}
 	m.bufferPool.Put(data)
 
 	return
+}
+
+func (m *Mailer) send(from string, to []string, msg []byte) error {
+	if !m.tls {
+		return smtp.SendMail(m.addr, m.auth, from, to, msg)
+	}
+
+	conn, err := tls.Dial("tcp", m.addr, nil)
+	if err != nil {
+		return err
+	}
+	c, err := smtp.NewClient(conn, m.host)
+	if err != nil {
+		conn.Close()
+		return err
+	}
+	defer c.Close()
+
+	if m.DoHelo {
+		err = c.Hello("")
+		if err != nil {
+			return err
+		}
+	}
+	if m.auth != nil {
+		if ok, _ := c.Extension("AUTH"); ok {
+			if err = c.Auth(m.auth); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err = c.Mail(from); err != nil {
+		return err
+	}
+	for _, addr := range to {
+		if err = c.Rcpt(addr); err != nil {
+			return err
+		}
+	}
+	w, err := c.Data()
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(msg)
+	if err != nil {
+		return err
+	}
+	err = w.Close()
+	if err != nil {
+		return err
+	}
+	return c.Quit()
 }
