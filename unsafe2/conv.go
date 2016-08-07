@@ -25,16 +25,19 @@ func String(b []byte) (s string) {
 
 // Bytes bring a no copy convert from string to byte slice
 // consider the risk
-func Bytes(s string) (b []byte) {
+func Bytes(s string) []byte {
 	if !Enable {
 		return []byte(s)
 	}
-	pbytes := (*reflect.SliceHeader)(unsafe.Pointer(&b))
 	pstring := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	return BytesFromPtr(pstring.Data, pstring.Len)
+}
 
-	pbytes.Data = pstring.Data
-	pbytes.Len = pstring.Len
-	pbytes.Cap = pstring.Len
-
-	return
+func BytesFromPtr(ptr uintptr, len int) []byte {
+	var b []byte
+	pbytes := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	pbytes.Data = uintptr(ptr)
+	pbytes.Len = len
+	pbytes.Cap = len
+	return b
 }

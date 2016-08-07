@@ -7,13 +7,13 @@ import (
 	"github.com/cosiner/gohper/time2"
 )
 
-type sleeper struct {
+type Sleeper struct {
 	maxSleepMs int
 	minSleepMs int
 	curr       int
 }
 
-func newSleeper(minMs, maxMs int) sleeper {
+func NewSleeper(minMs, maxMs int) Sleeper {
 	if minMs <= 0 {
 		minMs = 5
 	}
@@ -23,28 +23,28 @@ func newSleeper(minMs, maxMs int) sleeper {
 	if minMs > maxMs {
 		minMs = maxMs
 	}
-	return sleeper{
+	return Sleeper{
 		maxSleepMs: maxMs,
 		minSleepMs: minMs,
 	}
 }
 
-func (s *sleeper) Sleep() {
+func (s *Sleeper) Sleep() {
 	s.curr = time2.LimitSleep(s.curr, s.minSleepMs, s.maxSleepMs)
 }
 
-func (s *sleeper) Reset() {
+func (s *Sleeper) Reset() {
 	s.curr = 0
 }
 
 type retryListener struct {
-	sleeper sleeper
+	sleeper Sleeper
 	net.Listener
 }
 
 func NewRetryListener(l net.Listener, minSleepMs, maxSleepMs int) net.Listener {
 	return &retryListener{
-		sleeper:  newSleeper(minSleepMs, maxSleepMs),
+		sleeper:  NewSleeper(minSleepMs, maxSleepMs),
 		Listener: l,
 	}
 }
@@ -82,7 +82,7 @@ func (c limitConn) Close() error {
 }
 
 type limitListener struct {
-	sleeper sleeper
+	sleeper Sleeper
 
 	max  int64
 	curr int64
@@ -94,7 +94,7 @@ func NewLimitListener(l net.Listener, maxConn int64, minSleepMs, maxSleepMs int)
 		maxConn = 10240
 	}
 	return &limitListener{
-		sleeper:  newSleeper(minSleepMs, maxSleepMs),
+		sleeper:  NewSleeper(minSleepMs, maxSleepMs),
 		max:      maxConn,
 		Listener: l,
 	}
