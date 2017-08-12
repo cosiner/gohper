@@ -26,15 +26,19 @@ type Cipher struct {
 	hdrLen  int
 }
 
-func NewCipher(signKey []byte, ttl time.Duration, hash func() hash.Hash, encs ...encoding.Encoding) encoding.Encoding {
-	sigLen := hash().Size() / 3
-	return encoding.Pipe(encs).Prepend(&Cipher{
+func newCipher(signKey []byte, ttl time.Duration, hash func() hash.Hash) *Cipher {
+	sigLen := hash().Size()
+	return &Cipher{
 		signKey: signKey,
 		ttl:     ttl,
 		hash:    hash,
 		sigLen:  sigLen,
 		hdrLen:  sigLen + 8,
-	})
+	}
+}
+
+func NewCipher(signKey []byte, ttl time.Duration, hash func() hash.Hash, encs ...encoding.Encoding) encoding.Encoding {
+	return encoding.Pipe(encs).Prepend(newCipher(signKey, ttl, hash))
 }
 
 // | signature | deadline | str
@@ -45,7 +49,7 @@ func (c *Cipher) encrypt(deadline uint64, b []byte) []byte {
 
 	hash := hmac.New(c.hash, c.signKey)
 	hash.Write(b)
-	hash.Write(result[c.sigLen : c.hdrLen])
+	hash.Write(result[c.sigLen:c.hdrLen])
 	copy(result, hash.Sum(nil)[:c.sigLen])
 
 	return result
