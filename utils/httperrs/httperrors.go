@@ -41,26 +41,6 @@ func (c Code) NewS(err string) Error {
 	}
 }
 
-const (
-	BadRequest  Code = 400
-	UnAuth      Code = 401
-	NoPayment   Code = 402
-	Forbidden   Code = 403
-	NotFound    Code = 404
-	NotAllowed  Code = 405
-	NotAccept   Code = 406
-	ProxyUnAuth Code = 407
-	Timeout     Code = 408
-	Conflict    Code = 409
-	Gone        Code = 410
-	NoLength    Code = 411
-	Frequently  Code = 429
-
-	Server         Code = 500
-	NotImplemented Code = 501
-	Service        Code = 503
-)
-
 func Must(err error) Error {
 	if err == nil {
 		return nil
